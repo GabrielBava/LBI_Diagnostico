@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------
+   Tema LIFE — escuro (padrão) e claro. Cores em "R G B" para o Tailwind
+   conseguir aplicar transparência (ex.: bg-primary/10).
+------------------------------------------------------------------- */
+:root,
+.dark {
+  --background: 9 12 18;
+  --foreground: 236 233 226;
+  --card: 16 20 28;
+  --popover: 20 25 35;
+  --border: 38 45 58;
+  --input: 22 27 37;
+  --muted: 32 38 50;
+  --muted-foreground: 150 156 170;
+  --secondary: 26 31 42;
+  --primary: 214 172 86;
+  --primary-foreground: 22 17 8;
+  --accent: 96 165 250;
+  --success: 52 199 120;
+  --warning: 240 170 60;
+  --destructive: 239 84 84;
+  --gradient-gold: linear-gradient(135deg, #f3d98f 0%, #d6ac56 45%, #a9772a 100%);
+  /* séries de gráficos (validadas para daltonismo no fundo escuro) */
+  --serie-1: #b8892f;
+  --serie-2: #3987e5;
+  color-scheme: dark;
+}
+
+.light {
+  --background: 247 245 240;
+  --foreground: 24 26 32;
+  --card: 255 255 255;
+  --popover: 255 255 255;
+  --border: 226 222 212;
+  --input: 250 249 246;
+  --muted: 238 235 228;
+  --muted-foreground: 98 102 114;
+  --secondary: 243 240 233;
+  --primary: 166 118 34;
+  --primary-foreground: 255 255 255;
+  --accent: 37 99 235;
+  --success: 22 150 80;
+  --warning: 196 120 10;
+  --destructive: 210 50 50;
+  --gradient-gold: linear-gradient(135deg, #d9b25e 0%, #b8862f 50%, #8f6220 100%);
+  --serie-1: #a67622;
+  --serie-2: #2a78d6;
+  color-scheme: light;
+}
+
+html,
+body {
+  background: rgb(var(--background));
+  color: rgb(var(--foreground));
+}
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.bg-gold {
+  background: var(--gradient-gold);
+}
+.text-gold {
+  background: var(--gradient-gold);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Campos de formulário padrão */
+.inp {
+  width: 100%;
+  background: rgb(var(--input));
+  border: 1px solid rgb(var(--border));
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: rgb(var(--foreground));
+  outline: none;
+}
+.inp:focus,
+.inp-wrap:focus-within {
+  border-color: rgb(var(--primary));
+}
+.inp-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: rgb(var(--input));
+  border: 1px solid rgb(var(--border));
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+.inp-wrap input {
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.inp-wrap[data-readonly="true"] {
+  background: rgb(var(--muted) / 0.4);
+  border-style: dashed;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Linhas de listas: todos os campos com a mesma altura */
+.lista-compacta .inp,
+.lista-compacta .inp-wrap {
+  height: 34px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Barra de rolagem discreta */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border));
+  border-radius: 8px;
+}
+
+/* Impressão do relatório (PDF) */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .print-page {
+    break-after: page;
+  }
+  .print-avoid {
+    break-inside: avoid;
+  }
+}
