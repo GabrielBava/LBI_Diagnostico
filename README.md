@@ -10,6 +10,24 @@ Réplica do Diagnóstico LIFE (plano financeiro), reorganizada para ser fácil d
 
 A metodologia completa (processo + fórmulas) está em **[docs/METODOLOGIA.md](docs/METODOLOGIA.md)**.
 
+## Usar sem instalar nada (arquivo HTML único)
+
+O arquivo **[`html/Diagnostico-LIFE.html`](html/Diagnostico-LIFE.html)** contém o app inteiro. Baixe e abra com dois cliques no Chrome, Edge ou Safari. Funciona sem internet, exceto a fonte Inter, que tem substituta.
+
+- O selo de versão no cabeçalho (passe o mouse sobre ele) mostra quando o arquivo foi gerado.
+- Os dados ficam salvos no navegador. Ao receber uma versão nova do HTML, abra pelo mesmo navegador e os clientes continuam lá. Por segurança, use **Exportar backup** antes de trocar de versão.
+- Para gerar o arquivo de novo depois de alterar o código: `npm run html`.
+
+### Como pedir alterações
+
+Para cada mudança, diga **em qual etapa**, **o que entra/sai** e **como deve se comportar**. Por exemplo:
+
+> "Em Receitas, incluir o campo *Previsão de reajuste* (percentual), com a ajuda *Quando é o próximo dissídio?*."
+> "No roteiro de Despesas, trocar a frase de abertura por: ..."
+> "Na Aposentadoria, considerar o INSS como renda passiva a partir dos 65 anos."
+
+Prints de tela com marcações também ajudam.
+
 ## Como rodar
 
 Requer Node.js 18+.

@@ -43,7 +43,7 @@ export function Header() {
     <header className="no-print sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/85 px-4 backdrop-blur md:px-8">
       <Logo />
       <span
-        title={`Versão da plataforma — ${APP.versao}`}
+        title={`Versão da plataforma — ${APP.versao} · gerada em ${new Date(__GERADO_EM__).toLocaleString("pt-BR")}`}
         className="hidden rounded-full border border-border bg-card/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground md:inline-block"
       >
         {APP.versao}
