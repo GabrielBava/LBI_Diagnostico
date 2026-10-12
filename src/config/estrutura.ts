@@ -34,7 +34,7 @@ import {
   Wallet,
 } from "lucide-react";
 import type { Cliente } from "@/types";
-import { n, s } from "@/lib/calculos";
+import { financiamentosDoPatrimonio, n, s } from "@/lib/calculos";
 import { GRUPOS_DESPESA } from "./despesas";
 
 export interface Etapa {
@@ -176,7 +176,8 @@ export const SECOES: SecaoDef[] = [
     icone: ReceiptText,
     coleta: true,
     opcional: true,
-    concluida: (c) => c.financiamentos.length + c.consorcios.length + c.emprestimos.length > 0,
+    concluida: (c) =>
+      c.financiamentos.length + c.consorcios.length + c.emprestimos.length + financiamentosDoPatrimonio(c).length > 0,
   },
   {
     id: "projetos",
@@ -217,7 +218,8 @@ export const SECOES: SecaoDef[] = [
     subtitulo: "Aposentadoria e estilo de vida",
     icone: Sunset,
     coleta: true,
-    concluida: (c) => n(c.futuro.idadeAposentadoria) > 0 && (!!s(c.futuro.estiloVida) || n(c.futuro.rendaDesejada) > 0),
+    // A idade tem padrão (60 anos); basta definir o estilo de vida ou a renda desejada.
+    concluida: (c) => !!s(c.futuro.estiloVida) || n(c.futuro.rendaDesejada) > 0,
   },
 
   // Etapa 4 · Investimentos

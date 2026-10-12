@@ -231,7 +231,7 @@ export function Escala({
   const notas = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   return (
     <div>
-      <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-6 gap-1.5 sm:flex sm:flex-wrap">
+      <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-6 gap-1.5 sm:max-w-[520px] sm:grid-cols-11">
         {notas.map((nota) => {
           const ativo = atual === nota;
           return (
@@ -242,7 +242,7 @@ export function Escala({
               aria-checked={ativo}
               aria-label={String(nota)}
               onClick={() => onChange(ativo ? undefined : nota)}
-              className={`h-10 rounded-md border text-sm font-semibold tabular-nums transition sm:w-10 ${
+              className={`h-10 min-w-0 rounded-md border text-sm font-semibold tabular-nums transition ${
                 ativo
                   ? "border-transparent bg-gold text-primary-foreground shadow-sm"
                   : "border-border bg-input text-muted-foreground hover:border-primary/50 hover:text-foreground"
@@ -254,7 +254,7 @@ export function Escala({
         })}
       </div>
       {rotulos && (
-        <div className="mt-1 flex justify-between text-[10px] uppercase tracking-wider text-muted-foreground sm:max-w-[474px]">
+        <div className="mt-1 flex justify-between gap-3 text-[10px] uppercase tracking-wider text-muted-foreground sm:max-w-[520px]">
           <span>{rotulos[0]}</span>
           <span>{rotulos[1]}</span>
         </div>
@@ -278,7 +278,7 @@ export function Icones({
   ariaLabel?: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-10">
+    <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-3 gap-2 sm:grid-cols-5 2xl:grid-cols-10">
       {opcoes.map((o) => {
         const ativo = valor === o;
         const Icone = icones[o];
@@ -295,8 +295,8 @@ export function Icones({
                 : "border-border bg-input text-muted-foreground hover:border-primary/50 hover:text-foreground"
             }`}
           >
-            {Icone && <Icone className="h-5 w-5" />}
-            <span className="leading-tight">{o}</span>
+            {Icone && <Icone className="h-5 w-5 shrink-0" />}
+            <span className="w-full min-w-0 text-center leading-tight [overflow-wrap:anywhere]">{o}</span>
           </button>
         );
       })}

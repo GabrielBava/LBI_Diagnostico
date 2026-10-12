@@ -97,7 +97,7 @@ export function pilares(c: Cliente): Pilar[] {
     });
   }
 
-  if (fu.alvo <= 0 || !s(c.cadastro.nascimento))
+  if (fu.rendaDesejada <= 0 || !s(c.cadastro.nascimento))
     out.push({ id: "futuro", nome: "Independência financeira", nota: 0, status: "sem-dados", resumo: "Informe nascimento e renda desejada." });
   else {
     const nota = limitar(fu.independencia * 100);
@@ -227,7 +227,7 @@ export function pontos(c: Cliente): { fortes: Ponto[]; negativos: Ponto[] } {
   } else if (s(c.investimentos.temInvestimento) === "Não")
     negativos.push({ id: "nao-investe", area: "Investimentos", texto: "Ainda não possui investimentos." });
 
-  if (fu.alvo > 0 && s(c.cadastro.nascimento)) {
+  if (fu.rendaDesejada > 0 && s(c.cadastro.nascimento)) {
     if (fu.independencia >= 1) fortes.push({ id: "futuro", area: "Futuro", texto: `No ritmo atual, atinge a independência aos ${fu.idadeAposentadoria} anos.` });
     else
       negativos.push({
@@ -400,12 +400,12 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       prioridade: "Média",
       prazo: "Longo",
     });
-  if (su.filhos > 0)
+  if (su.escolares > 0)
     out.push({
       id: "op-educacao",
       quadrante: "Futuro",
       titulo: "Fundo de educação dos filhos",
-      detalhe: `${su.filhos} filho(s); mensalidades atuais de ${fmtBRL(su.mensalidades)}/mês.`,
+      detalhe: `${su.escolares} filho(s)/dependente(s) em idade escolar; mensalidades atuais de ${fmtBRL(su.mensalidades)}/mês.`,
       prioridade: "Média",
       prazo: "Longo",
     });

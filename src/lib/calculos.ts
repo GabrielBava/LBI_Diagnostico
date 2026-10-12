@@ -107,12 +107,14 @@ const estuda = (d: Item) => ehEscolar(d) && !!s(d.nivelEscola) && s(d.nivelEscol
 /** Mensalidade só conta para dependente que estuda (campo oculto não soma). */
 export const mensalidadeDependente = (d: Item) => (estuda(d) ? n(d.mensalidade) : 0);
 export const custoDependente = (d: Item) =>
-  mensalidadeDependente(d) + n(d.auxilio) + (ehEscolar(d) ? 0 : n(d.outrosCustos));
+  mensalidadeDependente(d) + n(d.auxilio) + (s(d.categoria) && !ehEscolar(d) ? n(d.outrosCustos) : 0);
 
 export function sucessao(c: Cliente) {
-  const filhos = c.dependentes.filter((d) => s(d.categoria) === "Filho(a)" || s(d.categoria) === "Enteado(a)");
+  const filhos = c.dependentes.filter((d) => s(d.categoria) === "Filho(a)");
   return {
     filhos: filhos.length,
+    /** Filhos, enteados e netos (dependentes com vida escolar). */
+    escolares: c.dependentes.filter(ehEscolar).length,
     dependentes: c.dependentes.length,
     custoMensal: soma(c.dependentes, custoDependente),
     mensalidades: soma(c.dependentes, mensalidadeDependente),
@@ -203,9 +205,11 @@ export function brutaLiquida(bruta: Valor, liquida: Valor) {
 export function renda(c: Cliente) {
   const cliente = brutaLiquida(c.renda.brutaCliente, c.renda.liquidaCliente);
   const conjuge = temConjuge(c) ? brutaLiquida(c.renda.brutaConjuge, c.renda.liquidaConjuge) : brutaLiquida(0, 0);
-  const outras = soma(c.outrasRendas, mensal);
+  // Renda marcada como do cônjuge só conta se o cadastro tiver cônjuge.
+  const validas = c.outrasRendas.filter((r) => temConjuge(c) || s(r.pessoa) !== "Cônjuge");
+  const outras = soma(validas, mensal);
   const passiva = soma(
-    c.outrasRendas.filter((r) => RENDA_PASSIVA.includes(s(r.tipo))),
+    validas.filter((r) => RENDA_PASSIVA.includes(s(r.tipo))),
     mensal,
   );
   return {
@@ -225,11 +229,13 @@ export function cartoes(c: Cliente) {
   const lista = s(c.renda.temCartao) === "Sim" ? c.cartoes : [];
   const limite = soma(lista, (k) => n(k.limite));
   const gasto = soma(lista, (k) => n(k.gastoMensal));
+  // Uso do limite considera só cartões com limite informado.
+  const gastoComLimite = soma(lista.filter((k) => n(k.limite) > 0), (k) => n(k.gastoMensal));
   return {
     quantidade: lista.length,
     limite,
     gasto,
-    usoLimite: limite > 0 ? gasto / limite : 0,
+    usoLimite: limite > 0 ? gastoComLimite / limite : 0,
     comMilhas: lista.filter((k) => k.milhas === true).length,
     semMilhas: lista.filter((k) => k.milhas !== true),
   };
@@ -409,8 +415,8 @@ const ANTES_DA_FACULDADE = ["Educação infantil", "Fundamental I", "Fundamental
 
 export function educacional(c: Cliente) {
   const pr = c.protecao;
-  const mensalidadeFac = n(pr.mensalidadeFaculdade) || 3000;
-  const duracao = n(pr.duracaoFaculdade) || 5;
+  const mensalidadeFac = nOpt(pr.mensalidadeFaculdade) ?? 3000;
+  const duracao = nOpt(pr.duracaoFaculdade) ?? 5;
   const lista = c.dependentes.filter(ehEscolar).map((d) => {
     const nivel = s(d.nivelEscola);
     const anosEscola = ANOS_ESCOLA_RESTANTES[nivel] ?? 0;
@@ -492,7 +498,10 @@ export function futuro(c: Cliente) {
   const i = taxaMensal(retornoReal);
   const meses = anos * 12;
   const projetado = valorFuturo(atual, aporteAtual, i, meses);
-  const aporte = aporteNecessario(alvo, atual, i, meses);
+  /** Idade de aposentadoria já atingida (ou menor que a idade atual). */
+  const idadeAtingida = idadeAtual > 0 && idadeAposentadoria <= idadeAtual;
+  // Sem prazo para aportar não existe "aporte mensal": o que falta é um valor único.
+  const aporte = idadeAtingida ? 0 : aporteNecessario(alvo, atual, i, meses);
   const anoBase = new Date().getFullYear();
   return {
     idadeAtual,
@@ -508,7 +517,10 @@ export function futuro(c: Cliente) {
     aporteAtual,
     projetado,
     aporte,
-    independencia: alvo > 0 ? projetado / alvo : 0,
+    idadeAtingida,
+    faltaHoje: Math.max(0, alvo - atual),
+    // Se as outras rendas já cobrem a renda desejada, a independência está atingida.
+    independencia: alvo > 0 ? projetado / alvo : rendaDesejada > 0 ? 1 : 0,
     rendaProjetada: (projetado * TAXA_RETIRADA) / 12 + outras,
     serie: Array.from({ length: anos + 1 }, (_, k) => ({
       ano: anoBase + k,

@@ -99,11 +99,17 @@ export default function Renda() {
           onChange={(i) => setLista("outrasRendas", i)}
           textoAdicionar="Adicionar renda extra ou de outra pessoa"
           tituloItem={(x, i) => `${s(x.descricao) || `Renda ${i + 1}`}${s(x.pessoa) ? ` · ${s(x.pessoa)}` : ""}`}
-          rodapeItem={(i) => (
-            <>
-              Equivalente mensal: <strong className="text-foreground tabular-nums">{fmtBRL(mensal(i))}</strong>
-            </>
-          )}
+          rodapeItem={(i) =>
+            s(i.pessoa) === "Cônjuge" && !temConjuge(cliente) ? (
+              <span className="text-warning">
+                Renda do cônjuge, mas o cadastro não tem cônjuge: não entra no total. Troque “De quem” ou o estado civil.
+              </span>
+            ) : (
+              <>
+                Equivalente mensal: <strong className="text-foreground tabular-nums">{fmtBRL(mensal(i))}</strong>
+              </>
+            )
+          }
         />
       </SubBloco>
 

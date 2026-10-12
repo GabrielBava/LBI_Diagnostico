@@ -56,7 +56,12 @@ export default function Sucessao() {
           // Mantém o Cadastro coerente: filhos adicionados ou removidos aqui atualizam a quantidade.
           atualizar((c) => {
             const filhos = novos.filter((d) => s(d.categoria) === "Filho(a)").length;
-            const cadastro = filhos > 0 ? { ...c.cadastro, temFilhos: "Sim", qtdFilhos: filhos } : c.cadastro;
+            const cadastro =
+              filhos > 0
+                ? { ...c.cadastro, temFilhos: "Sim", qtdFilhos: filhos }
+                : s(c.cadastro.temFilhos) === "Sim"
+                  ? { ...c.cadastro, temFilhos: "Não", qtdFilhos: undefined }
+                  : c.cadastro;
             return { ...c, dependentes: novos, cadastro };
           })
         }

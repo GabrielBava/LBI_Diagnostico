@@ -23,7 +23,7 @@ export default function Aposentadoria() {
         cliente={cliente}
         colunas={4}
         onChange={(k, v) => setCampo("futuro", k, v)}
-        automaticos={{ rendaDesejada: fu.rendaDesejadaAuto || undefined, outrasRendas: fu.outrasAuto || undefined }}
+        automaticos={{ idadeAposentadoria: 60, rendaDesejada: fu.rendaDesejadaAuto || undefined, outrasRendas: fu.outrasAuto || undefined }}
       />
 
       <SubBloco titulo="Estilos de vida">

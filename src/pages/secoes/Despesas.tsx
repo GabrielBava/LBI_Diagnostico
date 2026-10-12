@@ -16,9 +16,9 @@ type Bloco = "Fixa" | "Variável";
 /** Linha "rótulo | valor" das subcategorias (cabe em 390px). */
 function Linha({ rotulo, dica, children }: { rotulo: ReactNode; dica?: ReactNode; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_minmax(120px,160px)] items-center gap-3 py-1.5">
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(104px,42%)] items-center gap-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_160px]">
       <div className="min-w-0">
-        <div className="text-sm leading-tight">{rotulo}</div>
+        <div className="text-sm leading-tight [overflow-wrap:anywhere]">{rotulo}</div>
         {dica && <div className="truncate text-[11px] text-muted-foreground">{dica}</div>}
       </div>
       {children}
@@ -128,7 +128,13 @@ export default function Despesas() {
           {cliente.dependentes.map((dep, i) => (
             <Linha
               key={dep.id}
-              rotulo={s(dep.nome) || s(dep.categoria) || `Dependente ${i + 1}`}
+              rotulo={
+                s(dep.nome) ||
+                // Mesmo nome dos cartões de Sucessão: "Filho(a) 1", "Pai / Mãe 2"...
+                `${s(dep.categoria) || "Dependente"} ${
+                  cliente.dependentes.slice(0, i + 1).filter((x) => s(x.categoria) === s(dep.categoria)).length
+                }`
+              }
               dica={s(dep.nome) ? s(dep.categoria) : undefined}
             >
               <ValorTravado valor={custoDependente(dep)} />
@@ -157,9 +163,9 @@ export default function Despesas() {
               );
             })}
             {extras.map((e) => (
-              <div key={e.id} className="grid grid-cols-[minmax(0,1fr)_minmax(110px,160px)_auto] items-center gap-2 py-1.5">
+              <div key={e.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1.5 sm:grid-cols-[minmax(0,1fr)_160px_auto]">
                 <input
-                  className="inp min-w-0"
+                  className="inp col-span-2 min-w-0 sm:col-span-1"
                   value={s(e.descricao)}
                   placeholder="Descrição"
                   aria-label={`Descrição do item extra em ${g.label}`}
@@ -226,7 +232,7 @@ export default function Despesas() {
             <Icone className="h-4 w-4" aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold">{g.label}</span>
+            <span className="block text-sm font-semibold leading-tight [overflow-wrap:anywhere]">{g.label}</span>
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               {ehAutomatico(g) && <Lock className="h-2.5 w-2.5" aria-hidden="true" />}
               {resumoGrupo(g)}

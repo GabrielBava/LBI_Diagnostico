@@ -3,11 +3,13 @@
 import { GraficoFuturo } from "@/components/graficos";
 import { BarraProgresso, Botao, Kpi } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
+import { usePreferencias } from "@/lib/preferencias";
 import { futuro, nOpt, s, TAXA_RETIRADA } from "@/lib/calculos";
 import { fmtBRL, fmtPct } from "@/lib/format";
 
 export default function Futuro() {
   const { cliente, irPara } = useCliente();
+  const { apresentacao } = usePreferencias();
   const fu = futuro(cliente);
   const semIdade = !s(cliente.cadastro.nascimento);
   const rendaAuto = nOpt(cliente.futuro.rendaDesejada) === undefined;
@@ -35,13 +37,35 @@ export default function Futuro() {
             {outrasAuto && fu.outras > 0 && " (renda passiva atual)"}
           </span>
         </p>
-        <Botao pequeno variante="fantasma" className="no-print -ml-3 shrink-0 self-start sm:ml-0 sm:self-auto" onClick={() => irPara("aposentadoria")}>
-          Editar premissas
-        </Botao>
+        {!apresentacao && (
+          <Botao pequeno variante="fantasma" className="no-print -ml-3 shrink-0 self-start sm:ml-0 sm:self-auto" onClick={() => irPara("aposentadoria")}>
+            Editar premissas
+          </Botao>
+        )}
       </div>
 
       {semIdade ? (
         <p className="text-sm text-warning">Informe a data de nascimento no Cadastro para projetar o futuro.</p>
+      ) : fu.rendaDesejada <= 0 ? (
+        <p className="text-sm text-warning">Preencha as despesas ou a renda desejada (12 · Futuro) para projetar a independência financeira.</p>
+      ) : fu.idadeAtingida ? (
+        <div className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm">
+          <p>
+            A idade de aposentadoria ({fu.idadeAposentadoria} anos) já foi atingida: o cliente tem {fu.idadeAtual} anos. Ajuste a idade em 12 ·
+            Futuro para projetar os aportes.
+          </p>
+          <p className="mt-2">
+            Hoje o patrimônio financeiro é de <strong>{fmtBRL(fu.atual)}</strong> para uma meta de <strong>{fmtBRL(fu.alvo)}</strong>
+            {fu.faltaHoje > 0 ? (
+              <>
+                {" "}
+                — faltam <strong>{fmtBRL(fu.faltaHoje)}</strong>.
+              </>
+            ) : (
+              " — meta já atingida."
+            )}
+          </p>
+        </div>
       ) : (
         <>
           <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">

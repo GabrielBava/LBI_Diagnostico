@@ -312,7 +312,9 @@ export const CAMPOS_OUTRA_RENDA: CampoDef[] = [
     label: "De quem",
     tipo: "chips",
     opcoes: OPCOES.pessoaRenda,
-    opcoesSe: (_d, c) => (casado(c) ? OPCOES.pessoaRenda : OPCOES.pessoaRenda.filter((p) => p !== "Cônjuge")),
+    // "Cônjuge" só para casados — mas continua visível se já estiver marcada, para poder corrigir.
+    opcoesSe: (d, c) =>
+      casado(c) || d.pessoa === "Cônjuge" ? OPCOES.pessoaRenda : OPCOES.pessoaRenda.filter((p) => p !== "Cônjuge"),
     padrao: "Cliente",
     largura: 2,
   },

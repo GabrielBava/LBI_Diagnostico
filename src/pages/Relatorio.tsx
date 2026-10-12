@@ -128,8 +128,8 @@ export default function Relatorio() {
         {mostra("panorama") && (
           <Bloco titulo="Panorama financeiro">
             <div className={`grid grid-cols-2 gap-3 ${rd.brutaTotal > 0 ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
-              {rd.brutaTotal > 0 && <Indicador rotulo="Renda bruta" valor={fmtBRL(rd.brutaTotal)} />}
-              <Indicador rotulo={rd.brutaTotal > 0 ? "Renda líquida" : "Renda mensal"} valor={fmtBRL(f.renda)} />
+              {rd.brutaTotal > 0 && <Indicador rotulo="Salário bruto (cliente + cônjuge)" valor={fmtBRL(rd.brutaTotal)} />}
+              <Indicador rotulo={rd.brutaTotal > 0 ? "Renda líquida familiar" : "Renda mensal"} valor={fmtBRL(f.renda)} />
               <Indicador rotulo="Despesas mensais" valor={fmtBRL(f.despesas)} />
               <Indicador rotulo="Sobra mensal" valor={fmtBRL(f.sobra)} />
               <Indicador rotulo="Taxa de poupança" valor={fmtPct(f.taxaPoupanca)} />
@@ -154,8 +154,8 @@ export default function Relatorio() {
               <Tabela
                 cab={["Fluxo mensal", "Valor"]}
                 linhas={[
-                  ...(rd.brutaTotal > 0 ? [["Renda bruta", fmtBRL(rd.brutaTotal)]] : []),
-                  [rd.brutaTotal > 0 ? "Renda líquida" : "Renda", fmtBRL(f.renda)],
+                  ...(rd.brutaTotal > 0 ? [["Salário bruto (cliente + cônjuge)", fmtBRL(rd.brutaTotal)]] : []),
+                  [rd.brutaTotal > 0 ? "Renda líquida familiar (com outras rendas)" : "Renda", fmtBRL(f.renda)],
                   ["(−) Despesas fixas", fmtBRL(f.fixas)],
                   ["(−) Despesas variáveis", fmtBRL(f.variaveis)],
                   [<strong key="a">Sobra</strong>, <strong key="b">{fmtBRL(f.sobra)}</strong>],
