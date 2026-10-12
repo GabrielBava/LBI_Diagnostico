@@ -18,7 +18,7 @@ export function JornadaCliente() {
   const { cliente, setLista } = useCliente();
   return (
     <div className="space-y-5">
-      <ol className="grid gap-3 md:grid-cols-5">
+      <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {cliente.jornada.map((r, i) => {
           const st = s(r.status) || "Pendente";
           return (

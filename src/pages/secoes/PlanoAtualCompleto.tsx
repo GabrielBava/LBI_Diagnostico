@@ -6,7 +6,7 @@ import { Formulario } from "@/components/campos";
 import { BarrasHorizontais, RendaVsDespesas } from "@/components/graficos";
 import { Kpi, LinhaValor, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { despesas, fluxo, n, patrimonio, protecao, s } from "@/lib/calculos";
+import { despesas, fluxo, n, patrimonio, protecao, rotuloDependente, s } from "@/lib/calculos";
 import { fmtBRL, fmtPct } from "@/lib/format";
 import { usePreferencias } from "@/lib/preferencias";
 
@@ -92,7 +92,7 @@ function ProtecaoContratar() {
               <ul className="divide-y divide-border/60">
                 {ed.lista.map((x, i) => {
                   const d = x.item;
-                  const nome = s(d.nome) || s(d.categoria) || `Dependente ${i + 1}`;
+                  const nome = rotuloDependente(cliente.dependentes, d);
                   const partes = [
                     ...(x.anosEscola > 0 ? [`escola ${fmtBRL(x.escola)} (${fmtAnos(x.anosEscola)})`] : []),
                     ...(x.faculdade > 0 ? [`faculdade ${fmtBRL(x.faculdade)}`] : []),
@@ -188,6 +188,8 @@ function ProtecaoContratar() {
                 campos={CAMPOS_PREMISSAS_PROTECAO}
                 dados={cliente.protecao}
                 cliente={cliente}
+                // Em branco, o cálculo usa estes valores (mostrados como "auto").
+                automaticos={{ itcmd: 4, honorarios: 6, mensalidadeFaculdade: 3000, duracaoFaculdade: 5 }}
                 onChange={(k, v) => setCampo("protecao", k, v)}
               />
             </div>

@@ -5,17 +5,8 @@ import { CAMPOS_DEPENDENTE, OPCOES } from "@/config/campos";
 import { ListaItens } from "@/components/ListaEditor";
 import { Botao, Kpi } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { custoDependente, s, sucessao } from "@/lib/calculos";
+import { custoDependente, rotuloDependente, s, sucessao } from "@/lib/calculos";
 import { fmtBRL } from "@/lib/format";
-import type { Item } from "@/types";
-
-/** Título do cartão: nome, ou "<categoria> <n>" contando só dentro da categoria. */
-function titulo(itens: Item[], d: Item, i: number) {
-  const categoria = s(d.categoria);
-  if (s(d.nome)) return s(d.nome);
-  const posicao = itens.slice(0, i + 1).filter((x) => s(x.categoria) === categoria).length;
-  return `${categoria || "Dependente"} ${posicao}`;
-}
 
 export default function Sucessao() {
   const { cliente, atualizar, irPara } = useCliente();
@@ -71,9 +62,9 @@ export default function Sucessao() {
           .filter((categoria) => !(semFilhos && categoria === "Filho(a)"))
           .map((categoria) => ({ label: categoria, novo: () => ({ categoria }) }))}
         colunas={3}
-        tituloItem={(d, i) => (
+        tituloItem={(d) => (
           <span className="text-sm font-semibold text-foreground">
-            {titulo(itens, d, i)}
+            {rotuloDependente(itens, d)}
             {s(d.nome) && s(d.categoria) && <span className="ml-2 text-xs font-normal text-muted-foreground">{s(d.categoria)}</span>}
           </span>
         )}

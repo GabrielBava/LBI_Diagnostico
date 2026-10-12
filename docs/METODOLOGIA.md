@@ -64,15 +64,16 @@ Taxas anuais viram mensais por equivalência composta: `i = (1 + anual)^(1/12) �
 Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 
 ### Renda
-- Para cada pessoa: se só a **bruta** for informada, a **líquida** é estimada (bruta − INSS − IRRF); se só a líquida, a bruta é estimada pelo inverso. Tabelas de referência em `src/config/tributos.ts`: INSS empregado 2025, IRRF mensal (maio/2025) com desconto simplificado de R$ 607,20 e o redutor de 2026 (isenção até R$ 5.000, redução parcial até R$ 7.350). É uma estimativa para assalariado; pró-labore e autônomo diferem.
+- Para cada pessoa: se só a **bruta** for informada, a **líquida** é estimada (bruta − INSS − IRRF); se só a líquida, a bruta é estimada pelo inverso. Tabelas de referência em `src/config/tributos.ts`: INSS empregado 2026 (teto R$ 8.475,55), IRRF mensal (maio/2025) com desconto simplificado de R$ 607,20 e o redutor de 2026 (isenção até R$ 5.000, redução parcial até R$ 7.350). É uma estimativa para assalariado; pró-labore e autônomo diferem.
 - `Renda familiar (líquida) = líquida do cliente + líquida do cônjuge + outras rendas` (frequência Anual ÷ 12).
 - **Renda passiva** = outras fontes do tipo Aluguel, Dividendos/Juros e Pensão/Aposentadoria.
+- Renda marcada como do cônjuge só entra no total quando o estado civil é casado(a) ou união estável.
 ### Despesas
 - Cada subcategoria guarda um valor mensal; o bloco soma subcategorias e itens extras.
 - `Despesas = fixas + variáveis`. As fixas incluem o bloco Dependentes (de Sucessão) e o bloco Financiamento / Dívidas (parcelas).
 - O gasto informado nos cartões **não** é somado de novo: ele já está distribuído nas despesas.
 - `Sobra = Renda − Despesas` · `Taxa de poupança = Sobra ÷ Renda`.
-- `Comprometimento = Parcelas ÷ Renda` (alerta acima do limite dos parâmetros, padrão 30%).
+- `Comprometimento = Parcelas ÷ Renda` (alerta acima do limite dos parâmetros, padrão 30%). As parcelas são as da seção 8 (com os bens não quitados do Patrimônio) ou, se não houver nenhuma cadastrada, o valor digitado em Despesas > Financiamento / Dívidas.
 
 ### Balanço patrimonial
 - **Ativos** = imóveis + móveis + reserva + investimentos + previdência + participação em empresa.
@@ -87,13 +88,14 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 
 ### Objetivos
 - `Aporte mensal = valor futuro × i ÷ ((1 + i)^meses − 1)`, com `i` = retorno nominal mensal.
+- Objetivo sem prazo não tem aporte calculado e não soma no total (o pilar pede o prazo).
 - **Probabilidade sugerida** ("sug." ao lado da régua): a sobra mensal é distribuída entre os objetivos na ordem Essencial → Desejo → Sonho e, dentro de cada grupo, por prioridade. A sugestão é a parte do aporte que a sobra cobre, limitada a 95%. O consultor decide o valor final.
 
 ### Proteção — o que contratar (6.2 · Plano atual)
 ```
 Educacional        = Σ filhos/enteados/netos: mensalidade × 12 × anos de escola restantes
                      + faculdade (mensalidade de referência × 12 × duração; quem já está na graduação: mensalidade atual × metade da duração)
-Padrão de vida (N) = (custo de vida − mensalidades dos dependentes) × 12 × N anos   — N = 1, 5 ou 15 (escolhido nos cartões)
+Padrão de vida (N) = (custo de vida − mensalidades de escola e graduação) × 12 × N anos   — N = 1, 5 ou 15 (escolhido nos cartões)
 Sucessão           = patrimônio quitado × (ITCMD % + honorários e custas %)
 Quitação           = passivos (opcional; financiamento imobiliário costuma ter seguro MIP)
 Necessidade        = educacional + padrão de vida (N) + sucessão (+ quitação)
@@ -104,11 +106,13 @@ A contratar        = max(0, capital necessário − seguro de vida individual at
 - Patrimônio quitado = imóveis e móveis quitados + reserva + investimentos + participação em empresa (previdência não entra em inventário).
 - Premissas padrão (versão consultor): ITCMD 4%, honorários e custas 6%, faculdade R$ 3.000/mês por 5 anos.
 - O seguro de vida pela empresa não entra (termina com o vínculo).
+- Mensalidade de pós-graduação continua no padrão de vida (não há componente educacional para ela).
+- Se os recursos já cobrem a necessidade (capital necessário = 0), o pilar Proteção fica 100.
 
 ### Futuro (independência financeira)
 ```
 Renda desejada  = informada (ou custo de vida × fator do estilo de vida: mais simples 0,7 · igual a hoje 1,0 · mais confortável 1,3 · sofisticado 1,6)
-Outras rendas   = informada (ou renda passiva)
+Outras rendas   = informada (ou aluguéis + pensão/aposentadoria atuais; juros e dividendos ficam de fora porque o capital que os gera já está na projeção)
 Patrimônio necessário = (renda desejada − outras rendas) × 12 ÷ 4%    (25×)
 Projeção = investimentos + previdência hoje (sem a reserva), investindo a sobra atual todo mês, a retorno real
 Independência = projeção ÷ patrimônio necessário
@@ -132,7 +136,8 @@ Nota de 0 a 100 por pilar. Status: Saudável ≥ 75 · Atenção ≥ 45 · Crít
 | Independência financeira | projeção ÷ patrimônio necessário |
 | Objetivos | sobra ÷ aporte necessário dos objetivos |
 
-**Nota LIFE** = média dos pilares com dados.
+**Nota LIFE** = média dos pilares com dados (sem nenhum pilar com dados, aparece “—”). O pilar Dívidas pede a renda antes de dar nota.
+- Idade de aposentadoria já atingida: não há aporte mensal; o diagnóstico mostra quanto falta hoje para a meta.
 
 ### Pontos fortes (6.3) e pontos de atuação (6.4)
 Gerados automaticamente a partir das regras em `pontos()`, como poupança ≥ 20%, reserva completa, imóveis quitados, empréstimos ativos e veículos sem seguro. O consultor pode acrescentar pontos manuais. A seção 6.4 mostra a probabilidade de cada objetivo, atual × com plano.

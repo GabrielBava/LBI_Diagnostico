@@ -63,13 +63,16 @@ export default function Objetivos() {
               rodapeItem={
                 apresentacao
                   ? undefined
-                  : (o) => (
-                      <span className="no-print">
-                        Aporte necessário: <strong className="text-foreground">{fmtBRL(ob.aportes[o.id] ?? 0)}/mês</strong>
-                        {n(o.prazoMeses) > 0 && ` por ${n(o.prazoMeses)} meses`}
-                        {f.renda > 0 && ` · a sobra atual cobre ${ob.sugestao[o.id] ?? 0}% deste aporte`}
-                      </span>
-                    )
+                  : (o) =>
+                      n(o.prazoMeses) <= 0 ? (
+                        <span className="no-print">Informe o prazo para calcular o aporte necessário.</span>
+                      ) : (
+                        <span className="no-print">
+                          Aporte necessário: <strong className="text-foreground">{fmtBRL(ob.aportes[o.id] ?? 0)}/mês</strong>
+                          {` por ${n(o.prazoMeses)} meses`}
+                          {f.renda > 0 && ` · a sobra atual cobre ${ob.sugestao[o.id] ?? 0}% deste aporte`}
+                        </span>
+                      )
               }
             />
           </SubBloco>

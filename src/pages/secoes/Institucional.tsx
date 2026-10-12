@@ -1,14 +1,16 @@
 import { CalendarClock, HeartHandshake } from "lucide-react";
 import { CAMPOS_PONTO_PARTIDA } from "@/config/campos";
-import { ETAPAS, SECOES } from "@/config/estrutura";
+import { ETAPAS, SECOES, secaoOculta } from "@/config/estrutura";
 import { INSTITUCIONAL } from "@/config/institucional";
 import { Formulario } from "@/components/campos";
 import { SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
+import { usePreferencias } from "@/lib/preferencias";
 import { s } from "@/lib/calculos";
 
 export default function Institucional() {
   const { cliente, setCampo } = useCliente();
+  const { apresentacao } = usePreferencias();
   const nome = s(cliente.cadastro.nome).split(" ")[0];
   return (
     <div className="space-y-4">
@@ -31,13 +33,13 @@ export default function Institucional() {
       </div>
 
       <SubBloco titulo="Como vamos trabalhar juntos">
-        <ol className="grid gap-3 md:grid-cols-7">
+        <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-7">
           {ETAPAS.map((e) => (
             <li key={e.id} className="rounded-lg border border-border bg-card p-3">
               <span className="text-gold text-2xl font-black">{e.numero}</span>
               <div className="text-xs font-semibold">{e.nome}</div>
               <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
-                {SECOES.filter((x) => x.etapa === e.id)
+                {SECOES.filter((x) => x.etapa === e.id && !(apresentacao && secaoOculta(cliente, x)))
                   .map((x) => x.titulo.replace("V1 · ", ""))
                   .join(" · ")}
               </p>

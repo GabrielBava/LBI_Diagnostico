@@ -8,8 +8,8 @@ import { APP } from "@/config/defaults";
 import { secaoOculta, secaoPorId } from "@/config/estrutura";
 import { Logo } from "@/components/Header";
 import { BotaoOuro, Selo, corStatus, textoStatus } from "@/components/ui";
-import { despesas, fluxo, futuro, n, objetivos, patrimonio, protecao, renda, s } from "@/lib/calculos";
-import { notaGeral, pilares, pontos } from "@/lib/diagnostico";
+import { despesas, fluxo, futuro, n, objetivos, patrimonio, protecao, renda, s, temConjuge } from "@/lib/calculos";
+import { notaGeral, pilares, pontos, temNota } from "@/lib/diagnostico";
 import { fmtBRL, fmtData, fmtPct } from "@/lib/format";
 import { lerConfig, useClientes } from "@/lib/storage";
 
@@ -24,28 +24,30 @@ function Bloco({ titulo, children }: { titulo: string; children: ReactNode }) {
 
 function Tabela({ cab, linhas }: { cab: string[]; linhas: ReactNode[][] }) {
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-border text-left text-[10px] uppercase tracking-widest text-muted-foreground">
-          {cab.map((c, i) => (
-            <th key={c} className={`py-1.5 font-medium ${i > 0 ? "pl-4 text-right" : ""}`}>
-              {c}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-border">
-        {linhas.map((l, i) => (
-          <tr key={i}>
-            {l.map((c, j) => (
-              <td key={j} className={`py-1.5 ${j > 0 ? "pl-4 text-right tabular-nums" : ""}`}>
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border text-left text-[10px] uppercase tracking-widest text-muted-foreground">
+            {cab.map((c, i) => (
+              <th key={c} className={`py-1.5 font-medium ${i > 0 ? "pl-4 text-right" : ""}`}>
                 {c}
-              </td>
+              </th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {linhas.map((l, i) => (
+            <tr key={i}>
+              {l.map((c, j) => (
+                <td key={j} className={`py-1.5 ${j > 0 ? "pl-4 text-right tabular-nums" : ""}`}>
+                  {c}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -85,6 +87,7 @@ export default function Relatorio() {
   const rd = renda(cliente);
   const fu = futuro(cliente);
   const nome = s(cliente.cadastro.nome) || "Cliente";
+  const rotuloBruto = temConjuge(cliente) ? "Salário bruto (cliente + cônjuge)" : "Salário bruto";
   const fortes = [...pt.fortes.map((x) => x.texto), ...cliente.pontosFortes.map((x) => s(x.texto)).filter(Boolean)];
   const negativos = [...pt.negativos.map((x) => x.texto), ...cliente.pontosNegativos.map((x) => s(x.texto)).filter(Boolean)];
 
@@ -115,7 +118,7 @@ export default function Relatorio() {
             <div className="rounded-xl bg-gold px-6 py-4 text-primary-foreground">
               <div className="text-[10px] font-semibold uppercase tracking-widest opacity-80">Nota LIFE</div>
               <div className="text-4xl font-bold">
-                {nota}
+                {temNota(ps) ? nota : "—"}
                 <span className="text-sm font-medium opacity-80"> / 100</span>
               </div>
             </div>
@@ -128,7 +131,7 @@ export default function Relatorio() {
         {mostra("panorama") && (
           <Bloco titulo="Panorama financeiro">
             <div className={`grid grid-cols-2 gap-3 ${rd.brutaTotal > 0 ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
-              {rd.brutaTotal > 0 && <Indicador rotulo="Salário bruto (cliente + cônjuge)" valor={fmtBRL(rd.brutaTotal)} />}
+              {rd.brutaTotal > 0 && <Indicador rotulo={rotuloBruto} valor={fmtBRL(rd.brutaTotal)} />}
               <Indicador rotulo={rd.brutaTotal > 0 ? "Renda líquida familiar" : "Renda mensal"} valor={fmtBRL(f.renda)} />
               <Indicador rotulo="Despesas mensais" valor={fmtBRL(f.despesas)} />
               <Indicador rotulo="Sobra mensal" valor={fmtBRL(f.sobra)} />
@@ -154,7 +157,7 @@ export default function Relatorio() {
               <Tabela
                 cab={["Fluxo mensal", "Valor"]}
                 linhas={[
-                  ...(rd.brutaTotal > 0 ? [["Salário bruto (cliente + cônjuge)", fmtBRL(rd.brutaTotal)]] : []),
+                  ...(rd.brutaTotal > 0 ? [[rotuloBruto, fmtBRL(rd.brutaTotal)]] : []),
                   [rd.brutaTotal > 0 ? "Renda líquida familiar (com outras rendas)" : "Renda", fmtBRL(f.renda)],
                   ["(−) Despesas fixas", fmtBRL(f.fixas)],
                   ["(−) Despesas variáveis", fmtBRL(f.variaveis)],
@@ -217,8 +220,8 @@ export default function Relatorio() {
                     {s(o.motivo) && <span className="block text-xs italic text-muted-foreground">“{s(o.motivo)}”</span>}
                   </span>,
                   fmtBRL(n(o.valorFuturo)),
-                  `${n(o.prazoMeses)} meses`,
-                  fmtBRL(ob.aportes[o.id] ?? 0),
+                  n(o.prazoMeses) > 0 ? `${n(o.prazoMeses)} meses` : "—",
+                  n(o.prazoMeses) > 0 ? fmtBRL(ob.aportes[o.id] ?? 0) : "—",
                   `${n(o.probAtual)}% → ${n(o.probPlano)}%`,
                 ]),
               )}
@@ -251,18 +254,39 @@ export default function Relatorio() {
           </Bloco>
         )}
 
-        {mostra("futuro") && fu.alvo > 0 && s(cliente.cadastro.nascimento) && (
+        {mostra("futuro") && fu.rendaDesejada > 0 && s(cliente.cadastro.nascimento) && (
           <Bloco titulo="Futuro — independência financeira">
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <Indicador rotulo="Patrimônio necessário" valor={fmtBRL(fu.alvo)} />
-              <Indicador rotulo="Independência atingida" valor={fmtPct(Math.min(fu.independencia, 9.99))} />
-              <Indicador rotulo="Aporte necessário" valor={`${fmtBRL(fu.aporte)}/mês`} />
-              <Indicador rotulo="Renda projetada" valor={`${fmtBRL(fu.rendaProjetada)}/mês`} />
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Meta: renda de {fmtBRL(fu.rendaDesejada)}/mês aos {fu.idadeAposentadoria} anos, investindo a sobra atual de {fmtBRL(fu.aporteAtual)}/mês
-              (valores de hoje).
-            </p>
+            {fu.alvo <= 0 ? (
+              <p className="text-sm">
+                <strong>Independência atingida (100%):</strong> as outras rendas ({fmtBRL(fu.outras)}/mês) já cobrem a renda desejada de{" "}
+                {fmtBRL(fu.rendaDesejada)}/mês na aposentadoria.
+              </p>
+            ) : fu.idadeAtingida ? (
+              <>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                  <Indicador rotulo="Patrimônio necessário" valor={fmtBRL(fu.alvo)} />
+                  <Indicador rotulo="Investimentos e previdência hoje" valor={fmtBRL(fu.atual)} />
+                  <Indicador rotulo="Falta para a meta" valor={fmtBRL(fu.faltaHoje)} />
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  A idade de aposentadoria ({fu.idadeAposentadoria} anos) já foi atingida: o cliente tem {fu.idadeAtual} anos. Meta: renda de{" "}
+                  {fmtBRL(fu.rendaDesejada)}/mês (valores de hoje).
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  <Indicador rotulo="Patrimônio necessário" valor={fmtBRL(fu.alvo)} />
+                  <Indicador rotulo="Independência atingida" valor={fmtPct(Math.min(fu.independencia, 9.99))} />
+                  <Indicador rotulo="Aporte necessário" valor={`${fmtBRL(fu.aporte)}/mês`} />
+                  <Indicador rotulo="Renda projetada" valor={`${fmtBRL(fu.rendaProjetada)}/mês`} />
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Meta: renda de {fmtBRL(fu.rendaDesejada)}/mês aos {fu.idadeAposentadoria} anos, investindo a sobra atual de{" "}
+                  {fmtBRL(fu.aporteAtual)}/mês (valores de hoje).
+                </p>
+              </>
+            )}
           </Bloco>
         )}
 

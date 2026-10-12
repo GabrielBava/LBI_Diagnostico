@@ -14,9 +14,11 @@ export function useSecaoAtiva(ids: string[]) {
     const calcular = () => {
       quadro = 0;
       let atual = ids[0];
+      // Faixa do topo: cabeçalho (+ menu horizontal no celular) com folga.
+      const limite = window.matchMedia("(min-width: 768px)").matches ? 110 : 150;
       for (const id of ids) {
         const el = document.getElementById(`sec-${id}`);
-        if (el && el.getBoundingClientRect().top <= 110) atual = id;
+        if (el && el.getBoundingClientRect().top <= limite) atual = id;
       }
       // No fim da página, a última seção é a ativa (mesmo que não chegue ao topo).
       const fim = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
@@ -58,8 +60,9 @@ export function Navegacao({ cliente, ativa, irPara }: { cliente: Cliente; ativa:
   }, [ativa]);
 
   return (
-    <nav className="no-print min-w-0 max-w-full shrink-0 md:w-56 lg:w-64">
-      <div ref={refMenu} className="sticky top-20 z-10 flex max-w-full flex-row gap-3 overflow-x-auto rounded-xl border border-border bg-card p-2 md:max-h-[calc(100vh-6rem)] md:flex-col md:overflow-y-auto md:overflow-x-hidden md:p-3">
+    // No celular o próprio <nav> gruda abaixo do cabeçalho (faixa horizontal); no desktop, o menu lateral.
+    <nav className="no-print sticky top-14 z-20 -mx-4 min-w-0 shrink-0 bg-background/95 px-4 py-2 backdrop-blur md:static md:z-auto md:mx-0 md:w-56 md:max-w-full md:bg-transparent md:p-0 md:backdrop-blur-none lg:w-64">
+      <div ref={refMenu} className="z-10 flex max-w-full flex-row gap-3 overflow-x-auto rounded-xl border border-border bg-card p-2 md:sticky md:top-20 md:max-h-[calc(100vh-6rem)] md:flex-col md:overflow-y-auto md:overflow-x-hidden md:p-3">
         {!apresentacao && (
           <div className="hidden rounded-lg border border-primary/25 bg-primary/5 p-3 md:block">
             <div className="flex items-center justify-between">

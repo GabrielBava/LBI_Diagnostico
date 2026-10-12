@@ -17,6 +17,8 @@ export interface Cliente {
   id: string;
   criadoEm: string;
   atualizadoEm: string;
+  /** Versão da estrutura dos dados (conversões que só podem rodar uma vez usam este marcador). */
+  versaoDados?: number;
 
   // Etapa 1 · Conexão
   cadastro: Secao;

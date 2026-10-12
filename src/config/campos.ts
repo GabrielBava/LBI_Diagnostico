@@ -497,7 +497,7 @@ export const CAMPOS_FUTURO: CampoDef[] = [
   { key: "idadeAposentadoria", label: "Idade de aposentadoria", tipo: "numero", padrao: 60, sufixo: "anos" },
   { key: "estiloVida", label: "Estilo de vida na aposentadoria", tipo: "chips", opcoes: ESTILOS_VIDA.map((e) => e.id), largura: 3 },
   { key: "rendaDesejada", label: "Renda desejada /mês", tipo: "moeda", largura: 2, ajuda: "Em valores de hoje. Em branco = sugestão pelo estilo de vida." },
-  { key: "outrasRendas", label: "Outras fontes de renda /mês", tipo: "moeda", largura: 2, ajuda: "INSS, aluguéis, previdência. Em branco = renda passiva atual." },
+  { key: "outrasRendas", label: "Outras fontes de renda /mês", tipo: "moeda", largura: 2, ajuda: "INSS, aluguéis, previdência. Em branco = aluguéis e aposentadorias atuais (juros e dividendos já vêm dos investimentos)." },
 ];
 
 // ---------------------------------------------------------------------

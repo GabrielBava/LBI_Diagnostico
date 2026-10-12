@@ -1,5 +1,6 @@
 // Converte um cliente da versão 1 (estrutura antiga) para a versão 2.
 // Campos sem equivalente direto são preservados nas anotações do cliente.
+import { DEPENDENTES_ESCOLARES, HORIZONTES_PADRAO_VIDA } from "@/config/campos";
 import type { Cliente, Item } from "@/types";
 import { uid } from "./format";
 
@@ -7,6 +8,17 @@ type V1 = Record<string, unknown>;
 const lista = (v: unknown) => (Array.isArray(v) ? (v as Item[]) : []);
 const obj = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
 const num = (v: unknown) => (typeof v === "number" ? v : Number(v) || 0);
+
+/** Escolaridade provável pela idade (a versão 1 não tinha o nível escolar). */
+function nivelPorIdade(idade: number, escola: unknown, mensalidade: number) {
+  if (escola === "Ainda não estuda") return "Não estuda";
+  if (idade <= 0) return mensalidade > 0 ? "Fundamental I" : undefined;
+  if (idade < 6) return "Educação infantil";
+  if (idade < 11) return "Fundamental I";
+  if (idade < 15) return "Fundamental II";
+  if (idade < 18) return "Ensino médio";
+  return mensalidade > 0 ? "Graduação" : "Não estuda";
+}
 
 const CATEGORIA_SONHO: Record<string, string> = {
   Imóvel: "Casa",
@@ -26,10 +38,13 @@ export function migrarV1(v1: V1): Partial<Cliente> & { id: string } {
   const filhos = lista(v1.filhos);
 
   const principal = receitas.find((r) => r.titular !== "Cônjuge" && String(r.tipo ?? "").startsWith("Ativa") && r.frequencia !== "Anual");
-  const conjuge = receitas.find((r) => r.titular === "Cônjuge" && r !== principal);
+  // Mesma regra do principal: salário é renda ativa e mensal (bônus anual vai para outras rendas).
+  const conjuge = receitas.find((r) => r.titular === "Cônjuge" && String(r.tipo ?? "").startsWith("Ativa") && r.frequencia !== "Anual");
   const financeiros = patrimonio.filter((p) => ["Reserva / Caixa", "Renda fixa", "Renda variável"].includes(String(p.tipo)));
   const liquidos = financeiros.filter((p) => ["Diária", "Até 30 dias"].includes(String(p.liquidez)));
   const previdencia = patrimonio.filter((p) => p.tipo === "Previdência");
+  const empresas = patrimonio.filter((p) => p.tipo === "Empresa / Participação");
+  const outrosBens = patrimonio.filter((p) => p.tipo === "Outros");
   const pmt = (saldo: number, taxa: number, meses: number) => {
     const i = Math.pow(1 + taxa / 100, 1 / 12) - 1;
     return meses <= 0 ? 0 : i === 0 ? saldo / meses : (saldo * i) / (1 - Math.pow(1 + i, -meses));
@@ -60,7 +75,8 @@ export function migrarV1(v1: V1): Partial<Cliente> & { id: string } {
       tipo: s.prioridade === "Alta" ? "Essencial" : "Desejo",
       titulo: s.descricao,
       categoria: CATEGORIA_SONHO[String(s.categoria)] ?? "Outro",
-      valorFuturo: s.valor,
+      // O que já foi acumulado sai do valor que ainda falta juntar.
+      valorFuturo: num(s.acumulado) > 0 ? Math.max(0, num(s.valor) - num(s.acumulado)) : s.valor,
       prazoMeses: num(s.prazo) * 12 || undefined,
       prioridade: s.prioridade,
       motivo: s.motivo,
@@ -70,6 +86,7 @@ export function migrarV1(v1: V1): Partial<Cliente> & { id: string } {
       categoria: "Filho(a)",
       nome: f.nome,
       escola: f.escola === "Pública" || f.escola === "Particular" ? f.escola : undefined,
+      nivelEscola: nivelPorIdade(num(f.idade), f.escola, num(f.mensalidadeEscola)),
       mensalidade: f.mensalidadeEscola,
     })),
     despesasExtras: lista(v1.despesas).map((d) => ({
@@ -85,6 +102,7 @@ export function migrarV1(v1: V1): Partial<Cliente> & { id: string } {
         id: r.id,
         descricao: r.fonte,
         tipo: String(r.tipo ?? "").startsWith("Passiva") ? "Aluguel" : r.frequencia === "Anual" ? "Bônus / PLR" : "Outros",
+        pessoa: r.titular === "Cônjuge" ? "Cônjuge" : r.titular === "Família" ? "Outra pessoa" : "Cliente",
         valor: r.valor,
         frequencia: r.frequencia,
       })),
@@ -99,13 +117,19 @@ export function migrarV1(v1: V1): Partial<Cliente> & { id: string } {
       .map((d) => ({ id: d.id, tipo: "Outro", saldo: d.saldo, prazo: d.prazo, parcela: Math.round(pmt(num(d.saldo), num(d.taxa), num(d.prazo))) })),
     emprestimos: dividas
       .filter((d) => d.tipo !== "Financiamento")
-      .map((d) => ({ id: d.id, instituicao: d.descricao, prazo: d.prazo, parcela: Math.round(pmt(num(d.saldo), num(d.taxa), num(d.prazo))) })),
-    investimentos: financeiros.length
-      ? {
-          temInvestimento: "Sim",
-          valor: financeiros.reduce((t, p) => t + num(p.valor), 0),
-          liquidez: liquidos.reduce((t, p) => t + num(p.valor), 0),
-        }
+      // O saldo informado é mantido (dívida sem prazo, como cartão, fica só com o saldo).
+      .map((d) => ({ id: d.id, instituicao: d.descricao, saldo: d.saldo, prazo: d.prazo, parcela: Math.round(pmt(num(d.saldo), num(d.taxa), num(d.prazo))) })),
+    // "Outros" bens não têm categoria própria: entram nos investimentos (e ficam anotados).
+    investimentos:
+      financeiros.length || outrosBens.length
+        ? {
+            temInvestimento: "Sim",
+            valor: [...financeiros, ...outrosBens].reduce((t, p) => t + num(p.valor), 0),
+            liquidez: liquidos.reduce((t, p) => t + num(p.valor), 0),
+          }
+        : {},
+    corporativo: empresas.length
+      ? { possuiEmpresa: "Sim", valorParticipacao: empresas.reduce((t, p) => t + num(p.valor), 0) }
       : {},
     protecao: {
       temSeguroVida: num(obj(v1.seguro).capitalAtual) > 0 ? "Sim" : undefined,
@@ -117,7 +141,19 @@ export function migrarV1(v1: V1): Partial<Cliente> & { id: string } {
       valorPrevidencia: previdencia.reduce((t, p) => t + num(p.valor), 0) || undefined,
     },
     futuro: { idadeAposentadoria: obj(v1.aposentadoria).idadeAlvo as number },
-    notas: obj(v1.notas) as Record<string, string>,
+    notas: {
+      ...(obj(v1.notas) as Record<string, string>),
+      ...(outrosBens.length
+        ? {
+            investimentos: [
+              obj(v1.notas).investimentos,
+              `Versão anterior — "Outros" bens somados aos investimentos: ${outrosBens.map((p) => `${String(p.descricao ?? "Outro")} (${num(p.valor)})`).join(", ")}.`,
+            ]
+              .filter(Boolean)
+              .join("\n"),
+          }
+        : {}),
+    },
   };
 }
 
@@ -126,6 +162,8 @@ export function migrarV1(v1: V1): Partial<Cliente> & { id: string } {
  * Idempotente: pode rodar a cada carregamento sem alterar dados já convertidos.
  */
 export function atualizarV4(c: Partial<Cliente> & { id: string }): Partial<Cliente> & { id: string } {
+  // Conversões que não podem repetir (somam ou movem valores) rodam só uma vez.
+  const primeiraVez = (c.versaoDados ?? 0) < 5;
   const despesas: Record<string, number | undefined> = {};
   const extras: Item[] = [...(c.despesasExtras ?? [])].map((e) =>
     e.grupo ? e : { ...e, grupo: e.bloco === "Variável" ? "outros" : "outrasFixas" },
@@ -150,14 +188,34 @@ export function atualizarV4(c: Partial<Cliente> & { id: string }): Partial<Clien
 
   const investimentos = { ...(c.investimentos ?? {}) };
   const protecao = { ...(c.protecao ?? {}) };
-  if (investimentos.liquidez !== undefined && protecao.temReserva === undefined && num(investimentos.liquidez) > 0) {
-    protecao.temReserva = "Sim";
-    protecao.valorReserva = investimentos.liquidez;
-    investimentos.valor = Math.max(0, num(investimentos.valor) - num(investimentos.liquidez));
+  if (primeiraVez && investimentos.temInvestimento === "Sim" && protecao.temReserva === undefined && num(investimentos.liquidez) > 0) {
+    // A parte com liquidez vira a reserva, limitada ao valor investido (não cria dinheiro novo).
+    const reserva = Math.min(num(investimentos.liquidez), num(investimentos.valor));
+    if (reserva > 0) {
+      protecao.temReserva = "Sim";
+      protecao.valorReserva = reserva;
+      investimentos.valor = num(investimentos.valor) - reserva;
+    }
+  }
+  // Anos de proteção da v4 viram o horizonte mais próximo (1, 5 ou 15 anos).
+  if (primeiraVez && num(protecao.anosProtecao) > 0 && protecao.horizonte === undefined) {
+    const anos = num(protecao.anosProtecao);
+    protecao.horizonte = HORIZONTES_PADRAO_VIDA.reduce((melhor, h) => (Math.abs(h - anos) < Math.abs(melhor - anos) ? h : melhor));
   }
   delete investimentos.liquidez;
   delete protecao.anosProtecao;
   delete protecao.custoInventario;
 
-  return { ...c, despesas, despesasExtras: extras, renda, investimentos, protecao };
+  // Na v4 todo dependente tinha mensalidade. Na v5 só filhos, enteados e netos estudam:
+  // a mensalidade dos demais vira "outros custos" (e a categoria "Cônjuge" deixou de existir).
+  const dependentes = primeiraVez
+    ? (c.dependentes ?? []).map((d) => {
+        const categoria = d.categoria === "Cônjuge" ? "Outro dependente" : d.categoria;
+        if (!categoria || DEPENDENTES_ESCOLARES.includes(String(categoria)) || num(d.mensalidade) <= 0) return { ...d, categoria };
+        const { mensalidade, nivelEscola: _nivel, escola: _escola, ...resto } = d;
+        return { ...resto, categoria, outrosCustos: num(d.outrosCustos) + num(mensalidade) };
+      })
+    : c.dependentes;
+
+  return { ...c, versaoDados: 5, despesas, despesasExtras: extras, renda, investimentos, protecao, dependentes };
 }

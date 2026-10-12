@@ -46,6 +46,7 @@ export function normalizar(original: Partial<Cliente> & { id: string }): Cliente
   const c = atualizarV4(original);
   return {
     id: c.id,
+    versaoDados: c.versaoDados,
     criadoEm: c.criadoEm ?? agora,
     atualizadoEm: c.atualizadoEm ?? agora,
     cadastro: { ...(c.cadastro ?? {}) },

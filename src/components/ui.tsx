@@ -62,9 +62,10 @@ export function Kpi({
       <div className={`text-[10px] font-semibold uppercase tracking-widest ${ouro ? "opacity-80" : "text-muted-foreground"}`}>
         {rotulo}
       </div>
-      <div className="mt-1 text-xl font-semibold tabular-nums md:text-2xl">
-        {valor}
-        {sufixo && <span className={`ml-1 text-xs font-medium ${ouro ? "opacity-80" : "text-muted-foreground"}`}>{sufixo}</span>}
+      {/* Valor e sufixo podem ir para linhas diferentes em cartões estreitos. */}
+      <div className="mt-1 flex flex-wrap items-baseline gap-x-1 text-xl font-semibold tabular-nums md:text-2xl">
+        <span className="min-w-0 break-words">{valor}</span>
+        {sufixo && <span className={`text-xs font-medium ${ouro ? "opacity-80" : "text-muted-foreground"}`}>{sufixo}</span>}
       </div>
       {detalhe && <div className={`mt-1 text-xs ${ouro ? "opacity-80" : "text-muted-foreground"}`}>{detalhe}</div>}
     </div>

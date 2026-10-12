@@ -24,9 +24,10 @@ export default function PlanoAcao() {
         <SubBloco titulo="Sugestões do diagnóstico" className="no-print">
           <ul className="space-y-2">
             {pendentes.slice(0, 8).map((x) => (
-              <li key={x.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3">
+              <li key={x.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-3">
                 <Selo className={corPrioridade[x.prioridade]}>{x.prioridade}</Selo>
-                <span className="min-w-0 flex-1 text-sm">{x.acao}</span>
+                {/* O texto ganha largura mínima: em tela estreita, área e botão descem de linha. */}
+                <span className="min-w-0 flex-1 basis-[calc(100%-6rem)] text-sm [overflow-wrap:break-word] lg:basis-64">{x.acao}</span>
                 <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
                   {x.area} · {x.prazo}
                 </span>
@@ -60,7 +61,7 @@ export default function PlanoAcao() {
         itens={cliente.plano}
         onChange={(i) => setLista("plano", i)}
         textoAdicionar="Adicionar ação"
-        vazio="Nenhuma ação ainda. Use as sugestões acima ou adicione manualmente."
+        vazio={apresentacao ? "Nenhuma ação registrada ainda." : "Nenhuma ação ainda. Use as sugestões acima ou adicione manualmente."}
         tituloItem={(a, i) => `Ação ${i + 1}${s(a.area) ? ` · ${s(a.area)}` : ""}`}
       />
     </div>

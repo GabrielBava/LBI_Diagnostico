@@ -254,9 +254,16 @@ export function Escala({
         })}
       </div>
       {rotulos && (
+        // No celular os botões ocupam duas linhas: as pontas levam o número para não parecerem desalinhadas.
         <div className="mt-1 flex justify-between gap-3 text-[10px] uppercase tracking-wider text-muted-foreground sm:max-w-[520px]">
-          <span>{rotulos[0]}</span>
-          <span>{rotulos[1]}</span>
+          <span>
+            <span className="sm:hidden">{min} = </span>
+            {rotulos[0]}
+          </span>
+          <span className="text-right">
+            <span className="sm:hidden">{max} = </span>
+            {rotulos[1]}
+          </span>
         </div>
       )}
     </div>
@@ -278,7 +285,12 @@ export function Icones({
   ariaLabel?: string;
 }) {
   return (
-    <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-3 gap-2 sm:grid-cols-5 2xl:grid-cols-10">
+    // Telas bem estreitas (< 400px): 2 colunas com ícone ao lado do nome, para não partir palavras.
+    <div
+      role="radiogroup"
+      aria-label={ariaLabel}
+      className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-10"
+    >
       {opcoes.map((o) => {
         const ativo = valor === o;
         const Icone = icones[o];
@@ -289,14 +301,14 @@ export function Icones({
             role="radio"
             aria-checked={ativo}
             onClick={() => onChange(ativo ? undefined : o)}
-            className={`flex h-[68px] flex-col items-center justify-center gap-1.5 rounded-lg border px-1 text-[11px] font-medium transition ${
+            className={`flex h-11 items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium transition min-[400px]:h-[68px] min-[400px]:flex-col min-[400px]:justify-center min-[400px]:gap-1.5 min-[400px]:px-1 ${
               ativo
                 ? "border-transparent bg-gold text-primary-foreground shadow-sm"
                 : "border-border bg-input text-muted-foreground hover:border-primary/50 hover:text-foreground"
             }`}
           >
-            {Icone && <Icone className="h-5 w-5 shrink-0" />}
-            <span className="w-full min-w-0 text-center leading-tight [overflow-wrap:anywhere]">{o}</span>
+            {Icone && <Icone className="h-4 w-4 shrink-0 min-[400px]:h-5 min-[400px]:w-5" />}
+            <span className="w-full min-w-0 hyphens-auto break-words text-left leading-tight min-[400px]:text-center">{o}</span>
           </button>
         );
       })}

@@ -34,7 +34,7 @@ import {
   Wallet,
 } from "lucide-react";
 import type { Cliente } from "@/types";
-import { financiamentosDoPatrimonio, n, s } from "@/lib/calculos";
+import { financiamentosDoPatrimonio, n, renda, s } from "@/lib/calculos";
 import { GRUPOS_DESPESA } from "./despesas";
 
 export interface Etapa {
@@ -154,8 +154,8 @@ export const SECOES: SecaoDef[] = [
     titulo: "Renda",
     icone: TrendingUp,
     coleta: true,
-    concluida: (c) =>
-      n(c.renda.brutaCliente) > 0 || n(c.renda.liquidaCliente) > 0 || temValor(c.outrasRendas, "valor"),
+    // Conta só renda que entra no total (renda do cônjuge exige cônjuge no cadastro).
+    concluida: (c) => renda(c).total > 0,
   },
   {
     id: "patrimonio",

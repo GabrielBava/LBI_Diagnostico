@@ -71,8 +71,9 @@ export function pilares(c: Cliente): Pilar[] {
     });
   }
 
-  const dv = dividas(c);
-  if (dv.parcelas <= 0) out.push({ id: "dividas", nome: "Dívidas", nota: 100, status: "ok", resumo: "Sem parcelas comprometendo a renda." });
+  // Parcelas das despesas: as da seção 8 ou, sem elas, as digitadas em Despesas.
+  if (f.renda <= 0) out.push({ id: "dividas", nome: "Dívidas", nota: 0, status: "sem-dados", resumo: "Informe a renda." });
+  else if (f.parcelas <= 0) out.push({ id: "dividas", nome: "Dívidas", nota: 100, status: "ok", resumo: "Sem parcelas comprometendo a renda." });
   else {
     const nota = limitar(100 - (f.comprometimento / limite) * 60);
     out.push({
@@ -86,6 +87,8 @@ export function pilares(c: Cliente): Pilar[] {
 
   if (!s(c.protecao.temSeguroVida))
     out.push({ id: "protecao", nome: "Proteção", nota: 0, status: "sem-dados", resumo: "Complete a etapa Proteção." });
+  else if (pr.necessidade <= 0)
+    out.push({ id: "protecao", nome: "Proteção", nota: 0, status: "sem-dados", resumo: "Informe as despesas e os dependentes." });
   else {
     const nota = limitar(pr.cobertura * 100);
     out.push({
@@ -112,6 +115,8 @@ export function pilares(c: Cliente): Pilar[] {
 
   if (c.objetivos.length === 0)
     out.push({ id: "objetivos", nome: "Objetivos", nota: 0, status: "sem-dados", resumo: "Registre os objetivos." });
+  else if (ob.aporteTotal <= 0 && ob.semPrazo > 0)
+    out.push({ id: "objetivos", nome: "Objetivos", nota: 0, status: "sem-dados", resumo: "Informe o prazo dos objetivos." });
   else {
     const sobra = Math.max(0, f.sobra);
     const nota = ob.aporteTotal <= 0 ? 100 : limitar((sobra / ob.aporteTotal) * 100);
@@ -120,12 +125,17 @@ export function pilares(c: Cliente): Pilar[] {
       nome: "Objetivos",
       nota,
       status: statusPorNota(nota),
-      resumo: `Precisa de ${fmtBRL(ob.aporteTotal)}/mês para ${c.objetivos.length} objetivo(s).`,
+      resumo:
+        `Precisa de ${fmtBRL(ob.aporteTotal)}/mês para ${c.objetivos.length - ob.semPrazo} objetivo(s).` +
+        (ob.semPrazo > 0 ? ` ${ob.semPrazo} sem prazo definido.` : ""),
     });
   }
 
   return out;
 }
+
+/** Há ao menos um pilar com dados (sem isso a nota geral não tem significado). */
+export const temNota = (ps: Pilar[]) => ps.some((p) => p.status !== "sem-dados");
 
 export function notaGeral(ps: Pilar[]) {
   const validos = ps.filter((p) => p.status !== "sem-dados");
@@ -182,7 +192,7 @@ export function pontos(c: Cliente): { fortes: Ponto[]; negativos: Ponto[] } {
       });
   }
 
-  if (dv.parcelas === 0 && f.renda > 0) fortes.push({ id: "sem-dividas", area: "Dívidas", texto: "Nenhuma parcela comprometendo a renda." });
+  if (f.parcelas === 0 && f.renda > 0) fortes.push({ id: "sem-dividas", area: "Dívidas", texto: "Nenhuma parcela comprometendo a renda." });
   else if (f.comprometimento > limite)
     negativos.push({
       id: "comprometimento",
@@ -229,6 +239,12 @@ export function pontos(c: Cliente): { fortes: Ponto[]; negativos: Ponto[] } {
 
   if (fu.rendaDesejada > 0 && s(c.cadastro.nascimento)) {
     if (fu.independencia >= 1) fortes.push({ id: "futuro", area: "Futuro", texto: `No ritmo atual, atinge a independência aos ${fu.idadeAposentadoria} anos.` });
+    else if (fu.idadeAtingida)
+      negativos.push({
+        id: "futuro",
+        area: "Futuro",
+        texto: `Idade de aposentadoria (${fu.idadeAposentadoria} anos) já atingida; faltam ${fmtBRL(fu.faltaHoje)} para a meta de independência.`,
+      });
     else
       negativos.push({
         id: "futuro",
@@ -445,9 +461,10 @@ export function sugestoes(c: Cliente): Sugestao[] {
     out.push({ id: "sg-objetivos", acao: "Repriorizar objetivos: o aporte necessário supera a sobra mensal", area: "Objetivos", prioridade: "Média", prazo: "Curto" });
 
   // Oportunidades também viram sugestões (mesma área do quadrante).
-  oportunidades(c).forEach((o) =>
-    out.push({ id: o.id, acao: `${o.titulo}: ${o.detalhe}`, area: o.quadrante, prioridade: o.prioridade, prazo: o.prazo }),
-  );
+  // "op-reserva" repete "sg-reserva", que já define a prioridade pelos meses cobertos.
+  oportunidades(c)
+    .filter((o) => o.id !== "op-reserva")
+    .forEach((o) => out.push({ id: o.id, acao: `${o.titulo}: ${o.detalhe}`, area: o.quadrante, prioridade: o.prioridade, prazo: o.prazo }));
   const ordem = { Alta: 0, Média: 1, Baixa: 2 };
   return out.sort((a, b) => ordem[a.prioridade] - ordem[b.prioridade]);
 }

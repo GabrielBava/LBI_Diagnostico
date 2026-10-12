@@ -34,7 +34,7 @@ export default function Futuro() {
           <span aria-hidden="true"> · </span>
           <span>
             outras rendas <strong className="tabular-nums text-foreground">{fmtBRL(fu.outras)}/mês</strong>
-            {outrasAuto && fu.outras > 0 && " (renda passiva atual)"}
+            {outrasAuto && fu.outras > 0 && " (aluguéis e aposentadorias atuais)"}
           </span>
         </p>
         {!apresentacao && (
@@ -55,7 +55,7 @@ export default function Futuro() {
             Futuro para projetar os aportes.
           </p>
           <p className="mt-2">
-            Hoje o patrimônio financeiro é de <strong>{fmtBRL(fu.atual)}</strong> para uma meta de <strong>{fmtBRL(fu.alvo)}</strong>
+            Hoje os investimentos e a previdência somam <strong>{fmtBRL(fu.atual)}</strong> para uma meta de <strong>{fmtBRL(fu.alvo)}</strong>
             {fu.faltaHoje > 0 ? (
               <>
                 {" "}
@@ -85,7 +85,7 @@ export default function Futuro() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi tom="ouro" rotulo={`Patrimônio necessário (${Math.round(1 / TAXA_RETIRADA)}x)`} valor={fmtBRL(fu.alvo)} />
-            <Kpi rotulo="Patrimônio financeiro hoje" valor={fmtBRL(fu.atual)} />
+            <Kpi rotulo="Investimentos e previdência hoje" valor={fmtBRL(fu.atual)} detalhe="A reserva de emergência não entra na projeção" />
             <Kpi rotulo="Aporte necessário" valor={fmtBRL(fu.aporte)} sufixo="/mês" tom={fu.aporte > fu.aporteAtual ? "alerta" : "sucesso"} />
             <Kpi rotulo="Renda projetada" valor={fmtBRL(fu.rendaProjetada)} sufixo="/mês" />
           </div>

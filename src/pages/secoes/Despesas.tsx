@@ -7,7 +7,7 @@ import { GRUPOS_DESPESA, chaveDespesa, type GrupoDespesa } from "@/config/despes
 import { CampoMoeda } from "@/components/campos";
 import { Botao, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { custoDependente, despesas, dividas, fluxo, n, s } from "@/lib/calculos";
+import { custoDependente, despesas, dividas, fluxo, n, rotuloDependente, s } from "@/lib/calculos";
 import { fmtBRL, fmtPct, uid } from "@/lib/format";
 import type { Item } from "@/types";
 
@@ -16,9 +16,10 @@ type Bloco = "Fixa" | "Variável";
 /** Linha "rótulo | valor" das subcategorias (cabe em 390px). */
 function Linha({ rotulo, dica, children }: { rotulo: ReactNode; dica?: ReactNode; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_minmax(104px,42%)] items-center gap-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_160px]">
+    // O valor encolhe em blocos estreitos (2 colunas em lg) para o rótulo não partir palavras.
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(104px,42%)] items-center gap-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_min(160px,42%)]">
       <div className="min-w-0">
-        <div className="text-sm leading-tight [overflow-wrap:anywhere]">{rotulo}</div>
+        <div className="hyphens-auto break-words text-sm leading-tight">{rotulo}</div>
         {dica && <div className="truncate text-[11px] text-muted-foreground">{dica}</div>}
       </div>
       {children}
@@ -125,16 +126,11 @@ export default function Despesas() {
     return (
       <>
         <div className="divide-y divide-border/60">
-          {cliente.dependentes.map((dep, i) => (
+          {cliente.dependentes.map((dep) => (
             <Linha
               key={dep.id}
-              rotulo={
-                s(dep.nome) ||
-                // Mesmo nome dos cartões de Sucessão: "Filho(a) 1", "Pai / Mãe 2"...
-                `${s(dep.categoria) || "Dependente"} ${
-                  cliente.dependentes.slice(0, i + 1).filter((x) => s(x.categoria) === s(dep.categoria)).length
-                }`
-              }
+              // Mesmo nome dos cartões de Sucessão: "Filho(a) 1", "Pai / Mãe 2"...
+              rotulo={rotuloDependente(cliente.dependentes, dep)}
               dica={s(dep.nome) ? s(dep.categoria) : undefined}
             >
               <ValorTravado valor={custoDependente(dep)} />
@@ -226,13 +222,13 @@ export default function Despesas() {
           aria-expanded={aberto}
           aria-controls={idConteudo}
           onClick={() => alternar(g.id)}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-muted/40"
+          className="flex w-full items-center gap-2 rounded-lg px-2 py-2.5 text-left transition hover:bg-muted/40 sm:gap-3 sm:px-3"
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:h-8 sm:w-8">
             <Icone className="h-4 w-4" aria-hidden="true" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold leading-tight [overflow-wrap:anywhere]">{g.label}</span>
+            <span className="block hyphens-auto break-words text-sm font-semibold leading-tight">{g.label}</span>
             <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               {ehAutomatico(g) && <Lock className="h-2.5 w-2.5" aria-hidden="true" />}
               {resumoGrupo(g)}

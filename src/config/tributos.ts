@@ -3,7 +3,7 @@
 //  ---------------------------------------------------------------------
 //  Usada só quando o cliente sabe apenas um dos dois valores.
 //  Referências (atualize aqui quando as tabelas mudarem):
-//   • INSS empregado — tabela progressiva 2025
+//   • INSS empregado — tabela progressiva 2026 (Portaria Interministerial MPS/MF nº 13/2026)
 //   • IRRF mensal — tabela vigente desde maio/2025, com desconto simplificado
 //   • Redutor do IR a partir de 2026 (Lei 15.270/2025): isenção até
 //     R$ 5.000 e redução parcial até R$ 7.350
@@ -11,10 +11,10 @@
 // =====================================================================
 
 const INSS: { ate: number; aliquota: number }[] = [
-  { ate: 1518.0, aliquota: 0.075 },
-  { ate: 2793.88, aliquota: 0.09 },
-  { ate: 4190.83, aliquota: 0.12 },
-  { ate: 8157.41, aliquota: 0.14 },
+  { ate: 1621.0, aliquota: 0.075 },
+  { ate: 2902.84, aliquota: 0.09 },
+  { ate: 4354.27, aliquota: 0.12 },
+  { ate: 8475.55, aliquota: 0.14 },
 ];
 
 const IRRF: { ate: number; aliquota: number; deducao: number }[] = [

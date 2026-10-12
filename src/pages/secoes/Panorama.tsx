@@ -3,7 +3,7 @@ import { CircleCheck, CircleMinus, CircleX, Quote, TriangleAlert } from "lucide-
 import { Kpi, Selo, corStatus, textoStatus } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { fluxo, n, patrimonio, s } from "@/lib/calculos";
-import { notaGeral, pilares, type Status } from "@/lib/diagnostico";
+import { notaGeral, pilares, temNota, type Status } from "@/lib/diagnostico";
 import { fmtBRL, fmtPct } from "@/lib/format";
 
 export const iconeStatus: Record<Status, typeof CircleCheck> = {
@@ -37,7 +37,7 @@ export default function Panorama() {
         <div className="rounded-xl bg-gold p-5 text-primary-foreground">
           <div className="text-[10px] font-semibold uppercase tracking-widest opacity-80">Nota LIFE</div>
           <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-5xl font-bold tabular-nums">{nota}</span>
+            <span className="text-5xl font-bold tabular-nums">{temNota(ps) ? nota : "—"}</span>
             <span className="text-sm opacity-80">/ 100</span>
           </div>
           <p className="mt-2 text-xs opacity-90">Média dos pilares com dados preenchidos.</p>

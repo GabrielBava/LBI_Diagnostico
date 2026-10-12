@@ -109,6 +109,15 @@ export const mensalidadeDependente = (d: Item) => (estuda(d) ? n(d.mensalidade) 
 export const custoDependente = (d: Item) =>
   mensalidadeDependente(d) + n(d.auxilio) + (s(d.categoria) && !ehEscolar(d) ? n(d.outrosCustos) : 0);
 
+/** Nome do dependente, ou "<categoria> <n>" contando só dentro da categoria (igual em Sucessão, Despesas e 6.2). */
+export function rotuloDependente(lista: Item[], d: Item) {
+  if (s(d.nome)) return s(d.nome);
+  const categoria = s(d.categoria);
+  const i = lista.findIndex((x) => x === d || (!!d.id && x.id === d.id));
+  const posicao = (i < 0 ? lista : lista.slice(0, i + 1)).filter((x) => s(x.categoria) === categoria).length;
+  return `${categoria || "Dependente"} ${Math.max(1, posicao)}`;
+}
+
 export function sucessao(c: Cliente) {
   const filhos = c.dependentes.filter((d) => s(d.categoria) === "Filho(a)");
   return {
@@ -188,6 +197,8 @@ export function dividas(c: Cliente) {
 //  Renda, despesas e fluxo de caixa
 // ---------------------------------------------------------------------
 export const RENDA_PASSIVA = ["Aluguel", "Dividendos / Juros", "Pensão / Aposentadoria"];
+/** Rendas que seguem na aposentadoria sem depender dos investimentos (juros e dividendos já vêm do patrimônio projetado). */
+export const RENDA_FUTURA = ["Aluguel", "Pensão / Aposentadoria"];
 
 /**
  * Bruta e líquida de uma pessoa. Se só uma for informada, a outra é estimada
@@ -212,6 +223,10 @@ export function renda(c: Cliente) {
     validas.filter((r) => RENDA_PASSIVA.includes(s(r.tipo))),
     mensal,
   );
+  const futura = soma(
+    validas.filter((r) => RENDA_FUTURA.includes(s(r.tipo))),
+    mensal,
+  );
   return {
     cliente,
     conjugeDetalhe: conjuge,
@@ -219,6 +234,7 @@ export function renda(c: Cliente) {
     conjuge: conjuge.liquida,
     outras,
     passiva,
+    futura,
     /** Renda familiar líquida mensal. */
     total: cliente.liquida + conjuge.liquida + outras,
     brutaTotal: cliente.bruta + conjuge.bruta,
@@ -285,7 +301,6 @@ export function despesas(c: Cliente) {
 export function fluxo(c: Cliente) {
   const r = renda(c);
   const d = despesas(c);
-  const dv = dividas(c);
   const sobra = r.total - d.total;
   return {
     renda: r.total,
@@ -297,7 +312,8 @@ export function fluxo(c: Cliente) {
     parcelas: d.parcelas,
     sobra,
     taxaPoupanca: r.total > 0 ? sobra / r.total : 0,
-    comprometimento: r.total > 0 ? dv.parcelas / r.total : 0,
+    // Mesmas parcelas das despesas: as da seção 8 ou, sem elas, as digitadas em Despesas.
+    comprometimento: r.total > 0 ? d.parcelas / r.total : 0,
   };
 }
 
@@ -357,7 +373,9 @@ const ORDEM_PRIORIDADE: Record<string, number> = { Alta: 0, Média: 1, Baixa: 2 
 export function objetivo(c: Cliente, o: Item) {
   const { nominal } = parametros(c.parametros);
   const meses = Math.max(0, n(o.prazoMeses));
-  return { meses, aporte: aporteNecessario(n(o.valorFuturo), 0, taxaMensal(nominal), meses) };
+  // Sem prazo não há aporte mensal a calcular (não soma no total dos objetivos).
+  const semPrazo = meses <= 0 && n(o.valorFuturo) > 0;
+  return { meses, semPrazo, aporte: meses > 0 ? aporteNecessario(n(o.valorFuturo), 0, taxaMensal(nominal), meses) : 0 };
 }
 
 /**
@@ -390,6 +408,8 @@ export function objetivos(c: Cliente) {
     aporteTotal,
     valorTotal: soma(c.objetivos, (o) => n(o.valorFuturo)),
     cabeNaSobra: aporteTotal <= sobra,
+    /** Objetivos com valor e sem prazo (o aporte não é calculado). */
+    semPrazo: c.objetivos.filter((o) => objetivo(c, o).semPrazo).length,
     porTipo: Object.fromEntries(OPCOES.tipoObjetivo.map((t) => [t, porTipo(t)])) as Record<string, Item[]>,
   };
 }
@@ -424,9 +444,11 @@ export function educacional(c: Cliente) {
     let faculdade = 0;
     if (ANTES_DA_FACULDADE.includes(nivel)) faculdade = mensalidadeFac * 12 * duracao;
     else if (nivel === "Graduação") faculdade = mensalidadeDependente(d) * 12 * Math.ceil(duracao / 2);
-    return { item: d, anosEscola, escola, faculdade, total: escola + faculdade };
+    // Mensalidade atual que este componente substitui (sai do padrão de vida).
+    const mensalidadeCoberta = ANTES_DA_FACULDADE.includes(nivel) || nivel === "Graduação" ? mensalidadeDependente(d) : 0;
+    return { item: d, anosEscola, escola, faculdade, total: escola + faculdade, mensalidadeCoberta };
   });
-  return { lista, total: lista.reduce((t, x) => t + x.total, 0) };
+  return { lista, total: lista.reduce((t, x) => t + x.total, 0), mensalidadesCobertas: lista.reduce((t, x) => t + x.mensalidadeCoberta, 0) };
 }
 
 export function protecao(c: Cliente) {
@@ -435,8 +457,8 @@ export function protecao(c: Cliente) {
   const p = patrimonio(c);
   const ed = educacional(c);
   const horizonte = HORIZONTES_PADRAO_VIDA.includes(n(pr.horizonte)) ? n(pr.horizonte) : 5;
-  // As mensalidades dos dependentes já entram no componente educacional.
-  const custoMensal = Math.max(0, d.custoVida - sucessao(c).mensalidades);
+  // Mensalidades de escola e graduação já entram no componente educacional.
+  const custoMensal = Math.max(0, d.custoVida - ed.mensalidadesCobertas);
   const padraoVida = Object.fromEntries(HORIZONTES_PADRAO_VIDA.map((a) => [a, custoMensal * 12 * a])) as Record<number, number>;
   const quitados =
     soma(c.imoveis.filter((b) => b.quitado === true), (b) => n(b.valor)) +
@@ -468,7 +490,8 @@ export function protecao(c: Cliente) {
     atual,
     empresa: n(pr.seguroEmpresa),
     gap: Math.max(0, necessario - atual),
-    cobertura: necessario > 0 ? Math.min(1, atual / necessario) : atual > 0 ? 1 : 0,
+    // Sem capital a contratar (recursos cobrem a necessidade), a família está coberta.
+    cobertura: necessario > 0 ? Math.min(1, atual / necessario) : 1,
   };
 }
 
@@ -489,7 +512,8 @@ export function futuro(c: Cliente) {
   const estilo = ESTILOS_VIDA.find((e) => e.id === s(fu.estiloVida));
   const rendaDesejadaAuto = d.custoVida * (estilo?.fator ?? 1);
   const rendaDesejada = nOpt(fu.rendaDesejada) ?? rendaDesejadaAuto;
-  const outrasAuto = f.rendaPassiva;
+  // Juros e dividendos ficam de fora: o capital que os gera já está em "atual".
+  const outrasAuto = renda(c).futura;
   const outras = nOpt(fu.outrasRendas) ?? outrasAuto;
   const alvo = (Math.max(0, rendaDesejada - outras) * 12) / TAXA_RETIRADA;
   // A reserva de emergência não entra: ela existe para imprevistos.
