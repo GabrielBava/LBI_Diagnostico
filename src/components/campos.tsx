@@ -3,7 +3,7 @@
 // sim/não como seletor segmentado, flags como interruptor (switch),
 // percentuais e notas com régua deslizante.
 import { useEffect, useState } from "react";
-import { MapPin, Minus, Plus } from "lucide-react";
+import { Check, MapPin, Minus, Plus, type LucideIcon } from "lucide-react";
 import type { CampoDef } from "@/config/campos";
 import type { Cliente, Secao, Valor } from "@/types";
 import { moedaParaTexto, textoParaNumero } from "@/lib/format";
@@ -211,6 +211,146 @@ export function Regua({
   );
 }
 
+/** Escala de 0 a 10 com um botão por nota: um clique escolhe direto. */
+export function Escala({
+  valor,
+  onChange,
+  min = 0,
+  max = 10,
+  rotulos,
+  ariaLabel,
+}: {
+  valor: Valor;
+  onChange: (v: number | undefined) => void;
+  min?: number;
+  max?: number;
+  rotulos?: [string, string];
+  ariaLabel?: string;
+}) {
+  const atual = valor === undefined || valor === null || valor === "" ? undefined : Number(valor);
+  const notas = Array.from({ length: max - min + 1 }, (_, i) => min + i);
+  return (
+    <div>
+      <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-6 gap-1.5 sm:flex sm:flex-wrap">
+        {notas.map((nota) => {
+          const ativo = atual === nota;
+          return (
+            <button
+              key={nota}
+              type="button"
+              role="radio"
+              aria-checked={ativo}
+              aria-label={String(nota)}
+              onClick={() => onChange(ativo ? undefined : nota)}
+              className={`h-10 rounded-md border text-sm font-semibold tabular-nums transition sm:w-10 ${
+                ativo
+                  ? "border-transparent bg-gold text-primary-foreground shadow-sm"
+                  : "border-border bg-input text-muted-foreground hover:border-primary/50 hover:text-foreground"
+              }`}
+            >
+              {nota}
+            </button>
+          );
+        })}
+      </div>
+      {rotulos && (
+        <div className="mt-1 flex justify-between text-[10px] uppercase tracking-wider text-muted-foreground sm:max-w-[474px]">
+          <span>{rotulos[0]}</span>
+          <span>{rotulos[1]}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Opções com ícone (ex.: categorias de objetivo). */
+export function Icones({
+  opcoes,
+  icones,
+  valor,
+  onChange,
+  ariaLabel,
+}: {
+  opcoes: string[];
+  icones: Record<string, LucideIcon>;
+  valor: Valor;
+  onChange: (v: string | undefined) => void;
+  ariaLabel?: string;
+}) {
+  return (
+    <div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-10">
+      {opcoes.map((o) => {
+        const ativo = valor === o;
+        const Icone = icones[o];
+        return (
+          <button
+            key={o}
+            type="button"
+            role="radio"
+            aria-checked={ativo}
+            onClick={() => onChange(ativo ? undefined : o)}
+            className={`flex h-[68px] flex-col items-center justify-center gap-1.5 rounded-lg border px-1 text-[11px] font-medium transition ${
+              ativo
+                ? "border-transparent bg-gold text-primary-foreground shadow-sm"
+                : "border-border bg-input text-muted-foreground hover:border-primary/50 hover:text-foreground"
+            }`}
+          >
+            {Icone && <Icone className="h-5 w-5" />}
+            <span className="leading-tight">{o}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Várias opções marcáveis ao mesmo tempo (grava uma lista). */
+export function MultiChips({
+  opcoes,
+  valor,
+  onChange,
+  ariaLabel,
+}: {
+  opcoes: string[];
+  valor: Valor;
+  onChange: (v: string[]) => void;
+  ariaLabel?: string;
+}) {
+  const marcados = Array.isArray(valor) ? valor : [];
+  const alternar = (o: string) => {
+    // "Nenhum" é exclusivo: marcá-lo limpa os demais e vice-versa.
+    if (o === "Nenhum") return onChange(marcados.includes(o) ? [] : [o]);
+    const sem = marcados.filter((x) => x !== "Nenhum");
+    onChange(sem.includes(o) ? sem.filter((x) => x !== o) : [...sem, o]);
+  };
+  return (
+    <div role="group" aria-label={ariaLabel} className="flex flex-wrap gap-1.5">
+      {opcoes.map((o) => {
+        const ativo = marcados.includes(o);
+        return (
+          <button
+            key={o}
+            type="button"
+            role="checkbox"
+            aria-checked={ativo}
+            onClick={() => alternar(o)}
+            className={`flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-xs font-medium transition ${
+              ativo
+                ? "border-primary/60 bg-primary/15 text-foreground"
+                : "border-border bg-input text-muted-foreground hover:border-primary/50 hover:text-foreground"
+            }`}
+          >
+            <span className={`flex h-3.5 w-3.5 items-center justify-center rounded-sm border ${ativo ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50"}`}>
+              {ativo && <Check className="h-2.5 w-2.5" strokeWidth={4} />}
+            </span>
+            {o}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Contador({
   valor,
   onChange,
@@ -317,6 +457,12 @@ export function Controle({
       return <Chips opcoes={campo.opcoes ?? []} valor={valor} onChange={onChange} ariaLabel={campo.label} />;
     case "simnao":
       return <Chips opcoes={["Sim", "Não"]} valor={valor} onChange={onChange} ariaLabel={campo.label} />;
+    case "multichips":
+      return <MultiChips opcoes={campo.opcoes ?? []} valor={valor} onChange={onChange} ariaLabel={campo.label} />;
+    case "icones":
+      return <Icones opcoes={campo.opcoes ?? []} icones={campo.icones ?? {}} valor={valor} onChange={onChange} ariaLabel={campo.label} />;
+    case "escala":
+      return <Escala valor={valor} onChange={onChange} min={campo.min} max={campo.max} rotulos={campo.rotulosEscala} ariaLabel={campo.label} />;
     case "switch":
       return <Interruptor label={campo.label} valor={valor} onChange={onChange} />;
     case "slider":

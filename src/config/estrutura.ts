@@ -26,6 +26,7 @@ import {
   Route,
   Shield,
   Sunrise,
+  Sunset,
   Target,
   TrendingUp,
   TriangleAlert,
@@ -34,7 +35,7 @@ import {
 } from "lucide-react";
 import type { Cliente } from "@/types";
 import { n, s } from "@/lib/calculos";
-import { CATEGORIAS_DESPESA } from "./campos";
+import { GRUPOS_DESPESA } from "./despesas";
 
 export interface Etapa {
   id: string;
@@ -143,7 +144,8 @@ export const SECOES: SecaoDef[] = [
     subtitulo: "Fixas e variáveis",
     icone: CreditCard,
     coleta: true,
-    concluida: (c) => CATEGORIAS_DESPESA.some((k) => n(c.despesas[k.id]) > 0) || temValor(c.despesasExtras, "valor"),
+    concluida: (c) =>
+      GRUPOS_DESPESA.some((g) => g.itens.some((it) => n(c.despesas[`${g.id}.${it.id}`]) > 0)) || temValor(c.despesasExtras, "valor"),
   },
   {
     id: "renda",
@@ -152,7 +154,8 @@ export const SECOES: SecaoDef[] = [
     titulo: "Renda",
     icone: TrendingUp,
     coleta: true,
-    concluida: (c) => n(c.renda.renda) > 0 || temValor(c.outrasRendas, "valor"),
+    concluida: (c) =>
+      n(c.renda.brutaCliente) > 0 || n(c.renda.liquidaCliente) > 0 || temValor(c.outrasRendas, "valor"),
   },
   {
     id: "patrimonio",
@@ -201,17 +204,27 @@ export const SECOES: SecaoDef[] = [
     etapa: "protecao",
     numero: "11",
     titulo: "Proteção",
-    subtitulo: "Seguros, saúde e previdência",
+    subtitulo: "Reserva, seguros, saúde e previdência",
     icone: Shield,
     coleta: true,
-    concluida: (c) => !!s(c.protecao.temSeguroVida),
+    concluida: (c) => !!s(c.protecao.temReserva) && !!s(c.protecao.temSeguroVida),
+  },
+  {
+    id: "aposentadoria",
+    etapa: "protecao",
+    numero: "12",
+    titulo: "Futuro",
+    subtitulo: "Aposentadoria e estilo de vida",
+    icone: Sunset,
+    coleta: true,
+    concluida: (c) => n(c.futuro.idadeAposentadoria) > 0 && (!!s(c.futuro.estiloVida) || n(c.futuro.rendaDesejada) > 0),
   },
 
   // Etapa 4 · Investimentos
   {
     id: "investimentos",
     etapa: "investimentos",
-    numero: "12",
+    numero: "13",
     titulo: "Investimentos",
     icone: Wallet,
     coleta: true,
@@ -228,7 +241,7 @@ export const SECOES: SecaoDef[] = [
     etapa: "completo",
     numero: "6.2",
     titulo: "Plano atual",
-    subtitulo: "Categorias, fluxo e balanço patrimonial",
+    subtitulo: "Renda × despesas, categorias, balanço e proteção",
     icone: ChartColumn,
   },
   { id: "pontos-fortes", etapa: "completo", numero: "6.3", titulo: "Pontos fortes", subtitulo: "Manter", icone: CircleCheckBig },

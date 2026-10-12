@@ -159,7 +159,7 @@ input[type="number"] {
 
 /* Âncoras das seções compensam o cabeçalho fixo */
 .secao-ancora {
-  scroll-margin-top: 120px;
+  scroll-margin-top: 76px;
 }
 
 /* Barra de rolagem discreta */

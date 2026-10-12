@@ -1,11 +1,10 @@
 // Página do cliente: todas as etapas em uma rolagem contínua.
-// O menu lateral acompanha a rolagem; a faixa do topo mostra o pré-diagnóstico ao vivo.
+// O menu lateral acompanha a rolagem.
 import { Fragment, useEffect } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Download, Eye, EyeOff, Save } from "lucide-react";
 import { SECOES, secaoOculta } from "@/config/estrutura";
 import { Navegacao, useSecaoAtiva } from "@/components/Navegacao";
-import { ResumoVivo } from "@/components/ResumoVivo";
 import { DivisorEtapa, Secao } from "@/components/Secao";
 import { Botao } from "@/components/ui";
 import { ClienteProvider } from "@/lib/cliente-context";
@@ -42,8 +41,7 @@ export default function ClienteDetalhe() {
 
   return (
     <ClienteProvider cliente={cliente} irPara={(x) => rolarPara(x)}>
-      <ResumoVivo cliente={cliente} />
-      <div className="mx-auto max-w-7xl space-y-5 pt-5">
+      <div className="mx-auto max-w-7xl space-y-5">
         <div className="flex flex-wrap items-center gap-3">
           <Link to="/clientes" className="no-print flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
             <ArrowLeft className="h-3 w-3" /> Clientes

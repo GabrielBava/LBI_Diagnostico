@@ -8,7 +8,8 @@
 //
 //  Tipos:
 //    texto | textarea | email | telefone | cep | data | numero | moeda |
-//    percentual | select | chips | simnao | switch | slider | contador
+//    percentual | select | chips | multichips | icones | simnao | switch |
+//    slider | escala | contador
 //
 //  Propriedades úteis:
 //    ajuda            -> dica exibida abaixo do campo
@@ -20,6 +21,8 @@
 //    somenteConsultor -> oculto na versão apresentação
 // =====================================================================
 
+import type { LucideIcon } from "lucide-react";
+import { Briefcase, Car, Gem, GraduationCap, HeartPulse, House, Palette, Plane, Sparkles, Users } from "lucide-react";
 import type { Cliente, Secao, Valor } from "@/types";
 
 export type TipoCampo =
@@ -34,9 +37,12 @@ export type TipoCampo =
   | "percentual"
   | "select"
   | "chips"
+  | "multichips"
+  | "icones"
   | "simnao"
   | "switch"
   | "slider"
+  | "escala"
   | "contador";
 
 export interface CampoDef {
@@ -54,6 +60,10 @@ export interface CampoDef {
   passo?: number;
   mostrarSe?: (dados: Secao, cliente: Cliente) => boolean;
   somenteConsultor?: boolean;
+  /** Textos das pontas da escala 0–10 (ex.: ["Muito insatisfeito", "Muito satisfeito"]). */
+  rotulosEscala?: [string, string];
+  /** Ícone de cada opção (tipo "icones"). */
+  icones?: Record<string, LucideIcon>;
 }
 
 const sim = (v: Valor) => v === "Sim" || v === true;
@@ -79,7 +89,7 @@ export const OPCOES = {
     "Saúde",
     "Outro",
   ],
-  categoriaDependente: ["Filho(a)", "Enteado(a)", "Neto(a)", "Pai / Mãe", "Cônjuge", "Outro dependente"],
+  categoriaDependente: ["Filho(a)", "Enteado(a)", "Neto(a)", "Pai / Mãe", "Outro dependente"],
   nivelEscola: [
     "Não estuda",
     "Educação infantil",
@@ -91,7 +101,30 @@ export const OPCOES = {
   ],
   escola: ["Particular", "Pública", "Bilíngue / Internacional"],
   frequencia: ["Mensal", "Anual"],
-  tipoOutraRenda: ["Aluguel", "Dividendos / Juros", "Pró-labore / Empresa", "Bônus / PLR", "Pensão / Aposentadoria", "Outros"],
+  tipoOutraRenda: [
+    "Renda extra / freelance",
+    "Aluguel",
+    "Dividendos / Juros",
+    "Pró-labore / Empresa",
+    "Bônus / PLR",
+    "Pensão / Aposentadoria",
+    "Outros",
+  ],
+  pessoaRenda: ["Cliente", "Cônjuge", "Outra pessoa"],
+  temasInvestimento: [
+    "Reserva de emergência",
+    "Tesouro Direto",
+    "CDB, LCI e LCA",
+    "Fundos de investimento",
+    "Previdência privada",
+    "Ações",
+    "Fundos imobiliários (FIIs)",
+    "Investimentos no exterior",
+    "Criptoativos",
+    "Derivativos e opções",
+    "Planejamento sucessório",
+    "Nenhum",
+  ],
   categoriaImovel: ["Moradia", "Veraneio", "Renda (aluguel)", "Investimento", "Comercial"],
   tipoImovel: ["Casa", "Apartamento", "Terreno", "Sala comercial", "Galpão", "Rural"],
   tipoMovel: ["Carro", "Moto", "Lancha", "Jetski"],
@@ -175,11 +208,12 @@ export const CAMPOS_PONTO_PARTIDA: CampoDef[] = [
   },
   {
     key: "satisfacao",
-    label: "Satisfação financeira hoje",
-    tipo: "slider",
+    label: "De 0 a 10, como você se sente hoje em relação ao seu dinheiro?",
+    tipo: "escala",
     min: 0,
     max: 10,
-    largura: 2,
+    largura: 4,
+    rotulosEscala: ["Muito insatisfeito", "Muito satisfeito"],
     ajuda: "Repita a pergunta nas revisões para medir a evolução.",
   },
 ];
@@ -187,15 +221,29 @@ export const CAMPOS_PONTO_PARTIDA: CampoDef[] = [
 // ---------------------------------------------------------------------
 //  3 · Objetivos
 // ---------------------------------------------------------------------
+/** Ícone de cada categoria de objetivo. */
+export const ICONES_OBJETIVO: Record<string, LucideIcon> = {
+  Viagem: Plane,
+  Veículo: Car,
+  Casa: House,
+  Família: Users,
+  Casamento: Gem,
+  Educação: GraduationCap,
+  Hobby: Palette,
+  Profissional: Briefcase,
+  Saúde: HeartPulse,
+  Outro: Sparkles,
+};
+
 export const CAMPOS_OBJETIVO: CampoDef[] = [
+  { key: "categoria", label: "Categoria", tipo: "icones", opcoes: OPCOES.categoriaObjetivo, icones: ICONES_OBJETIVO, largura: 4 },
   { key: "titulo", label: "Título do objetivo", tipo: "texto", largura: 2, placeholder: "Ex.: Casa na praia" },
-  { key: "categoria", label: "Categoria", tipo: "select", opcoes: OPCOES.categoriaObjetivo },
-  { key: "prioridade", label: "Prioridade", tipo: "chips", opcoes: OPCOES.prioridade, padrao: "Média" },
+  { key: "prioridade", label: "Prioridade", tipo: "chips", opcoes: OPCOES.prioridade, padrao: "Média", largura: 2 },
   { key: "valorFuturo", label: "Valor futuro", tipo: "moeda" },
   { key: "prazoMeses", label: "Prazo (meses)", tipo: "numero", padrao: 12, min: 1 },
   { key: "probAtual", label: "Probabilidade atual", tipo: "slider", min: 0, max: 100, passo: 5, sufixo: "%", largura: 2 },
   { key: "probPlano", label: "Probabilidade com plano", tipo: "slider", min: 0, max: 100, passo: 5, sufixo: "%", largura: 2 },
-  { key: "impacto", label: "Impacto na vida", tipo: "slider", min: 0, max: 10, largura: 2 },
+  { key: "impacto", label: "Impacto na vida (0 a 10)", tipo: "escala", min: 0, max: 10, largura: 4, rotulosEscala: ["Pouco impacto", "Transforma a vida"] },
   { key: "motivo", label: "Por que é importante?", tipo: "texto", largura: 4, placeholder: "Nas palavras do cliente" },
 ];
 
@@ -208,93 +256,93 @@ export const TIPOS_OBJETIVO: { id: string; titulo: string; descricao: string }[]
 // ---------------------------------------------------------------------
 //  4 · Sucessão (dependentes)
 // ---------------------------------------------------------------------
+/** Categorias de dependente que têm vida escolar (mostram escolaridade e mensalidade). */
+export const DEPENDENTES_ESCOLARES = ["Filho(a)", "Enteado(a)", "Neto(a)"];
+const escolar = (d: Secao) => DEPENDENTES_ESCOLARES.includes(String(d.categoria ?? ""));
+const estuda = (d: Secao) => escolar(d) && !!d.nivelEscola && d.nivelEscola !== "Não estuda";
+
 export const CAMPOS_DEPENDENTE: CampoDef[] = [
-  { key: "categoria", label: "Categoria", tipo: "select", opcoes: OPCOES.categoriaDependente, padrao: "Filho(a)" },
+  { key: "categoria", label: "Categoria", tipo: "chips", opcoes: OPCOES.categoriaDependente, largura: 4 },
   { key: "nome", label: "Nome (opcional)", tipo: "texto" },
-  { key: "nivelEscola", label: "Nível escolar", tipo: "select", opcoes: OPCOES.nivelEscola },
-  {
-    key: "escola",
-    label: "Escola atual",
-    tipo: "select",
-    opcoes: OPCOES.escola,
-    mostrarSe: (d) => !!d.nivelEscola && d.nivelEscola !== "Não estuda",
-  },
-  {
-    key: "mensalidade",
-    label: "Mensalidade",
-    tipo: "moeda",
-    mostrarSe: (d) => !!d.nivelEscola && d.nivelEscola !== "Não estuda",
-  },
+  { key: "nivelEscola", label: "Escolaridade", tipo: "select", opcoes: OPCOES.nivelEscola, mostrarSe: escolar },
+  { key: "escola", label: "Escola atual", tipo: "select", opcoes: OPCOES.escola, mostrarSe: estuda },
+  { key: "mensalidade", label: "Mensalidade", tipo: "moeda", mostrarSe: estuda },
   { key: "auxilio", label: "Auxílio mensal", tipo: "moeda", ajuda: "Mesada, pensão, ajuda de custo" },
+  {
+    key: "outrosCustos",
+    label: "Outros custos mensais",
+    tipo: "moeda",
+    ajuda: "Saúde, cuidador, moradia",
+    mostrarSe: (d) => !!d.categoria && !escolar(d),
+  },
 ];
 
 // ---------------------------------------------------------------------
-//  5 · Despesas — categorias pré-definidas (um valor mensal por categoria)
+//  5 · Despesas — blocos e subcategorias ficam em src/config/despesas.ts
 // ---------------------------------------------------------------------
-export interface CategoriaDespesa {
-  id: string;
-  label: string;
-  bloco: "Fixa" | "Variável";
-  dica?: string;
-}
-
-export const CATEGORIAS_DESPESA: CategoriaDespesa[] = [
-  { id: "casa", label: "Casa", bloco: "Fixa", dica: "Aluguel, condomínio, luz, água, internet" },
-  { id: "alimentacao", label: "Alimentação", bloco: "Fixa" },
-  { id: "transporte", label: "Transporte", bloco: "Fixa", dica: "Combustível, app, estacionamento" },
-  { id: "saude", label: "Saúde", bloco: "Fixa", dica: "Plano de saúde, remédios, terapias" },
-  { id: "cuidados", label: "Cuidados pessoais", bloco: "Fixa" },
-  { id: "impostos", label: "Impostos", bloco: "Fixa", dica: "IPTU, IPVA (valor anual ÷ 12)" },
-  { id: "servicosFinanceiros", label: "Serviços financeiros", bloco: "Fixa", dica: "Tarifas, anuidades" },
-  { id: "profissionais", label: "Profissionais", bloco: "Fixa", dica: "Diarista, contador, personal" },
-  { id: "mercado", label: "Mercado", bloco: "Fixa" },
-  { id: "seguros", label: "Seguros", bloco: "Fixa" },
-  { id: "financiamentos", label: "Financiamento / Dívidas", bloco: "Fixa", dica: "Preenchido por Financiamentos e Dívidas" },
-  { id: "educacao", label: "Educação", bloco: "Fixa", dica: "Do próprio cliente (cursos, pós)" },
-  { id: "restaurantes", label: "Restaurantes", bloco: "Variável" },
-  { id: "lazer", label: "Lazer", bloco: "Variável" },
-  { id: "roupas", label: "Roupas", bloco: "Variável" },
-  { id: "assinaturas", label: "Assinaturas", bloco: "Variável", dica: "Streaming, apps, clubes" },
-  { id: "compras", label: "Compras", bloco: "Variável" },
-  { id: "esportes", label: "Esportes", bloco: "Variável" },
-  { id: "viagens", label: "Viagens", bloco: "Variável", dica: "Gasto anual ÷ 12" },
-  { id: "outros", label: "Outros", bloco: "Variável" },
-];
-
+/** Item acrescentado dentro de um bloco de despesas. */
 export const CAMPOS_DESPESA_EXTRA: CampoDef[] = [
   { key: "descricao", label: "Descrição", tipo: "texto", largura: 2 },
-  { key: "bloco", label: "Tipo", tipo: "chips", opcoes: ["Fixa", "Variável"], padrao: "Fixa" },
-  { key: "valor", label: "Valor mensal", tipo: "moeda" },
+  { key: "valor", label: "Valor mensal", tipo: "moeda", largura: 2 },
 ];
 
 // ---------------------------------------------------------------------
 //  6 · Renda
 // ---------------------------------------------------------------------
-export const CAMPOS_RENDA: CampoDef[] = [
-  { key: "renda", label: "Renda líquida mensal", tipo: "moeda", ajuda: "Já descontados impostos e INSS" },
-  {
-    key: "rendaConjuge",
-    label: "Renda do cônjuge",
-    tipo: "moeda",
-    mostrarSe: (_d, c) => OPCOES.comConjuge.includes(String(c.cadastro.estadoCivil ?? "")),
-  },
+const casado = (c: Cliente) => OPCOES.comConjuge.includes(String(c.cadastro.estadoCivil ?? ""));
+export const temConjugeCadastro = casado;
+
+/** Renda do cliente: preencha a bruta, a líquida ou as duas. */
+export const CAMPOS_RENDA_CLIENTE: CampoDef[] = [
+  { key: "brutaCliente", label: "Renda bruta mensal", tipo: "moeda", largura: 2 },
+  { key: "liquidaCliente", label: "Renda líquida mensal", tipo: "moeda", largura: 2 },
+];
+
+/** Renda do cônjuge (só para casado(a) ou união estável). */
+export const CAMPOS_RENDA_CONJUGE: CampoDef[] = [
+  { key: "brutaConjuge", label: "Renda bruta mensal", tipo: "moeda", largura: 2, mostrarSe: (_d, c) => casado(c) },
+  { key: "liquidaConjuge", label: "Renda líquida mensal", tipo: "moeda", largura: 2, mostrarSe: (_d, c) => casado(c) },
 ];
 
 export const CAMPOS_OUTRA_RENDA: CampoDef[] = [
+  { key: "pessoa", label: "De quem", tipo: "chips", opcoes: OPCOES.pessoaRenda, padrao: "Cliente", largura: 2 },
   { key: "descricao", label: "Fonte", tipo: "texto", largura: 2, placeholder: "Ex.: Aluguel sala comercial" },
-  { key: "tipo", label: "Tipo", tipo: "select", opcoes: OPCOES.tipoOutraRenda, padrao: "Outros" },
-  { key: "valor", label: "Valor", tipo: "moeda" },
-  { key: "frequencia", label: "Frequência", tipo: "chips", opcoes: OPCOES.frequencia, padrao: "Mensal" },
+  { key: "tipo", label: "Tipo", tipo: "select", opcoes: OPCOES.tipoOutraRenda, padrao: "Renda extra / freelance" },
+  { key: "valor", label: "Valor líquido", tipo: "moeda" },
+  { key: "frequencia", label: "Frequência", tipo: "chips", opcoes: OPCOES.frequencia, padrao: "Mensal", largura: 2 },
+];
+
+/** Pergunta que abre a lista de cartões (fica na seção Renda). */
+export const CAMPOS_RENDA_CARTAO: CampoDef[] = [{ key: "temCartao", label: "Tem cartão de crédito?", tipo: "simnao", largura: 2 }];
+
+export const CAMPOS_CARTAO: CampoDef[] = [
+  { key: "cartao", label: "Qual cartão", tipo: "texto", largura: 2, placeholder: "Banco / bandeira / categoria" },
+  { key: "limite", label: "Limite", tipo: "moeda" },
+  { key: "gastoMensal", label: "Quanto gasta por mês", tipo: "moeda" },
+  { key: "milhas", label: "Acumula milhas / pontos", tipo: "switch", largura: 2 },
+  { key: "programa", label: "Programa", tipo: "texto", placeholder: "Ex.: Smiles, Livelo", largura: 2, mostrarSe: (d) => d.milhas === true },
 ];
 
 // ---------------------------------------------------------------------
 //  7 · Patrimônio
 // ---------------------------------------------------------------------
+
+/** Campos que aparecem quando o bem NÃO está quitado. */
+const naoQuitado = (d: Secao) => d.quitado !== true;
+const CAMPOS_FINANCIAMENTO_DO_BEM: CampoDef[] = [
+  { key: "instituicao", label: "Instituição", tipo: "texto", placeholder: "Banco / financeira", mostrarSe: naoQuitado },
+  { key: "parcela", label: "Parcela", tipo: "moeda", mostrarSe: naoQuitado },
+  { key: "prazo", label: "Prazo restante (meses)", tipo: "numero", mostrarSe: naoQuitado },
+  { key: "saldo", label: "Saldo devedor (se souber)", tipo: "moeda", mostrarSe: naoQuitado },
+];
+
 export const CAMPOS_IMOVEL: CampoDef[] = [
   { key: "categoria", label: "Categoria", tipo: "select", opcoes: OPCOES.categoriaImovel, padrao: "Moradia" },
   { key: "tipo", label: "Tipo", tipo: "select", opcoes: OPCOES.tipoImovel, padrao: "Apartamento" },
-  { key: "valor", label: "Valor de mercado", tipo: "moeda" },
-  { key: "quitado", label: "Quitado", tipo: "switch", padrao: true },
+  { key: "valor", label: "Valor de mercado", tipo: "moeda", largura: 2 },
+  { key: "quitado", label: "Quitado", tipo: "switch", padrao: true, largura: 2 },
+  { key: "temSeguro", label: "Tem seguro", tipo: "switch", largura: 2 },
+  ...CAMPOS_FINANCIAMENTO_DO_BEM,
 ];
 
 export const CAMPOS_MOVEL: CampoDef[] = [
@@ -304,6 +352,7 @@ export const CAMPOS_MOVEL: CampoDef[] = [
   { key: "quitado", label: "Quitado", tipo: "switch", padrao: true },
   { key: "temSeguro", label: "Tem seguro", tipo: "switch" },
   { key: "pensaAmpliacao", label: "Pensa em ampliação / troca", tipo: "switch", largura: 2 },
+  ...CAMPOS_FINANCIAMENTO_DO_BEM,
 ];
 
 // ---------------------------------------------------------------------
@@ -359,6 +408,16 @@ export const CAMPOS_CORPORATIVO: CampoDef[] = [
 //  Etapa 3 · Proteção
 // ---------------------------------------------------------------------
 export const CAMPOS_PROTECAO: CampoDef[] = [
+  { key: "temReserva", label: "Tem reserva de emergência?", tipo: "simnao", largura: 2 },
+  { key: "valorReserva", label: "Valor da reserva", tipo: "moeda", mostrarSe: (d) => sim(d.temReserva) },
+  {
+    key: "mesesReserva",
+    label: "Para quantos meses?",
+    tipo: "numero",
+    sufixo: "meses",
+    ajuda: "Na visão do cliente",
+    mostrarSe: (d) => sim(d.temReserva),
+  },
   { key: "temSeguroVida", label: "Tem seguro de vida individual?", tipo: "simnao", largura: 2 },
   { key: "capitalAtual", label: "Capital segurado", tipo: "moeda", mostrarSe: (d) => sim(d.temSeguroVida) },
   { key: "premioAtual", label: "Prêmio mensal", tipo: "moeda", mostrarSe: (d) => sim(d.temSeguroVida) },
@@ -366,28 +425,29 @@ export const CAMPOS_PROTECAO: CampoDef[] = [
   { key: "temInvalidez", label: "Cobertura de invalidez / DIT", tipo: "simnao" },
   { key: "temSaude", label: "Plano de saúde", tipo: "simnao" },
   { key: "temPrevidencia", label: "Previdência privada", tipo: "simnao" },
-  {
-    key: "valorPrevidencia",
-    label: "Saldo da previdência",
-    tipo: "moeda",
-    mostrarSe: (d) => sim(d.temPrevidencia),
-  },
-  {
-    key: "anosProtecao",
-    label: "Anos de proteção da renda",
-    tipo: "numero",
-    padrao: 5,
-    somenteConsultor: true,
-    ajuda: "Por quanto tempo a família mantém o padrão sem a renda.",
-  },
-  {
-    key: "custoInventario",
-    label: "Custos de inventário (% patrimônio)",
-    tipo: "percentual",
-    padrao: 15,
-    somenteConsultor: true,
-  },
+  { key: "valorPrevidencia", label: "Saldo da previdência", tipo: "moeda", mostrarSe: (d) => sim(d.temPrevidencia) },
 ];
+
+/**
+ * Premissas do cálculo de proteção (6.2 · Plano atual). Versão consultor.
+ * O horizonte do padrão de vida (1, 5 ou 15 anos) é escolhido nos cartões da 6.2.
+ */
+export const CAMPOS_PREMISSAS_PROTECAO: CampoDef[] = [
+  { key: "itcmd", label: "ITCMD (%)", tipo: "percentual", padrao: 4, somenteConsultor: true, ajuda: "Varia por estado (até 8%)." },
+  { key: "honorarios", label: "Honorários e custas (%)", tipo: "percentual", padrao: 6, somenteConsultor: true },
+  {
+    key: "mensalidadeFaculdade",
+    label: "Mensalidade de faculdade",
+    tipo: "moeda",
+    padrao: 3000,
+    somenteConsultor: true,
+    ajuda: "Referência para quem ainda não está na faculdade.",
+  },
+  { key: "duracaoFaculdade", label: "Duração da faculdade (anos)", tipo: "numero", padrao: 5, somenteConsultor: true },
+  { key: "incluirQuitacao", label: "Incluir quitação de dívidas", tipo: "switch", padrao: false, somenteConsultor: true, largura: 2 },
+];
+
+export const HORIZONTES_PADRAO_VIDA = [1, 5, 15];
 
 // ---------------------------------------------------------------------
 //  Etapa 4 · Investimentos
@@ -396,26 +456,36 @@ const investe = (d: Secao) => sim(d.temInvestimento);
 export const CAMPOS_INVESTIMENTOS: CampoDef[] = [
   { key: "conhecimento", label: "Nível de conhecimento", tipo: "chips", opcoes: OPCOES.conhecimento, largura: 2 },
   { key: "perfil", label: "Perfil de investidor", tipo: "chips", opcoes: OPCOES.perfilInvestidor, largura: 2 },
-  { key: "temInvestimento", label: "Tem investimentos?", tipo: "simnao", largura: 2 },
-  { key: "valor", label: "Qual valor?", tipo: "moeda", mostrarSe: investe },
   {
-    key: "liquidez",
-    label: "Quanto com liquidez diária?",
-    tipo: "moeda",
-    mostrarSe: investe,
-    ajuda: "Usado como reserva de emergência.",
+    key: "temas",
+    label: "Temas que já estudou",
+    tipo: "multichips",
+    opcoes: OPCOES.temasInvestimento,
+    largura: 4,
+    ajuda: "Marque todos que se aplicam.",
   },
-  { key: "temAssessor", label: "Tem assessor?", tipo: "simnao", mostrarSe: investe, largura: 2 },
-  { key: "instituicao", label: "Onde investe?", tipo: "texto", mostrarSe: investe, placeholder: "Banco / corretora" },
+  { key: "temInvestimento", label: "Tem investimentos?", tipo: "simnao", largura: 2 },
+  { key: "valor", label: "Valor investido", tipo: "moeda", mostrarSe: investe, ajuda: "Sem contar a reserva de emergência." },
+  { key: "temAssessor", label: "Tem assessor?", tipo: "simnao", mostrarSe: investe },
+  { key: "instituicao", label: "Onde investe?", tipo: "texto", mostrarSe: investe, placeholder: "Banco / corretora", largura: 2 },
 ];
 
 // ---------------------------------------------------------------------
-//  6.5 · Futuro (independência financeira)
+//  12 · Futuro (Etapa 3) — aposentadoria
 // ---------------------------------------------------------------------
+/** Estilo de vida na aposentadoria: o fator multiplica o custo de vida atual para sugerir a renda desejada. */
+export const ESTILOS_VIDA: { id: string; fator: number; descricao: string }[] = [
+  { id: "Mais simples", fator: 0.7, descricao: "Menos gastos que hoje" },
+  { id: "Igual a hoje", fator: 1, descricao: "Mesmo padrão atual" },
+  { id: "Mais confortável", fator: 1.3, descricao: "Mais viagens e lazer" },
+  { id: "Sofisticado", fator: 1.6, descricao: "Padrão bem acima do atual" },
+];
+
 export const CAMPOS_FUTURO: CampoDef[] = [
-  { key: "idadeAposentadoria", label: "Idade de aposentadoria", tipo: "numero", padrao: 60 },
-  { key: "rendaDesejada", label: "Renda desejada /mês", tipo: "moeda", ajuda: "Em valores de hoje" },
-  { key: "outrasRendas", label: "Outras rendas /mês", tipo: "moeda", ajuda: "INSS, aluguéis, previdência" },
+  { key: "idadeAposentadoria", label: "Idade de aposentadoria", tipo: "numero", padrao: 60, sufixo: "anos" },
+  { key: "estiloVida", label: "Estilo de vida na aposentadoria", tipo: "chips", opcoes: ESTILOS_VIDA.map((e) => e.id), largura: 3 },
+  { key: "rendaDesejada", label: "Renda desejada /mês", tipo: "moeda", largura: 2, ajuda: "Em valores de hoje. Em branco = sugestão pelo estilo de vida." },
+  { key: "outrasRendas", label: "Outras fontes de renda /mês", tipo: "moeda", largura: 2, ajuda: "INSS, aluguéis, previdência. Em branco = renda passiva atual." },
 ];
 
 // ---------------------------------------------------------------------

@@ -16,7 +16,7 @@ export function useSecaoAtiva(ids: string[]) {
       let atual = ids[0];
       for (const id of ids) {
         const el = document.getElementById(`sec-${id}`);
-        if (el && el.getBoundingClientRect().top <= 160) atual = id;
+        if (el && el.getBoundingClientRect().top <= 110) atual = id;
       }
       // No fim da página, a última seção é a ativa (mesmo que não chegue ao topo).
       const fim = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
@@ -59,7 +59,7 @@ export function Navegacao({ cliente, ativa, irPara }: { cliente: Cliente; ativa:
 
   return (
     <nav className="no-print min-w-0 max-w-full shrink-0 md:w-56 lg:w-64">
-      <div ref={refMenu} className="sticky top-[7.5rem] z-10 flex max-w-full flex-row gap-3 overflow-x-auto rounded-xl border border-border bg-card p-2 md:max-h-[calc(100vh-8.5rem)] md:flex-col md:overflow-y-auto md:overflow-x-hidden md:p-3">
+      <div ref={refMenu} className="sticky top-20 z-10 flex max-w-full flex-row gap-3 overflow-x-auto rounded-xl border border-border bg-card p-2 md:max-h-[calc(100vh-6rem)] md:flex-col md:overflow-y-auto md:overflow-x-hidden md:p-3">
         {!apresentacao && (
           <div className="hidden rounded-lg border border-primary/25 bg-primary/5 p-3 md:block">
             <div className="flex items-center justify-between">

@@ -15,7 +15,7 @@ export const iconeStatus: Record<Status, typeof CircleCheck> = {
 
 const secaoDoPilar: Record<string, string> = {
   fluxo: "despesas",
-  reserva: "investimentos",
+  reserva: "protecao",
   dividas: "dividas",
   protecao: "protecao",
   futuro: "futuro",

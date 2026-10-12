@@ -7,6 +7,7 @@
 import type { Cliente } from "@/types";
 import { fmtBRL, fmtPct } from "./format";
 import {
+  cartoes,
   dividas,
   fluxo,
   futuro,
@@ -209,6 +210,16 @@ export function pontos(c: Cliente): { fortes: Ponto[]; negativos: Ponto[] } {
   const semSeguro = c.moveis.filter((m) => m.temSeguro !== true);
   if (semSeguro.length > 0)
     negativos.push({ id: "auto", area: "Seguros", texto: `${semSeguro.length} veículo(s)/embarcação(ões) sem seguro.` });
+  const imoveisSemSeguro = c.imoveis.filter((m) => m.temSeguro !== true);
+  if (imoveisSemSeguro.length > 0)
+    negativos.push({ id: "residencial", area: "Seguros", texto: `${imoveisSemSeguro.length} imóvel(is) sem seguro.` });
+  if (c.imoveis.length > 0 && imoveisSemSeguro.length === 0)
+    fortes.push({ id: "residencial", area: "Seguros", texto: "Todos os imóveis têm seguro." });
+
+  const ct = cartoes(c);
+  if (ct.quantidade > 0 && ct.usoLimite > 0.8)
+    negativos.push({ id: "limite", area: "Fluxo de caixa", texto: `Usa ${fmtPct(ct.usoLimite)} do limite dos cartões todo mês.` });
+  if (ct.comMilhas > 0) fortes.push({ id: "milhas", area: "Fluxo de caixa", texto: "Acumula milhas/pontos com os gastos do cartão." });
 
   if (sim(c.investimentos.temInvestimento)) {
     fortes.push({ id: "investe", area: "Investimentos", texto: `Já investe ${fmtBRL(p.investimentos)}.` });
@@ -284,14 +295,15 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       prioridade: "Média",
       prazo: "Curto",
     });
-  if (c.imoveis.length)
+  const imoveisSemSeguro = c.imoveis.filter((m) => m.temSeguro !== true);
+  if (imoveisSemSeguro.length)
     out.push({
       id: "op-residencial",
       quadrante: "Seguros",
       titulo: "Seguro residencial / patrimonial",
-      detalhe: `${c.imoveis.length} imóvel(is) somando ${fmtBRL(p.imoveis)}.`,
-      prioridade: "Baixa",
-      prazo: "Médio",
+      detalhe: `${imoveisSemSeguro.length} imóvel(is) sem seguro, somando ${fmtBRL(imoveisSemSeguro.reduce((t, m) => t + n(m.valor), 0))}.`,
+      prioridade: "Média",
+      prazo: "Curto",
     });
   if (sim(c.corporativo.possuiEmpresa) && c.corporativo.seguroEmpresarial !== true)
     out.push({ id: "op-empresarial", quadrante: "Seguros", titulo: "Seguro empresarial", detalhe: "Empresa sem seguro do patrimônio/operação.", prioridade: "Média", prazo: "Médio" });
@@ -354,6 +366,16 @@ export function oportunidades(c: Cliente): Oportunidade[] {
     });
   if (sim(c.investimentos.temInvestimento) && s(c.investimentos.temAssessor) === "Não")
     out.push({ id: "op-assessoria", quadrante: "Investimentos", titulo: "Assessoria de investimentos", detalhe: "Cliente investe sem acompanhamento.", prioridade: "Média", prazo: "Curto" });
+  const ct = cartoes(c);
+  if (ct.semMilhas.length && ct.gasto >= 3000)
+    out.push({
+      id: "op-cartao",
+      quadrante: "Investimentos",
+      titulo: "Cartão com milhas ou cashback",
+      detalhe: `Gasta ${fmtBRL(ct.gasto)}/mês no cartão sem acumular pontos.`,
+      prioridade: "Baixa",
+      prazo: "Curto",
+    });
   if (!s(c.investimentos.perfil) || s(c.investimentos.perfil) === "Não sabe")
     out.push({ id: "op-suitability", quadrante: "Investimentos", titulo: "Definir perfil de investidor", detalhe: "Aplicar suitability e alinhar carteira.", prioridade: "Baixa", prazo: "Curto" });
   if (p.ativos > 0 && p.financeiro / p.ativos < 0.2 && p.ativos > 300_000)

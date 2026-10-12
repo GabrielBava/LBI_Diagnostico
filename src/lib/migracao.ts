@@ -120,3 +120,44 @@ export function migrarV1(v1: V1): Partial<Cliente> & { id: string } {
     notas: obj(v1.notas) as Record<string, string>,
   };
 }
+
+/**
+ * Ajusta clientes salvos na versão 4 para a estrutura atual (v5).
+ * Idempotente: pode rodar a cada carregamento sem alterar dados já convertidos.
+ */
+export function atualizarV4(c: Partial<Cliente> & { id: string }): Partial<Cliente> & { id: string } {
+  const despesas: Record<string, number | undefined> = {};
+  const extras: Item[] = [...(c.despesasExtras ?? [])].map((e) =>
+    e.grupo ? e : { ...e, grupo: e.bloco === "Variável" ? "outros" : "outrasFixas" },
+  );
+  const GRUPOS_V4 = [
+    "casa", "alimentacao", "transporte", "saude", "cuidados", "impostos", "servicosFinanceiros", "profissionais",
+    "mercado", "seguros", "educacao", "restaurantes", "lazer", "roupas", "assinaturas", "compras", "esportes", "viagens", "outros",
+  ];
+  Object.entries(c.despesas ?? {}).forEach(([chave, valor]) => {
+    if (chave.includes(".")) despesas[chave] = valor;
+    else if (chave === "financiamentos") despesas["financiamentos.parcelas"] = valor;
+    else if (num(valor) > 0)
+      // Valor por categoria da versão anterior vira um item do bloco correspondente.
+      extras.push({ id: uid(), grupo: GRUPOS_V4.includes(chave) ? chave : "outrasFixas", descricao: "Total (versão anterior)", valor });
+  });
+
+  const renda = { ...(c.renda ?? {}) };
+  if (renda.renda !== undefined && renda.liquidaCliente === undefined) renda.liquidaCliente = renda.renda;
+  if (renda.rendaConjuge !== undefined && renda.liquidaConjuge === undefined) renda.liquidaConjuge = renda.rendaConjuge;
+  delete renda.renda;
+  delete renda.rendaConjuge;
+
+  const investimentos = { ...(c.investimentos ?? {}) };
+  const protecao = { ...(c.protecao ?? {}) };
+  if (investimentos.liquidez !== undefined && protecao.temReserva === undefined && num(investimentos.liquidez) > 0) {
+    protecao.temReserva = "Sim";
+    protecao.valorReserva = investimentos.liquidez;
+    investimentos.valor = Math.max(0, num(investimentos.valor) - num(investimentos.liquidez));
+  }
+  delete investimentos.liquidez;
+  delete protecao.anosProtecao;
+  delete protecao.custoInventario;
+
+  return { ...c, despesas, despesasExtras: extras, renda, investimentos, protecao };
+}

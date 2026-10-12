@@ -20,6 +20,7 @@ export function ListaItens({
   novo,
   colunas = 4,
   sugestoes,
+  acoesAdicionar,
 }: {
   campos: CampoDef[];
   itens: Item[];
@@ -33,9 +34,12 @@ export function ListaItens({
   novo?: () => Record<string, Valor>;
   colunas?: 2 | 3 | 4;
   sugestoes?: (item: Item) => Record<string, number | undefined>;
+  /** Vários botões de adicionar (ex.: um por categoria); substituem o botão único. */
+  acoesAdicionar?: { label: string; novo: () => Record<string, Valor> }[];
 }) {
   const { cliente } = useCliente();
-  const adicionar = () => onChange([...itens, { id: uid(), ...padroes(campos), ...(novo?.() ?? {}) }]);
+  const adicionar = (extra?: Record<string, Valor>) =>
+    onChange([...itens, { id: uid(), ...padroes(campos), ...(novo?.() ?? {}), ...(extra ?? {}) }]);
   const remover = (id: string) => onChange(itens.filter((i) => i.id !== id));
   const alterar = (id: string, key: string, v: Valor) => onChange(itens.map((i) => (i.id === id ? { ...i, [key]: v } : i)));
 
@@ -66,7 +70,23 @@ export function ListaItens({
           {rodapeItem && <div className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">{rodapeItem(item)}</div>}
         </div>
       ))}
-      <BotaoAdicionar onClick={adicionar}>{textoAdicionar}</BotaoAdicionar>
+      {acoesAdicionar ? (
+        <div className="no-print flex flex-wrap items-center gap-2 rounded-lg border border-dashed border-border p-3">
+          <span className="text-xs font-semibold text-muted-foreground">{textoAdicionar}:</span>
+          {acoesAdicionar.map((a) => (
+            <button
+              key={a.label}
+              type="button"
+              onClick={() => adicionar(a.novo())}
+              className="h-9 rounded-full border border-border bg-input px-3.5 text-xs font-medium text-muted-foreground transition hover:border-primary/60 hover:text-primary"
+            >
+              + {a.label}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <BotaoAdicionar onClick={() => adicionar()}>{textoAdicionar}</BotaoAdicionar>
+      )}
     </div>
   );
 }

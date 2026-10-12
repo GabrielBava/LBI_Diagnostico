@@ -8,10 +8,10 @@
 
 import { useSyncExternalStore } from "react";
 import type { Cliente } from "@/types";
-import { CAMPOS_PARAMETROS, CAMPOS_PROTECAO, CAMPOS_FUTURO, JORNADA_PADRAO, padroes } from "@/config/campos";
+import { CAMPOS_FUTURO, CAMPOS_PARAMETROS, CAMPOS_PREMISSAS_PROTECAO, CAMPOS_PROTECAO, JORNADA_PADRAO, padroes } from "@/config/campos";
 import { CONFIG_PADRAO, type ConfigConsultor } from "@/config/defaults";
 import { uid } from "./format";
-import { migrarV1 } from "./migracao";
+import { atualizarV4, migrarV1 } from "./migracao";
 
 const CHAVE_CLIENTES = "life-diagnostico-v2:clientes";
 const CHAVE_CLIENTES_V1 = "life-diagnostico:clientes";
@@ -41,8 +41,9 @@ export function novoCliente(nome = ""): Cliente {
   return normalizar({ id: uid(), criadoEm: agora, atualizadoEm: agora, cadastro: { nome } });
 }
 
-export function normalizar(c: Partial<Cliente> & { id: string }): Cliente {
+export function normalizar(original: Partial<Cliente> & { id: string }): Cliente {
   const agora = new Date().toISOString();
+  const c = atualizarV4(original);
   return {
     id: c.id,
     criadoEm: c.criadoEm ?? agora,
@@ -55,6 +56,7 @@ export function normalizar(c: Partial<Cliente> & { id: string }): Cliente {
     despesasExtras: c.despesasExtras ?? [],
     renda: { ...(c.renda ?? {}) },
     outrasRendas: c.outrasRendas ?? [],
+    cartoes: c.cartoes ?? [],
     imoveis: c.imoveis ?? [],
     moveis: c.moveis ?? [],
     financiamentos: c.financiamentos ?? [],
@@ -62,7 +64,7 @@ export function normalizar(c: Partial<Cliente> & { id: string }): Cliente {
     emprestimos: c.emprestimos ?? [],
     projetos: c.projetos ?? [],
     corporativo: { ...(c.corporativo ?? {}) },
-    protecao: { ...padroes(CAMPOS_PROTECAO), ...(c.protecao ?? {}) },
+    protecao: { ...padroes(CAMPOS_PROTECAO), ...padroes(CAMPOS_PREMISSAS_PROTECAO), horizonte: 5, ...(c.protecao ?? {}) },
     investimentos: { ...(c.investimentos ?? {}) },
     futuro: { ...padroes(CAMPOS_FUTURO), ...(c.futuro ?? {}) },
     pontosFortes: c.pontosFortes ?? [],

@@ -2,7 +2,8 @@
 // Seções de formulário e listas usam objetos flexíveis (Secao / Item) para que
 // novos campos possam ser incluídos apenas editando src/config/campos.ts.
 
-export type Valor = string | number | boolean | undefined | null;
+/** Valor de um campo. Listas de opções marcadas (multiescolha) usam string[]. */
+export type Valor = string | number | boolean | string[] | undefined | null;
 
 /** Linha de uma lista (objetivo, imóvel, financiamento...). Cada campo configurado vira uma chave. */
 export interface Item {
@@ -24,11 +25,13 @@ export interface Cliente {
   dependentes: Item[];
 
   // Etapa 2 · Raio-X financeiro
-  /** Valor mensal por categoria de despesa (chave = id da categoria). */
+  /** Valor mensal por subcategoria de despesa (chave = "grupo.item", ex.: "casa.aluguel"). */
   despesas: Record<string, number | undefined>;
+  /** Itens de despesa acrescentados dentro de um grupo (campo `grupo`). */
   despesasExtras: Item[];
   renda: Secao;
   outrasRendas: Item[];
+  cartoes: Item[];
   imoveis: Item[];
   moveis: Item[];
   financiamentos: Item[];
@@ -37,12 +40,13 @@ export interface Cliente {
   projetos: Item[];
   corporativo: Secao;
 
-  // Etapa 3 · Proteção  /  Etapa 4 · Investimentos
+  // Etapa 3 · Proteção e futuro  /  Etapa 4 · Investimentos
   protecao: Secao;
+  /** Aposentadoria: idade, renda desejada, outras rendas e estilo de vida. */
+  futuro: Secao;
   investimentos: Secao;
 
   // Etapa 6 · Diagnóstico completo
-  futuro: Secao;
   pontosFortes: Item[];
   pontosNegativos: Item[];
   plano: Item[];
@@ -65,6 +69,7 @@ export type ListaId =
   | "dependentes"
   | "despesasExtras"
   | "outrasRendas"
+  | "cartoes"
   | "imoveis"
   | "moveis"
   | "financiamentos"

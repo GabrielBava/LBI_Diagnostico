@@ -4,12 +4,12 @@ Diagnóstico financeiro do Grupo Life Brasil, organizado como um processo com o 
 
 - **Rolagem contínua:** todas as etapas em uma página. Ao rolar, você passa de categoria em categoria e o menu lateral acompanha.
 - **7 etapas:** Conexão → Raio-X financeiro → Proteção e futuro → Investimentos → Pré-diagnóstico → Diagnóstico completo → Jornada.
-- **Pré-diagnóstico ao vivo:** faixa fixa no topo com renda, despesas, sobra, patrimônio líquido e aporte dos objetivos, atualizada a cada campo.
 - **Versão consultor × versão apresentação:** roteiro, anotações, parâmetros e seções internas (como a Matriz de oportunidades) ficam ocultos para o cliente. Cada seção tem um botão para mostrar/ocultar na apresentação.
-- **Campos dinâmicos:** cônjuge só para casados, quantidade de filhos cria os cartões em Sucessão, CEP busca o endereço, parcelas e dependentes entram sozinhos nas despesas.
-- **Padrões de campo:** opções em botões (chips), Sim/Não, interruptores para flags, régua para percentuais e notas, contador.
+- **Campos dinâmicos:** cônjuge (e a renda dele) só para casados, quantidade de filhos cria os cartões em Sucessão, CEP busca o endereço, bens não quitados viram financiamentos, parcelas e dependentes entram sozinhos nas despesas, renda bruta ↔ líquida estimada.
+- **Despesas em blocos** (Casa, Mercado, Transporte…) com subcategorias (Aluguel, Condomínio, Luz, Água, Internet…).
+- **Padrões de campo:** opções em botões (chips), escala 0–10 com um botão por nota, categorias por ícones, múltipla escolha, Sim/Não, interruptores para flags, contador.
 - **Roteiro da conversa** por seção: frase de abertura, perguntas (checklist), pontos de atenção e anotações.
-- **Diagnóstico:** nota LIFE, pilares, pontos fortes e de atuação, independência financeira, matriz de oportunidades (cross-sell), plano de ação e cronograma.
+- **Diagnóstico:** nota LIFE, pilares, renda × despesas, balanço, proteção "o que contratar" (educacional, padrão de vida 1/5/15 anos, sucessão), pontos fortes e de atuação, independência financeira, matriz de oportunidades (cross-sell), plano de ação e cronograma.
 - **PDF** do diagnóstico (segue a versão apresentação), backup e importação.
 
 A metodologia completa (processo + fórmulas) está em **[docs/METODOLOGIA.md](docs/METODOLOGIA.md)**.
@@ -53,6 +53,8 @@ src/
   config/
     estrutura.ts     ← ETAPAS e SEÇÕES (ordem, numeração, regra de conclusão, oculta na apresentação)
     campos.ts        ← CAMPOS de cada seção (incluir/remover/renomear, campos condicionais)
+    despesas.ts      ← BLOCOS e SUBCATEGORIAS de despesas
+    tributos.ts      ← tabelas de INSS/IR para estimar renda bruta ↔ líquida
     roteiro.ts       ← ROTEIRO da conversa e frases de abertura das etapas
     institucional.ts ← textos do V1 · Institucional
     defaults.ts      ← nome do app, versão, consultor padrão
@@ -61,7 +63,7 @@ src/
     diagnostico.ts   ← pilares, pontos fortes/de atuação, oportunidades, sugestões
     storage.ts       ← onde os dados são salvos (hoje: navegador)
     migracao.ts      ← conversão de clientes da versão anterior
-  components/        ← campos, listas, seção, menu, faixa ao vivo, gráficos
+  components/        ← campos, listas, seção, menu, gráficos
   pages/
     Clientes.tsx         ← lista de clientes
     ClienteDetalhe.tsx   ← página contínua do diagnóstico
@@ -84,7 +86,9 @@ Em `src/config/campos.ts`, adicione uma linha na lista da seção. Exemplos:
 { key: "observacaoInterna", label: "Observação interna", tipo: "textarea", somenteConsultor: true },
 ```
 
-Tipos: `texto`, `textarea`, `email`, `telefone`, `cep`, `data`, `numero`, `moeda`, `percentual`, `select`, `chips`, `simnao`, `switch`, `slider` e `contador`. Use `ajuda` para uma dica abaixo do campo, `padrao` para o valor inicial e `largura` (1 a 4) para ocupar mais colunas.
+Tipos: `texto`, `textarea`, `email`, `telefone`, `cep`, `data`, `numero`, `moeda`, `percentual`, `select`, `chips`, `multichips`, `icones`, `simnao`, `switch`, `slider`, `escala` e `contador`.
+
+Para incluir uma subcategoria de despesa, acrescente uma linha no bloco em `src/config/despesas.ts`, por exemplo `{ id: "jardinagem", label: "Jardinagem" }` no bloco Casa. Use `ajuda` para uma dica abaixo do campo, `padrao` para o valor inicial e `largura` (1 a 4) para ocupar mais colunas.
 
 Para usar o campo em um cálculo, leia-o em `src/lib/calculos.ts` pela mesma `key`.
 
