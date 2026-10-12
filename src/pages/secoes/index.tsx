@@ -12,6 +12,7 @@ import Dividas from "./Dividas";
 import Projetos from "./Projetos";
 import Corporativo from "./Corporativo";
 import Protecao from "./Protecao";
+import Aposentadoria from "./Aposentadoria";
 import Investimentos from "./Investimentos";
 import PlanoAtual from "./PlanoAtual";
 import Panorama from "./Panorama";
@@ -34,6 +35,7 @@ export const TELAS: Record<string, ComponentType> = {
   projetos: Projetos,
   corporativo: Corporativo,
   protecao: Protecao,
+  aposentadoria: Aposentadoria,
   investimentos: Investimentos,
   "plano-atual": PlanoAtual,
   panorama: Panorama,

@@ -1,27 +1,44 @@
-// 6.5 · Futuro: independência financeira (entradas e resultado).
-import { CAMPOS_FUTURO } from "@/config/campos";
-import { Formulario } from "@/components/campos";
+// 6.5 · Futuro: independência financeira (resultado).
+// As premissas (idade, estilo, rendas) são preenchidas em 12 · Futuro.
 import { GraficoFuturo } from "@/components/graficos";
-import { BarraProgresso, Kpi } from "@/components/ui";
+import { BarraProgresso, Botao, Kpi } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { futuro, s, TAXA_RETIRADA } from "@/lib/calculos";
+import { futuro, nOpt, s, TAXA_RETIRADA } from "@/lib/calculos";
 import { fmtBRL, fmtPct } from "@/lib/format";
 
 export default function Futuro() {
-  const { cliente, setCampo } = useCliente();
+  const { cliente, irPara } = useCliente();
   const fu = futuro(cliente);
   const semIdade = !s(cliente.cadastro.nascimento);
+  const rendaAuto = nOpt(cliente.futuro.rendaDesejada) === undefined;
+  const outrasAuto = nOpt(cliente.futuro.outrasRendas) === undefined;
 
   return (
     <div className="space-y-4">
-      <Formulario
-        campos={CAMPOS_FUTURO}
-        dados={cliente.futuro}
-        cliente={cliente}
-        colunas={3}
-        onChange={(k, v) => setCampo("futuro", k, v)}
-        automaticos={{ rendaDesejada: fu.rendaDesejadaAuto || undefined, outrasRendas: fu.outrasAuto || undefined }}
-      />
+      <div className="flex flex-col gap-2 rounded-xl border border-border bg-secondary/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="min-w-0 text-sm text-muted-foreground">
+          <span>
+            Aposentadoria aos <strong className="text-foreground">{fu.idadeAposentadoria} anos</strong>
+          </span>
+          <span aria-hidden="true"> · </span>
+          <span>
+            estilo <strong className="text-foreground">{fu.estilo ? fu.estilo.toLowerCase() : "não definido"}</strong>
+          </span>
+          <span aria-hidden="true"> · </span>
+          <span>
+            renda desejada <strong className="tabular-nums text-foreground">{fmtBRL(fu.rendaDesejada)}/mês</strong>
+            {rendaAuto && " (sugerida)"}
+          </span>
+          <span aria-hidden="true"> · </span>
+          <span>
+            outras rendas <strong className="tabular-nums text-foreground">{fmtBRL(fu.outras)}/mês</strong>
+            {outrasAuto && fu.outras > 0 && " (renda passiva atual)"}
+          </span>
+        </p>
+        <Botao pequeno variante="fantasma" className="no-print -ml-3 shrink-0 self-start sm:ml-0 sm:self-auto" onClick={() => irPara("aposentadoria")}>
+          Editar premissas
+        </Botao>
+      </div>
 
       {semIdade ? (
         <p className="text-sm text-warning">Informe a data de nascimento no Cadastro para projetar o futuro.</p>

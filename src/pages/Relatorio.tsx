@@ -3,12 +3,12 @@
 import { useEffect, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Printer } from "lucide-react";
-import { PRAZOS_PLANO, TIPOS_OBJETIVO } from "@/config/campos";
+import { HORIZONTES_PADRAO_VIDA, PRAZOS_PLANO, TIPOS_OBJETIVO } from "@/config/campos";
 import { APP } from "@/config/defaults";
 import { secaoOculta, secaoPorId } from "@/config/estrutura";
 import { Logo } from "@/components/Header";
 import { BotaoOuro, Selo, corStatus, textoStatus } from "@/components/ui";
-import { despesas, fluxo, futuro, n, objetivos, patrimonio, protecao, s } from "@/lib/calculos";
+import { despesas, fluxo, futuro, n, objetivos, patrimonio, protecao, renda, s } from "@/lib/calculos";
 import { notaGeral, pilares, pontos } from "@/lib/diagnostico";
 import { fmtBRL, fmtData, fmtPct } from "@/lib/format";
 import { lerConfig, useClientes } from "@/lib/storage";
@@ -49,6 +49,8 @@ function Tabela({ cab, linhas }: { cab: string[]; linhas: ReactNode[][] }) {
   );
 }
 
+const anos = (a: number) => (a === 1 ? "1 ano" : `${a} anos`);
+
 function Indicador({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
     <div className="rounded-lg border border-border p-3">
@@ -80,6 +82,7 @@ export default function Relatorio() {
   const pt = pontos(cliente);
   const ob = objetivos(cliente);
   const pr = protecao(cliente);
+  const rd = renda(cliente);
   const fu = futuro(cliente);
   const nome = s(cliente.cadastro.nome) || "Cliente";
   const fortes = [...pt.fortes.map((x) => x.texto), ...cliente.pontosFortes.map((x) => s(x.texto)).filter(Boolean)];
@@ -124,8 +127,9 @@ export default function Relatorio() {
 
         {mostra("panorama") && (
           <Bloco titulo="Panorama financeiro">
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <Indicador rotulo="Renda mensal" valor={fmtBRL(f.renda)} />
+            <div className={`grid grid-cols-2 gap-3 ${rd.brutaTotal > 0 ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
+              {rd.brutaTotal > 0 && <Indicador rotulo="Renda bruta" valor={fmtBRL(rd.brutaTotal)} />}
+              <Indicador rotulo={rd.brutaTotal > 0 ? "Renda líquida" : "Renda mensal"} valor={fmtBRL(f.renda)} />
               <Indicador rotulo="Despesas mensais" valor={fmtBRL(f.despesas)} />
               <Indicador rotulo="Sobra mensal" valor={fmtBRL(f.sobra)} />
               <Indicador rotulo="Taxa de poupança" valor={fmtPct(f.taxaPoupanca)} />
@@ -150,7 +154,8 @@ export default function Relatorio() {
               <Tabela
                 cab={["Fluxo mensal", "Valor"]}
                 linhas={[
-                  ["Renda", fmtBRL(f.renda)],
+                  ...(rd.brutaTotal > 0 ? [["Renda bruta", fmtBRL(rd.brutaTotal)]] : []),
+                  [rd.brutaTotal > 0 ? "Renda líquida" : "Renda", fmtBRL(f.renda)],
                   ["(−) Despesas fixas", fmtBRL(f.fixas)],
                   ["(−) Despesas variáveis", fmtBRL(f.variaveis)],
                   [<strong key="a">Sobra</strong>, <strong key="b">{fmtBRL(f.sobra)}</strong>],
@@ -221,20 +226,28 @@ export default function Relatorio() {
           </Bloco>
         )}
 
-        {mostra("protecao") && s(cliente.protecao.temSeguroVida) && (
+        {(mostra("protecao") || mostra("plano-atual-completo")) && pr.necessidade > 0 && (
           <Bloco titulo="Proteção da família">
             <Tabela
               cab={["Componente", "Valor"]}
               linhas={[
-                [`Manutenção do padrão de vida (${pr.anos} anos)`, fmtBRL(pr.componentes.manutencao)],
-                ["Quitação de financiamentos e dívidas", fmtBRL(pr.componentes.quitacao)],
-                ["Inventário e sucessão", fmtBRL(pr.componentes.inventario)],
-                ["(−) Investimentos e previdência", `− ${fmtBRL(pr.recursos)}`],
-                [<strong key="a">Capital necessário</strong>, <strong key="b">{fmtBRL(pr.necessario)}</strong>],
-                ["Capital atual", fmtBRL(pr.atual)],
-                [<strong key="c">Gap de proteção</strong>, <strong key="d">{fmtBRL(pr.gap)}</strong>],
+                ["Educacional (escola e faculdade)", fmtBRL(pr.componentes.educacional)],
+                [`Padrão de vida (${anos(pr.horizonte)})`, fmtBRL(pr.componentes.padraoVida)],
+                ["Sucessão patrimonial (ITCMD + honorários)", fmtBRL(pr.componentes.sucessao)],
+                ...(pr.componentes.quitacao > 0 ? [["Quitação de financiamentos e dívidas", fmtBRL(pr.componentes.quitacao)]] : []),
+                [<strong key="a">Necessidade total</strong>, <strong key="b">{fmtBRL(pr.necessidade)}</strong>],
+                ["(−) Reserva, investimentos e previdência", `− ${fmtBRL(pr.recursos)}`],
+                [<strong key="c">Capital necessário</strong>, <strong key="d">{fmtBRL(pr.necessario)}</strong>],
+                ["Capital atual (seguro de vida)", fmtBRL(pr.atual)],
+                [<strong key="e">A contratar</strong>, <strong key="f">{fmtBRL(pr.gap)}</strong>],
               ]}
             />
+            <p className="mt-2 text-xs text-muted-foreground">
+              Padrão de vida ({fmtBRL(pr.custoMensal)}/mês):{" "}
+              {HORIZONTES_PADRAO_VIDA.map((h) => `${anos(h)} ${fmtBRL(pr.padraoVida[h] ?? 0)}`).join(" · ")}. Sucessão sobre patrimônio quitado de{" "}
+              {fmtBRL(pr.quitados)}: ITCMD {fmtBRL(pr.itcmd)} + honorários {fmtBRL(pr.honorarios)}.
+              {pr.empresa > 0 && ` O seguro pela empresa (${fmtBRL(pr.empresa)}) não entra: termina com o vínculo.`}
+            </p>
           </Bloco>
         )}
 

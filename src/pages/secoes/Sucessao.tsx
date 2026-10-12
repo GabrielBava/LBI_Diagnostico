@@ -18,7 +18,7 @@ function titulo(itens: Item[], d: Item, i: number) {
 }
 
 export default function Sucessao() {
-  const { cliente, setLista, irPara } = useCliente();
+  const { cliente, atualizar, irPara } = useCliente();
   const su = sucessao(cliente);
   const itens = cliente.dependentes;
   const temFilhos = s(cliente.cadastro.temFilhos);
@@ -52,9 +52,19 @@ export default function Sucessao() {
       <ListaItens
         campos={CAMPOS_DEPENDENTE}
         itens={itens}
-        onChange={(i) => setLista("dependentes", i)}
+        onChange={(novos) =>
+          // Mantém o Cadastro coerente: filhos adicionados ou removidos aqui atualizam a quantidade.
+          atualizar((c) => {
+            const filhos = novos.filter((d) => s(d.categoria) === "Filho(a)").length;
+            const cadastro = filhos > 0 ? { ...c.cadastro, temFilhos: "Sim", qtdFilhos: filhos } : c.cadastro;
+            return { ...c, dependentes: novos, cadastro };
+          })
+        }
         textoAdicionar="Adicionar dependente"
-        acoesAdicionar={OPCOES.categoriaDependente.map((categoria) => ({ label: categoria, novo: () => ({ categoria }) }))}
+        acoesAdicionar={OPCOES.categoriaDependente
+          // Se o Cadastro diz que não tem filhos, o botão de filho não aparece.
+          .filter((categoria) => !(semFilhos && categoria === "Filho(a)"))
+          .map((categoria) => ({ label: categoria, novo: () => ({ categoria }) }))}
         colunas={3}
         tituloItem={(d, i) => (
           <span className="text-sm font-semibold text-foreground">

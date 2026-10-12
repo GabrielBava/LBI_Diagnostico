@@ -1,36 +1,80 @@
+// 11 · Proteção: reserva de emergência, seguros, saúde e previdência.
+// O cálculo do que contratar (educacional, padrão de vida e sucessão) fica em 6.2 · Plano atual.
+import { CircleCheck, TriangleAlert } from "lucide-react";
 import { CAMPOS_PROTECAO } from "@/config/campos";
 import { Formulario } from "@/components/campos";
-import { BarraProgresso, Kpi, LinhaValor, SubBloco } from "@/components/ui";
+import { Botao, Kpi, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { protecao } from "@/lib/calculos";
-import { fmtBRL, fmtPct } from "@/lib/format";
+import { despesas, nOpt, reservaEmergencia, sim } from "@/lib/calculos";
+import { fmtBRL } from "@/lib/format";
+
+const fmtMeses = (v: number) => v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+const meses = (v: number) => `${fmtMeses(v)} ${Math.abs(v - 1) < 0.05 ? "mês" : "meses"}`;
+
+/** Quadro da reserva: quantos meses de despesas ela cobre e a comparação com a meta. */
+function QuadroReserva() {
+  const { cliente } = useCliente();
+  const r = reservaEmergencia(cliente);
+  const custo = despesas(cliente).total;
+  const estimativa = nOpt(cliente.protecao.mesesReserva);
+  const atingiu = r.meses >= r.mesesMeta;
+  const diferente = estimativa !== undefined && Math.abs(estimativa - r.meses) >= 0.5;
+  const Icone = atingiu ? CircleCheck : TriangleAlert;
+
+  if (r.atual <= 0)
+    return (
+      <SubBloco titulo="Reserva de emergência">
+        <p className="text-sm text-muted-foreground">Informe o valor da reserva para calcular quantos meses de despesas ela cobre.</p>
+      </SubBloco>
+    );
+
+  return (
+    <SubBloco titulo="Reserva de emergência">
+      <p className="text-sm">
+        Pelas despesas informadas (<strong className="tabular-nums">{fmtBRL(custo)}/mês</strong>), a reserva cobre{" "}
+        <strong className="tabular-nums">{meses(r.meses)}</strong>.
+        {estimativa !== undefined && diferente && <span className="text-muted-foreground"> O cliente estima {meses(estimativa)}.</span>}
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <Kpi rotulo="Reserva informada" valor={fmtBRL(r.atual)} />
+        <Kpi
+          rotulo="Cobertura"
+          valor={fmtMeses(r.meses)}
+          sufixo={Math.abs(r.meses - 1) < 0.05 ? "mês" : "meses"}
+          tom={atingiu ? "sucesso" : "alerta"}
+          detalhe={
+            <span className="inline-flex items-center gap-1">
+              <Icone className={`h-3.5 w-3.5 shrink-0 ${atingiu ? "text-success" : "text-warning"}`} aria-hidden="true" />
+              {atingiu ? "Dentro da meta" : "Abaixo da meta"} de {meses(r.mesesMeta)}
+            </span>
+          }
+        />
+        <Kpi
+          rotulo={atingiu ? "Meta da reserva" : "Falta para a meta"}
+          valor={fmtBRL(atingiu ? r.meta : r.falta)}
+          detalhe={atingiu ? `${meses(r.mesesMeta)} de despesas` : `Meta: ${fmtBRL(r.meta)} (${meses(r.mesesMeta)})`}
+        />
+      </div>
+    </SubBloco>
+  );
+}
 
 export default function Protecao() {
-  const { cliente, setCampo } = useCliente();
-  const pr = protecao(cliente);
+  const { cliente, setCampo, irPara } = useCliente();
+  const mostrarReserva = sim(cliente.protecao.temReserva) && despesas(cliente).total > 0;
+
   return (
     <div className="space-y-4">
       <Formulario campos={CAMPOS_PROTECAO} dados={cliente.protecao} cliente={cliente} onChange={(k, v) => setCampo("protecao", k, v)} />
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Kpi tom="ouro" rotulo="Capital necessário" valor={fmtBRL(pr.necessario)} />
-        <Kpi rotulo="Capital atual" valor={fmtBRL(pr.atual)} detalhe={`Cobertura de ${fmtPct(pr.cobertura)}`} />
-        <Kpi
-          rotulo="Gap de proteção"
-          valor={fmtBRL(pr.gap)}
-          tom={pr.gap > 0 ? "alerta" : pr.necessario > 0 ? "sucesso" : "neutro"}
-          detalhe={pr.empresa > 0 ? `Seguro da empresa (${fmtBRL(pr.empresa)}) não entra na conta` : undefined}
-        />
+      {mostrarReserva && <QuadroReserva />}
+      <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="min-w-0 text-xs text-muted-foreground">
+          O cálculo do que contratar (educacional, padrão de vida e sucessão) está em 6.2 · Plano atual.
+        </p>
+        <Botao pequeno variante="fantasma" className="no-print -ml-3 shrink-0 self-start sm:ml-0 sm:self-auto" onClick={() => irPara("plano-atual-completo")}>
+          Ver em 6.2
+        </Botao>
       </div>
-      <SubBloco titulo="Como chegamos ao capital necessário">
-        <div className="divide-y divide-border">
-          <LinhaValor rotulo={`Manutenção do padrão de vida por ${pr.anos} anos (descontadas renda do cônjuge e passiva)`} valor={fmtBRL(pr.componentes.manutencao)} />
-          <LinhaValor rotulo="Quitação de financiamentos e dívidas" valor={fmtBRL(pr.componentes.quitacao)} />
-          <LinhaValor rotulo="Custos de inventário e sucessão" valor={fmtBRL(pr.componentes.inventario)} />
-          <LinhaValor rotulo="(−) Investimentos e previdência já disponíveis" valor={`− ${fmtBRL(pr.recursos)}`} />
-          <LinhaValor rotulo="Capital segurado necessário" valor={fmtBRL(pr.necessario)} forte />
-        </div>
-        <BarraProgresso valor={pr.cobertura * 100} className="mt-3" />
-      </SubBloco>
     </div>
   );
 }

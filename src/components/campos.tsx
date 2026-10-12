@@ -557,7 +557,8 @@ export function Formulario({
   const visiveis = campos.filter((c) => (!c.mostrarSe || c.mostrarSe(dados, cliente)) && !(apresentacao && c.somenteConsultor));
   return (
     <div className={`grid grid-cols-1 gap-x-4 gap-y-4 ${grid}`}>
-      {visiveis.map((c) => {
+      {visiveis.map((original) => {
+        const c = original.opcoesSe ? { ...original, opcoes: original.opcoesSe(dados, cliente) } : original;
         const span = SPAN[Math.min(c.largura ?? 1, colunas)];
         if (c.tipo === "switch")
           return (

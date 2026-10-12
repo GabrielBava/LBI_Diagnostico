@@ -64,6 +64,8 @@ export interface CampoDef {
   rotulosEscala?: [string, string];
   /** Ícone de cada opção (tipo "icones"). */
   icones?: Record<string, LucideIcon>;
+  /** Opções que dependem dos dados (ex.: "Cônjuge" só para casados). Substitui `opcoes`. */
+  opcoesSe?: (dados: Secao, cliente: Cliente) => string[];
 }
 
 const sim = (v: Valor) => v === "Sim" || v === true;
@@ -305,7 +307,15 @@ export const CAMPOS_RENDA_CONJUGE: CampoDef[] = [
 ];
 
 export const CAMPOS_OUTRA_RENDA: CampoDef[] = [
-  { key: "pessoa", label: "De quem", tipo: "chips", opcoes: OPCOES.pessoaRenda, padrao: "Cliente", largura: 2 },
+  {
+    key: "pessoa",
+    label: "De quem",
+    tipo: "chips",
+    opcoes: OPCOES.pessoaRenda,
+    opcoesSe: (_d, c) => (casado(c) ? OPCOES.pessoaRenda : OPCOES.pessoaRenda.filter((p) => p !== "Cônjuge")),
+    padrao: "Cliente",
+    largura: 2,
+  },
   { key: "descricao", label: "Fonte", tipo: "texto", largura: 2, placeholder: "Ex.: Aluguel sala comercial" },
   { key: "tipo", label: "Tipo", tipo: "select", opcoes: OPCOES.tipoOutraRenda, padrao: "Renda extra / freelance" },
   { key: "valor", label: "Valor líquido", tipo: "moeda" },

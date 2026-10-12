@@ -67,7 +67,12 @@ export function ListaItens({
             onChange={(k, v) => alterar(item.id, k, v)}
             sugestoes={sugestoes?.(item)}
           />
-          {rodapeItem && <div className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">{rodapeItem(item)}</div>}
+          {(() => {
+            const rodape = rodapeItem?.(item);
+            return rodape === null || rodape === undefined || rodape === false ? null : (
+              <div className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">{rodape}</div>
+            );
+          })()}
         </div>
       ))}
       {acoesAdicionar ? (

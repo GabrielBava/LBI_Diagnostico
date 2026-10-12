@@ -1,5 +1,7 @@
 // Gráficos reutilizáveis (Recharts). Cores vêm de --serie-1/--serie-2 em index.css.
+import type { ReactNode } from "react";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { fmtBRL, fmtCompacto, fmtPct } from "@/lib/format";
 
 export const corEixo = "rgb(var(--muted-foreground))";
@@ -202,5 +204,209 @@ export function GraficoFuturo({ serie }: { serie: { ano: number; idade: number; 
         </AreaChart>
       </ResponsiveContainer>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+//  Renda × despesas (HTML/CSS): duas colunas sobre a mesma base.
+//  A faixa entre o topo das despesas e a altura da renda é a sobra;
+//  se as despesas passam da renda, o excedente aparece como déficit.
+// ---------------------------------------------------------------------
+const ALTURA_RD = 220;
+
+/** Afasta rótulos verticais (centros em px a partir da base) para não se sobreporem. */
+function espalharRotulos<T extends { centro: number; altura: number }>(rotulos: T[], limite: number, folga = 4): T[] {
+  const r = [...rotulos].sort((a, b) => a.centro - b.centro).map((x) => ({ ...x }));
+  for (let i = 0; i < r.length; i++) {
+    const min = i === 0 ? r[i].altura / 2 : r[i - 1].centro + r[i - 1].altura / 2 + folga + r[i].altura / 2;
+    r[i].centro = Math.max(r[i].centro, min);
+  }
+  for (let i = r.length - 1; i >= 0; i--) {
+    const max = i === r.length - 1 ? limite - r[i].altura / 2 : r[i + 1].centro - r[i + 1].altura / 2 - folga - r[i].altura / 2;
+    r[i].centro = Math.min(r[i].centro, max);
+  }
+  return r;
+}
+
+// Listras finas: deixam ver os segmentos por baixo e não dependem só da cor (impressão/daltonismo).
+const TEXTURA_DEFICIT =
+  "repeating-linear-gradient(135deg, rgb(var(--destructive) / 0.7) 0 2px, rgb(var(--destructive) / 0.08) 2px 7px)";
+
+export function RendaVsDespesas({ renda, fixas, variaveis }: { renda: number; fixas: number; variaveis: number }) {
+  const r = Math.max(0, renda);
+  const fx = Math.max(0, fixas);
+  const vr = Math.max(0, variaveis);
+  const desp = fx + vr;
+  if (r <= 0 && desp <= 0) return <p className="py-6 text-center text-xs text-muted-foreground">Sem valores para exibir.</p>;
+
+  const topo = Math.max(r, desp, 1);
+  const px = (v: number) => (v / topo) * ALTURA_RD;
+  const diferenca = r - desp;
+  const sobra = diferenca > 0.5;
+  const deficit = diferenca < -0.5;
+  const pctRenda = r > 0 ? Math.abs(diferenca) / r : 0;
+
+  const titulo = sobra
+    ? `A renda supera as despesas em ${fmtBRL(diferenca)} (${fmtPct(pctRenda)})`
+    : deficit
+      ? `As despesas superam a renda em ${fmtBRL(-diferenca)}`
+      : "A renda e as despesas estão empatadas";
+
+  // Rótulos da coluna de despesas, ao lado de cada segmento.
+  const rotulos = espalharRotulos(
+    [
+      ...(fx > 0 ? [{ id: "fixas", centro: px(fx) / 2, altura: 30 }] : []),
+      ...(vr > 0 ? [{ id: "variaveis", centro: px(fx) + px(vr) / 2, altura: 30 }] : []),
+      ...(sobra ? [{ id: "sobra", centro: (px(desp) + px(r)) / 2, altura: 44 }] : []),
+      ...(deficit ? [{ id: "deficit", centro: (px(r) + px(desp)) / 2, altura: 30 }] : []),
+    ],
+    ALTURA_RD + 28,
+    6,
+  );
+  const conteudo: Record<string, ReactNode> = {
+    fixas: (
+      <>
+        <span className="block truncate text-[11px] text-muted-foreground">Fixas</span>
+        <span className="block truncate text-xs font-semibold tabular-nums">{fmtBRL(fx)}</span>
+      </>
+    ),
+    variaveis: (
+      <>
+        <span className="block truncate text-[11px] text-muted-foreground">Variáveis</span>
+        <span className="block truncate text-xs font-semibold tabular-nums">{fmtBRL(vr)}</span>
+      </>
+    ),
+    sobra: (
+      <>
+        <span className="block truncate text-[11px] font-semibold text-success">Sobra</span>
+        <span className="block truncate text-xs font-semibold tabular-nums">{fmtBRL(diferenca)}</span>
+        <span className="block truncate text-[11px] text-muted-foreground">{fmtPct(pctRenda)} da renda</span>
+      </>
+    ),
+    deficit: (
+      <>
+        <span className="block truncate text-[11px] font-semibold text-destructive">Déficit</span>
+        <span className="block truncate text-xs font-semibold tabular-nums">{fmtBRL(-diferenca)}</span>
+      </>
+    ),
+  };
+
+  const legenda = [
+    { nome: "Renda", valor: r, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-gold" /> },
+    { nome: "Despesas fixas", valor: fx, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: "var(--serie-2)" }} /> },
+    {
+      nome: "Despesas variáveis",
+      valor: vr,
+      amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: "var(--serie-2)", opacity: 0.55 }} />,
+    },
+    ...(sobra
+      ? [{ nome: "Sobra", valor: diferenca, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-dashed border-success bg-success/15" /> }]
+      : []),
+    ...(deficit
+      ? [{ nome: "Déficit", valor: -diferenca, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-destructive" style={{ background: TEXTURA_DEFICIT }} /> }]
+      : []),
+  ];
+
+  const IconeTitulo = deficit ? TrendingDown : TrendingUp;
+
+  return (
+    <figure className="m-0">
+      <figcaption className="mb-3 flex items-start gap-2 text-sm font-semibold">
+        <IconeTitulo className={`mt-0.5 h-4 w-4 shrink-0 ${deficit ? "text-destructive" : "text-success"}`} aria-hidden="true" />
+        <span className="min-w-0">{titulo}</span>
+      </figcaption>
+
+      <div
+        role="img"
+        aria-label={`Renda de ${fmtBRL(r)} e despesas de ${fmtBRL(desp)} (fixas ${fmtBRL(fx)}, variáveis ${fmtBRL(vr)}). ${titulo}.`}
+        className="pt-8"
+      >
+        <div className="flex gap-3 border-b border-border" style={{ height: ALTURA_RD }}>
+          {/* Coluna da renda */}
+          <div className="relative h-full w-[28%] max-w-28 shrink-0">
+            {r > 0 && (
+              <div
+                className="absolute inset-x-0 bottom-0 rounded-t bg-gold"
+                style={{ height: Math.max(2, px(r)) }}
+                title={`Renda: ${fmtBRL(r)}`}
+              />
+            )}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-semibold tabular-nums"
+              style={{ bottom: px(r) + 4 }}
+            >
+              {fmtBRL(r)}
+            </span>
+          </div>
+
+          {/* Coluna das despesas: fixas embaixo, variáveis em cima, separadas por 2px */}
+          <div className="relative h-full w-[28%] max-w-28 shrink-0">
+            {fx > 0 && (
+              <div
+                className={`absolute inset-x-0 bottom-0 ${vr > 0 ? "" : "rounded-t"}`}
+                style={{ height: Math.max(2, px(fx)), background: "var(--serie-2)" }}
+                title={`Despesas fixas: ${fmtBRL(fx)}`}
+              />
+            )}
+            {vr > 0 && (
+              <div
+                className="absolute inset-x-0 rounded-t"
+                style={{
+                  bottom: px(fx) + (fx > 0 ? 2 : 0),
+                  height: Math.max(2, px(vr) - (fx > 0 ? 2 : 0)),
+                  background: "var(--serie-2)",
+                  opacity: 0.55,
+                }}
+                title={`Despesas variáveis: ${fmtBRL(vr)}`}
+              />
+            )}
+            {sobra && (
+              <div
+                className="absolute inset-x-0 rounded-t border-2 border-dashed border-success/60 bg-success/10"
+                style={{ bottom: px(desp) + 2, height: Math.max(2, px(r) - px(desp) - 2) }}
+                title={`Sobra: ${fmtBRL(diferenca)} (${fmtPct(pctRenda)} da renda)`}
+              />
+            )}
+            {deficit && (
+              <div
+                className="absolute -inset-x-1 rounded-t border-2 border-destructive"
+                style={{ bottom: px(r), height: px(desp) - px(r), background: TEXTURA_DEFICIT }}
+                title={`Déficit: ${fmtBRL(-diferenca)}`}
+              />
+            )}
+          </div>
+
+          {/* Rótulos diretos dos segmentos de despesa */}
+          <div className="relative h-full min-w-0 flex-1">
+            {rotulos.map((l) => (
+              <div key={l.id} className="absolute inset-x-0 leading-tight" style={{ bottom: l.centro - l.altura / 2, height: l.altura }}>
+                {conteudo[l.id]}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-1.5 flex gap-3 text-xs leading-tight">
+          <span className="w-[28%] max-w-28 shrink-0 text-center">
+            <span className="block font-semibold">Renda</span>
+            <span className="block text-muted-foreground">líquida</span>
+          </span>
+          <span className="w-[28%] max-w-28 shrink-0 text-center">
+            <span className="block font-semibold">Despesas</span>
+            <span className="block truncate tabular-nums text-muted-foreground">{fmtBRL(desp)}</span>
+          </span>
+        </div>
+      </div>
+
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+        {legenda.map((l) => (
+          <li key={l.nome} className="flex items-center gap-1.5 text-xs">
+            {l.amostra}
+            <span className="text-muted-foreground">{l.nome}</span>
+            <span className="font-semibold tabular-nums">{fmtBRL(l.valor)}</span>
+          </li>
+        ))}
+      </ul>
+    </figure>
   );
 }
