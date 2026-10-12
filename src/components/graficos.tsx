@@ -20,8 +20,19 @@ export const estiloTooltip = {
 };
 
 /** Barras horizontais ordenadas (uma série) com o valor rotulado na ponta. */
-export function BarrasHorizontais({ dados, altura }: { dados: { nome: string; valor: number }[]; altura?: number }) {
-  const ordenados = [...dados].filter((d) => d.valor > 0).sort((a, b) => b.valor - a.valor);
+export function BarrasHorizontais({
+  dados,
+  altura,
+  ultimo,
+}: {
+  dados: { nome: string; valor: number }[];
+  altura?: number;
+  /** Nome de um item que fica sempre no fim (ex.: "Demais categorias"). */
+  ultimo?: string;
+}) {
+  const ordenados = [...dados]
+    .filter((d) => d.valor > 0)
+    .sort((a, b) => (a.nome === ultimo ? 1 : b.nome === ultimo ? -1 : b.valor - a.valor));
   if (!ordenados.length) return <p className="py-6 text-center text-xs text-muted-foreground">Sem valores para exibir.</p>;
   const h = altura ?? Math.max(120, ordenados.length * 40 + 20);
   return (

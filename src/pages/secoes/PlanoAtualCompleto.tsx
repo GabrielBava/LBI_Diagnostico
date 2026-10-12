@@ -216,7 +216,7 @@ export default function PlanoAtualCompleto() {
     <div className="space-y-4">
       <div className="grid gap-4 xl:grid-cols-2">
         <SubBloco titulo="Maiores categorias de despesa">
-          <BarrasHorizontais dados={topCategorias} />
+          <BarrasHorizontais dados={topCategorias} ultimo="Demais categorias" />
         </SubBloco>
         <SubBloco titulo="Fluxo de caixa mensal">
           <RendaVsDespesas renda={f.renda} fixas={f.fixas} variaveis={f.variaveis} />
