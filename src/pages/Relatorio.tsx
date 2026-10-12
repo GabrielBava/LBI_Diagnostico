@@ -1,23 +1,15 @@
-// Relatório completo para impressão / PDF (sempre em tema claro).
+// Relatório completo para impressão / PDF (tema claro). Segue a versão
+// apresentação: seções ocultas para o cliente não entram no PDF.
 import { useEffect, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Printer } from "lucide-react";
+import { PRAZOS_PLANO, TIPOS_OBJETIVO } from "@/config/campos";
 import { APP } from "@/config/defaults";
+import { secaoOculta, secaoPorId } from "@/config/estrutura";
 import { Logo } from "@/components/Header";
 import { BotaoOuro, Selo, corStatus, textoStatus } from "@/components/ui";
-import {
-  alavancagem,
-  aposentadoria,
-  educacaoTotal,
-  fluxo,
-  n,
-  patrimonio,
-  reservaEmergencia,
-  s,
-  seguroVida,
-  sonhos,
-} from "@/lib/calculos";
-import { notaGeral, pilares, sugestoes } from "@/lib/diagnostico";
+import { despesas, fluxo, futuro, n, objetivos, patrimonio, protecao, s } from "@/lib/calculos";
+import { notaGeral, pilares, pontos } from "@/lib/diagnostico";
 import { fmtBRL, fmtData, fmtPct } from "@/lib/format";
 import { lerConfig, useClientes } from "@/lib/storage";
 
@@ -36,7 +28,7 @@ function Tabela({ cab, linhas }: { cab: string[]; linhas: ReactNode[][] }) {
       <thead>
         <tr className="border-b border-border text-left text-[10px] uppercase tracking-widest text-muted-foreground">
           {cab.map((c, i) => (
-            <th key={c} className={`py-1.5 font-medium ${i > 0 ? "text-right" : ""}`}>
+            <th key={c} className={`py-1.5 font-medium ${i > 0 ? "pl-4 text-right" : ""}`}>
               {c}
             </th>
           ))}
@@ -46,7 +38,7 @@ function Tabela({ cab, linhas }: { cab: string[]; linhas: ReactNode[][] }) {
         {linhas.map((l, i) => (
           <tr key={i}>
             {l.map((c, j) => (
-              <td key={j} className={`py-1.5 ${j > 0 ? "text-right tabular-nums" : ""}`}>
+              <td key={j} className={`py-1.5 ${j > 0 ? "pl-4 text-right tabular-nums" : ""}`}>
                 {c}
               </td>
             ))}
@@ -75,34 +67,37 @@ export default function Relatorio() {
   }, [cliente, navigate]);
   if (!cliente) return null;
 
+  const mostra = (secaoId: string) => {
+    const def = secaoPorId(secaoId);
+    return !!def && !secaoOculta(cliente, def);
+  };
   const cfg = lerConfig();
   const f = fluxo(cliente);
+  const d = despesas(cliente);
   const p = patrimonio(cliente);
-  const r = reservaEmergencia(cliente);
   const ps = pilares(cliente);
   const nota = notaGeral(ps);
-  const sug = sugestoes(cliente).slice(0, 3);
-  const so = sonhos(cliente);
-  const ed = educacaoTotal(cliente);
-  const sv = seguroVida(cliente);
-  const ap = aposentadoria(cliente);
-  const al = alavancagem(cliente);
+  const pt = pontos(cliente);
+  const ob = objetivos(cliente);
+  const pr = protecao(cliente);
+  const fu = futuro(cliente);
   const nome = s(cliente.cadastro.nome) || "Cliente";
+  const fortes = [...pt.fortes.map((x) => x.texto), ...cliente.pontosFortes.map((x) => s(x.texto)).filter(Boolean)];
+  const negativos = [...pt.negativos.map((x) => x.texto), ...cliente.pontosNegativos.map((x) => s(x.texto)).filter(Boolean)];
 
   return (
     <div className="light min-h-screen bg-background text-foreground">
       <div className="no-print sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-card px-4 py-3 md:px-8">
-        <Link to={`/clientes/${cliente.id}?etapa=visao-geral`} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
+        <Link to={`/clientes/${cliente.id}`} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
           <ArrowLeft className="h-3 w-3" /> Voltar ao diagnóstico
         </Link>
-        <span className="flex-1 text-xs text-muted-foreground">Dica: na janela de impressão escolha “Salvar como PDF”.</span>
+        <span className="flex-1 text-xs text-muted-foreground">Na janela de impressão, escolha “Salvar como PDF”.</span>
         <BotaoOuro onClick={() => window.print()}>
           <Printer className="h-3.5 w-3.5" /> Imprimir / Salvar PDF
         </BotaoOuro>
       </div>
 
       <article className="mx-auto max-w-4xl bg-card px-6 py-10 md:px-12">
-        {/* Capa */}
         <header className="print-page flex min-h-[60vh] flex-col justify-between">
           <Logo />
           <div>
@@ -116,142 +111,175 @@ export default function Relatorio() {
           <div className="flex items-end justify-between">
             <div className="rounded-xl bg-gold px-6 py-4 text-primary-foreground">
               <div className="text-[10px] font-semibold uppercase tracking-widest opacity-80">Nota LIFE</div>
-              <div className="text-4xl font-bold">{nota}<span className="text-sm font-medium opacity-80"> / 100</span></div>
+              <div className="text-4xl font-bold">
+                {nota}
+                <span className="text-sm font-medium opacity-80"> / 100</span>
+              </div>
             </div>
-            <span className="text-[10px] text-muted-foreground">{APP.nome} {APP.versao}</span>
+            <span className="text-[10px] text-muted-foreground">
+              {APP.nome} {APP.versao}
+            </span>
           </div>
         </header>
 
-        <Bloco titulo="Retrato atual">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Indicador rotulo="Renda mensal" valor={fmtBRL(f.renda)} />
-            <Indicador rotulo="Despesas + parcelas" valor={fmtBRL(f.despesas + f.parcelas)} />
-            <Indicador rotulo="Sobra mensal" valor={fmtBRL(f.sobra)} />
-            <Indicador rotulo="Taxa de poupança" valor={fmtPct(f.taxaPoupanca)} />
-            <Indicador rotulo="Patrimônio" valor={fmtBRL(p.total)} />
-            <Indicador rotulo="Dívidas" valor={fmtBRL(p.dividas)} />
-            <Indicador rotulo="Patrimônio líquido" valor={fmtBRL(p.liquido)} />
-            <Indicador rotulo="Reserva (meses)" valor={r.meses.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} />
-          </div>
-        </Bloco>
-
-        <Bloco titulo="Pilares">
-          <div className="space-y-2">
-            {ps.map((pl) => (
-              <div key={pl.id} className="flex items-center gap-3">
-                <span className="w-48 text-sm font-medium">{pl.nome}</span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-gold" style={{ width: `${pl.status === "sem-dados" ? 0 : pl.nota}%` }} />
-                </div>
-                <Selo className={`w-24 justify-center ${corStatus[pl.status]}`}>{textoStatus[pl.status]}</Selo>
-              </div>
-            ))}
-          </div>
-        </Bloco>
-
-        {sug.length > 0 && (
-          <Bloco titulo="Prioridades">
-            <ol className="space-y-2">
-              {sug.map((x, i) => (
-                <li key={x.id} className="flex gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gold text-xs font-bold text-primary-foreground">{i + 1}</span>
-                  <div>
-                    <div className="text-sm font-semibold">{x.titulo}</div>
-                    <p className="text-xs text-muted-foreground">{x.detalhe}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </Bloco>
-        )}
-
-        {cliente.sonhos.length > 0 && (
-          <Bloco titulo="Sonhos e objetivos">
-            <Tabela
-              cab={["Sonho", "Valor hoje", "Prazo", "Aporte mensal"]}
-              linhas={so.lista.map((x) => [
-                <span key="n">
-                  <span className="font-medium">{s(x.item.descricao)}</span>
-                  {s(x.item.motivo) && <span className="block text-xs italic text-muted-foreground">“{s(x.item.motivo)}”</span>}
-                </span>,
-                fmtBRL(n(x.item.valor)),
-                `${n(x.item.prazo)} anos`,
-                fmtBRL(x.aporte),
-              ])}
-            />
-            {ed.aporteTotal > 0 && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Educação dos filhos: custo futuro de {fmtBRL(ed.custoFuturoTotal)}, aporte de {fmtBRL(ed.aporteTotal)}/mês.
-              </p>
-            )}
-          </Bloco>
-        )}
-
-        <Bloco titulo="Proteção da família">
-          <Tabela
-            cab={["Componente", "Valor"]}
-            linhas={[
-              ["Manutenção do padrão de vida", fmtBRL(sv.componentes.manutencao)],
-              ["Quitação de dívidas", fmtBRL(sv.componentes.dividas)],
-              ["Educação dos filhos", fmtBRL(sv.componentes.educacaoFilhos)],
-              ["Inventário e sucessão", fmtBRL(sv.componentes.inventario)],
-              ["(−) Patrimônio financeiro disponível", `− ${fmtBRL(sv.recursos)}`],
-              [<strong key="a">Capital necessário</strong>, <strong key="b">{fmtBRL(sv.necessario)}</strong>],
-              ["Capital atual", fmtBRL(sv.atual)],
-              [<strong key="c">Gap de proteção</strong>, <strong key="d">{fmtBRL(sv.gap)}</strong>],
-            ]}
-          />
-        </Bloco>
-
-        {ap.alvo > 0 && (
-          <Bloco titulo="Independência financeira">
+        {mostra("panorama") && (
+          <Bloco titulo="Panorama financeiro">
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              <Indicador rotulo={`Patrimônio alvo (${Math.round(ap.multiplicador)}x)`} valor={fmtBRL(ap.alvo)} />
-              <Indicador rotulo="Progresso" valor={fmtPct(ap.progresso)} />
-              <Indicador rotulo="Aporte necessário" valor={`${fmtBRL(ap.aporte)}/mês`} />
-              <Indicador rotulo="Aporte atual" valor={`${fmtBRL(ap.aporteAtual)}/mês`} />
+              <Indicador rotulo="Renda mensal" valor={fmtBRL(f.renda)} />
+              <Indicador rotulo="Despesas mensais" valor={fmtBRL(f.despesas)} />
+              <Indicador rotulo="Sobra mensal" valor={fmtBRL(f.sobra)} />
+              <Indicador rotulo="Taxa de poupança" valor={fmtPct(f.taxaPoupanca)} />
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Meta: renda de {fmtBRL(ap.rendaAlvo)}/mês aos {ap.idadeAlvo} anos. Mantido o aporte atual, o patrimônio projetado é de{" "}
-              {fmtBRL(ap.projetadoAtual)} (valores de hoje).
-            </p>
+            <div className="mt-4 space-y-2">
+              {ps.map((pl) => (
+                <div key={pl.id} className="flex items-center gap-3">
+                  <span className="w-48 text-sm font-medium">{pl.nome}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-gold" style={{ width: `${pl.status === "sem-dados" ? 0 : pl.nota}%` }} />
+                  </div>
+                  <Selo className={`w-24 justify-center ${corStatus[pl.status]}`}>{textoStatus[pl.status]}</Selo>
+                </div>
+              ))}
+            </div>
           </Bloco>
         )}
 
-        {al.valor > 0 && cliente.naoAplica.alavancagem !== true && (
-          <Bloco titulo={`Alavancagem: ${s(cliente.alavancagem.bemDesejado) || "bem desejado"}`}>
+        {mostra("plano-atual-completo") && (
+          <Bloco titulo="Plano atual">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Tabela
+                cab={["Fluxo mensal", "Valor"]}
+                linhas={[
+                  ["Renda", fmtBRL(f.renda)],
+                  ["(−) Despesas fixas", fmtBRL(f.fixas)],
+                  ["(−) Despesas variáveis", fmtBRL(f.variaveis)],
+                  [<strong key="a">Sobra</strong>, <strong key="b">{fmtBRL(f.sobra)}</strong>],
+                ]}
+              />
+              <Tabela
+                cab={["Maiores categorias", "Valor"]}
+                linhas={[...d.porCategoria]
+                  .filter((x) => x.valor > 0)
+                  .sort((a, b) => b.valor - a.valor)
+                  .slice(0, 6)
+                  .map((x) => [x.label, fmtBRL(x.valor)])}
+              />
+            </div>
+            <div className="mt-4 grid gap-6 md:grid-cols-2">
+              <Tabela
+                cab={["Ativos", "Valor"]}
+                linhas={[...p.linhasAtivo.filter((l) => l.valor > 0).map((l) => [l.nome, fmtBRL(l.valor)]), [<strong key="a">Total</strong>, <strong key="b">{fmtBRL(p.ativos)}</strong>]]}
+              />
+              <Tabela
+                cab={["Passivos", "Valor"]}
+                linhas={[
+                  ...p.linhasPassivo.filter((l) => l.valor > 0).map((l) => [l.nome, fmtBRL(l.valor)]),
+                  [<strong key="a">Patrimônio líquido</strong>, <strong key="b">{fmtBRL(p.liquido)}</strong>],
+                ]}
+              />
+            </div>
+          </Bloco>
+        )}
+
+        {mostra("pontos-fortes") && fortes.length > 0 && (
+          <Bloco titulo="Pontos fortes — manter">
+            <ul className="list-disc space-y-1 pl-5 text-sm">
+              {fortes.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </Bloco>
+        )}
+        {mostra("pontos-negativos") && negativos.length > 0 && (
+          <Bloco titulo="Pontos de atuação">
+            <ul className="list-disc space-y-1 pl-5 text-sm">
+              {negativos.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </Bloco>
+        )}
+
+        {mostra("objetivos") && cliente.objetivos.length > 0 && (
+          <Bloco titulo="Objetivos">
             <Tabela
-              cab={["Estratégia", "Parcela", "Total pago", `Patrimônio em ${al.anos} anos`]}
+              cab={["Objetivo", "Valor futuro", "Prazo", "Aporte/mês", "Prob. atual → com plano"]}
+              linhas={TIPOS_OBJETIVO.flatMap((t) =>
+                (ob.porTipo[t.id] ?? []).map((o) => [
+                  <span key="n">
+                    <span className="mr-2 text-[10px] uppercase tracking-widest text-primary">{t.titulo}</span>
+                    <span className="font-medium">{s(o.titulo)}</span>
+                    {s(o.motivo) && <span className="block text-xs italic text-muted-foreground">“{s(o.motivo)}”</span>}
+                  </span>,
+                  fmtBRL(n(o.valorFuturo)),
+                  `${n(o.prazoMeses)} meses`,
+                  fmtBRL(ob.aportes[o.id] ?? 0),
+                  `${n(o.probAtual)}% → ${n(o.probPlano)}%`,
+                ]),
+              )}
+            />
+          </Bloco>
+        )}
+
+        {mostra("protecao") && s(cliente.protecao.temSeguroVida) && (
+          <Bloco titulo="Proteção da família">
+            <Tabela
+              cab={["Componente", "Valor"]}
               linhas={[
-                ["Poupar e comprar à vista", fmtBRL(Math.max(al.parcelaFin, al.parcelaCons)), fmtBRL(Math.max(al.parcelaFin, al.parcelaCons) * al.meses), fmtBRL(al.comparativo[0].valor)],
-                ["Financiamento bancário", fmtBRL(al.parcelaFin), fmtBRL(al.totalFin), fmtBRL(al.comparativo[1].valor)],
-                ["Consórcio + investido", fmtBRL(al.parcelaCons), fmtBRL(al.totalCons), fmtBRL(al.comparativo[2].valor)],
+                [`Manutenção do padrão de vida (${pr.anos} anos)`, fmtBRL(pr.componentes.manutencao)],
+                ["Quitação de financiamentos e dívidas", fmtBRL(pr.componentes.quitacao)],
+                ["Inventário e sucessão", fmtBRL(pr.componentes.inventario)],
+                ["(−) Investimentos e previdência", `− ${fmtBRL(pr.recursos)}`],
+                [<strong key="a">Capital necessário</strong>, <strong key="b">{fmtBRL(pr.necessario)}</strong>],
+                ["Capital atual", fmtBRL(pr.atual)],
+                [<strong key="c">Gap de proteção</strong>, <strong key="d">{fmtBRL(pr.gap)}</strong>],
               ]}
             />
           </Bloco>
         )}
 
-        {cliente.plano.length > 0 && (
-          <Bloco titulo="Plano de ação">
-            <Tabela
-              cab={["Ação", "Responsável", "Prazo", "Status"]}
-              linhas={cliente.plano.map((a) => [s(a.acao), s(a.responsavel), fmtData(s(a.prazo)), s(a.status)])}
-            />
+        {mostra("futuro") && fu.alvo > 0 && s(cliente.cadastro.nascimento) && (
+          <Bloco titulo="Futuro — independência financeira">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Indicador rotulo="Patrimônio necessário" valor={fmtBRL(fu.alvo)} />
+              <Indicador rotulo="Independência atingida" valor={fmtPct(Math.min(fu.independencia, 9.99))} />
+              <Indicador rotulo="Aporte necessário" valor={`${fmtBRL(fu.aporte)}/mês`} />
+              <Indicador rotulo="Renda projetada" valor={`${fmtBRL(fu.rendaProjetada)}/mês`} />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Meta: renda de {fmtBRL(fu.rendaDesejada)}/mês aos {fu.idadeAposentadoria} anos, investindo a sobra atual de {fmtBRL(fu.aporteAtual)}/mês
+              (valores de hoje).
+            </p>
           </Bloco>
         )}
 
-        <Bloco titulo="Próximos passos">
-          <p className="text-sm">
-            {s(cliente.cadastro.proximaRevisao)
-              ? `Próxima revisão agendada para ${fmtData(s(cliente.cadastro.proximaRevisao))}.`
-              : "Agende a próxima revisão com o seu consultor."}
-            {s(cliente.cadastro.combinados) && ` Combinados: ${s(cliente.cadastro.combinados)}`}
-          </p>
-          <p className="mt-6 text-[10px] text-muted-foreground">
-            Projeções baseadas nas informações fornecidas e nos parâmetros de inflação ({n(cliente.parametros.inflacaoGeral)}% a.a.) e
-            retorno real ({n(cliente.parametros.retornoReal)}% a.a.). Não constituem garantia de rentabilidade.
-          </p>
-        </Bloco>
+        {mostra("plano-acao") && cliente.plano.length > 0 && (
+          <Bloco titulo="Plano de ação">
+            {Object.entries(PRAZOS_PLANO).map(([chave, pz]) => {
+              const acoes = cliente.plano.filter((a) => (s(a.prazo) || "Curto") === chave);
+              if (!acoes.length) return null;
+              return (
+                <div key={chave} className="mb-4">
+                  <div className="mb-1 text-xs font-semibold">{pz.titulo}</div>
+                  <Tabela cab={["Ação", "Área", "Prioridade", "Status"]} linhas={acoes.map((a) => [s(a.acao), s(a.area), s(a.prioridade), s(a.status) || "Pendente"])} />
+                </div>
+              );
+            })}
+          </Bloco>
+        )}
+
+        {mostra("jornada-cliente") && (
+          <Bloco titulo="Jornada e próximos passos">
+            <Tabela
+              cab={["Encontro", "Data", "Status"]}
+              linhas={cliente.jornada.map((r) => [s(r.titulo), s(r.data) ? fmtData(s(r.data)) : "A agendar", s(r.status) || "Pendente"])}
+            />
+            <p className="mt-6 text-[10px] text-muted-foreground">
+              Projeções baseadas nas informações fornecidas, com inflação de {n(cliente.parametros.inflacaoGeral)}% a.a. e retorno real de{" "}
+              {n(cliente.parametros.retornoReal)}% a.a. Não constituem garantia de rentabilidade.
+            </p>
+          </Bloco>
+        )}
       </article>
     </div>
   );

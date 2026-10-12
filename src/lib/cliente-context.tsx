@@ -1,7 +1,6 @@
 // Contexto do cliente aberto: leitura e atualização (com salvamento automático).
 import { createContext, useContext, type ReactNode } from "react";
 import type { Cliente, Item, ListaId, SecaoId, Valor } from "@/types";
-import type { EtapaId } from "@/config/etapas";
 import { obterCliente, salvarCliente } from "./storage";
 
 interface Ctx {
@@ -9,7 +8,8 @@ interface Ctx {
   atualizar: (f: (c: Cliente) => Cliente) => void;
   setCampo: (secao: SecaoId, key: string, v: Valor) => void;
   setLista: (lista: ListaId, itens: Item[]) => void;
-  irPara: (etapa: EtapaId) => void;
+  /** Rola a página até a seção indicada. */
+  irPara: (secaoId: string) => void;
 }
 
 const ClienteContext = createContext<Ctx | null>(null);
@@ -20,7 +20,7 @@ export function ClienteProvider({
   children,
 }: {
   cliente: Cliente;
-  irPara: (e: EtapaId) => void;
+  irPara: (secaoId: string) => void;
   children: ReactNode;
 }) {
   // Lê sempre a versão mais recente do armazenamento para não perder alterações seguidas.

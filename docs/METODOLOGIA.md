@@ -1,186 +1,136 @@
-# Metodologia do Diagnóstico LIFE
+# Metodologia do Diagnóstico LIFE (versão 4)
 
-Este documento descreve **o processo com o cliente** (a jornada e o roteiro de conversa) e **as fórmulas** usadas em cada etapa.
-Tudo o que está aqui corresponde a arquivos editáveis do projeto:
+Este documento descreve **o processo com o cliente** e **as fórmulas** de cada seção.
+Tudo corresponde a arquivos editáveis:
 
 | O quê | Onde editar |
 |---|---|
-| Fases, ordem das etapas e regra de "etapa concluída" | `src/config/etapas.ts` |
-| Roteiro da conversa (abertura, perguntas, atenção, transição) | `src/config/roteiro.ts` |
-| Campos de cada etapa (incluir / remover / renomear) | `src/config/campos.ts` |
+| Etapas, seções, ordem e regra de "seção concluída" | `src/config/estrutura.ts` |
+| Campos de cada seção (incluir / remover / renomear) | `src/config/campos.ts` |
+| Roteiro da conversa e frases de abertura das etapas | `src/config/roteiro.ts` |
+| Textos do V1 · Institucional (Grupo Life Brasil) | `src/config/institucional.ts` |
 | Fórmulas de cálculo | `src/lib/calculos.ts` |
-| Notas dos pilares e sugestões do plano de ação | `src/lib/diagnostico.ts` |
+| Pilares, pontos fortes/de atuação, matriz de oportunidades e sugestões | `src/lib/diagnostico.ts` |
 
 ---
 
-## 1. A jornada do cliente
+## 1. Como a página funciona
 
-O diagnóstico é uma história contada em 5 fases. A ordem foi pensada para que **o cliente fale primeiro dos sonhos e só depois dos números**: assim cada número coletado já tem um propósito.
+- **Rolagem contínua:** todas as seções ficam em uma única página. Ao rolar, você passa de uma categoria para a próxima e o menu lateral acompanha. Clicar no menu leva à seção.
+- **Pré-diagnóstico ao vivo:** a faixa fixa no topo (renda, despesas, sobra, patrimônio líquido e aporte dos objetivos) se atualiza a cada campo preenchido.
+- **Versão consultor × versão apresentação:** o botão no topo alterna entre as duas.
+  - A versão apresentação oculta o roteiro, as anotações, os parâmetros financeiros, as sugestões internas e as seções marcadas como ocultas.
+  - Cada seção tem o botão **"Na apresentação / Oculta na apresentação"** para decidir o que o cliente vê. A **Matriz de oportunidades** começa oculta.
+  - O PDF segue a versão apresentação: seção oculta não entra.
+- **Roteiro:** o botão "Roteiro" de cada seção abre a gaveta com o objetivo, a frase de abertura, as perguntas (checklist), os pontos de atenção e as anotações da conversa.
+- **Divisor de etapa:** antes de cada etapa aparece a frase de abertura da conversa e, quando houver, os documentos a pedir.
 
-| Fase | Pergunta que responde | Etapas | Encontro sugerido |
-|---|---|---|---|
-| **1 · Conexão** | Quem é o cliente e onde ele quer chegar? | Apresentação, Cadastro, Sonhos, Filhos | Reunião 1 · Descoberta (60–90 min) |
-| **2 · Raio-X financeiro** | Onde o cliente está hoje? | Receitas, Despesas, Patrimônio, Dívidas | Reunião 2 · Coleta de dados |
-| **3 · Proteção e futuro** | Como proteger o que existe e construir o futuro? | Seguro de Vida, Aposentadoria, Alavancagem | Reunião 2 ou 3 · Análise |
-| **4 · Diagnóstico e plano** | O que os números dizem e o que vamos fazer? | Visão geral, Plano de ação | Reunião 3 · Entrega |
-| **5 · Acompanhamento** | Estamos evoluindo? | Histórico | Revisões mensais ou trimestrais |
+## 2. Estrutura
 
-### Documentos a pedir
+| Etapa | Seções |
+|---|---|
+| **1 · Conexão** | 1 Cadastro · 2 V1 Institucional · 3 Objetivos · 4 Sucessão |
+| **2 · Raio-X financeiro** | 5 Despesas · 6 Renda · 7 Patrimônio · 8 Financiamentos e dívidas · 9 Projetos · 10 Corporativo |
+| **3 · Proteção e futuro** | 11 Proteção |
+| **4 · Investimentos** | 12 Investimentos |
+| **5 · Pré-diagnóstico** | 5.1 Plano atual (visão breve) |
+| **6 · Diagnóstico completo** | 6.1 Panorama · 6.2 Plano atual · 6.3 Pontos fortes · 6.4 Pontos de atuação · 6.5 Futuro · 6.6 Matriz de oportunidades · 6.7 Plano de ação |
+| **7 · Jornada** | 7.1 Jornada do cliente · 7.2 Cronograma de implementação |
 
-O sistema mostra a lista no roteiro, na etapa anterior à fase em que os documentos são necessários.
+O progresso de **coleta** (menu lateral) considera as seções 1, 3 a 12. Seções opcionais podem ser marcadas como **"Não se aplica"**.
 
-- **Antes do Raio-X:** contracheques/pró-labore (3 meses), extratos bancários (3 meses), faturas de cartão (3 meses), última declaração de IR, extratos de investimentos e previdência, contratos de financiamentos e empréstimos.
-- **Antes de Proteção e futuro:** apólices de seguro de vida (individual e da empresa), extrato do INSS (CNIS).
+### Regras de preenchimento dinâmico
 
-### O roteiro de cada etapa (storytelling da coleta)
-
-No topo de cada etapa aparece o painel **Roteiro da conversa** com:
-
-1. **Objetivo:** por que a etapa existe.
-2. **Frase de abertura:** como introduzir o assunto.
-3. **Perguntas-chave:** um checklist que você marca conforme pergunta. O progresso fica salvo por cliente.
-4. **Pontos de atenção:** boas práticas e armadilhas comuns.
-5. **Transição:** no rodapé, a frase-ponte que conecta com a próxima etapa.
-
-Além disso:
-
-- **Anotações da conversa:** campo livre em cada etapa para registrar frases do cliente, emoções e objeções.
-- **"Por que é importante?"** em cada sonho e a **motivação** registrada na Apresentação reaparecem na Visão geral e na capa do PDF, em "Nas palavras do cliente". É o fio da história: o diagnóstico começa e termina com o que o cliente disse.
-- **Modo apresentação** (botão no topo): oculta o roteiro, as anotações e os controles do consultor para compartilhar a tela com o cliente.
-- **Não se aplica:** etapas opcionais (Filhos, Patrimônio, Dívidas, Seguro, Alavancagem) podem ser marcadas como não aplicáveis e contam como concluídas no progresso.
-
----
-
-## 2. Parâmetros
-
-Ficam no Cadastro de cada cliente (os valores padrão estão em `src/config/campos.ts`).
-
-| Parâmetro | Padrão | Uso |
-|---|---|---|
-| Inflação geral | 5% a.a. | Educação (retorno nominal) |
-| Inflação educacional | 8% a.a. | Correção do custo da faculdade |
-| Retorno real esperado | 4% a.a. | Sonhos e educação |
-| Meta de reserva | 6 meses | Reserva de emergência |
-| Limite de parcelas | 30% da renda | Dívidas e alavancagem |
-
-Taxas anuais viram mensais por equivalência composta: `i_mensal = (1 + i_anual)^(1/12) − 1`.
+- **Estado civil:** "Nome do cônjuge" e "Renda do cônjuge" só aparecem para Casado(a) ou União estável.
+- **Tem filhos?** Com "Sim", aparece o contador de filhos. A quantidade **cria os cartões automaticamente em Sucessão**. Diminuir remove só cartões ainda vazios. Com "Não", nada aparece.
+- **CEP:** ao completar os 8 dígitos, o endereço é buscado automaticamente (ViaCEP, precisa de internet) e exibido abaixo do campo.
+- **Sucessão:** mensalidades e auxílios entram sozinhos nas despesas fixas como "Dependentes (Sucessão)".
+- **Financiamentos e dívidas:** a soma das parcelas (financiamentos + consórcios + empréstimos) preenche sozinha a categoria "Financiamento / Dívidas" das despesas. Sem parcelas lançadas na seção 8, vale o valor digitado.
+- **Investimentos:** valor, liquidez diária, assessor e instituição só aparecem com "Tem investimentos? Sim".
+- **Proteção:** capital e prêmio só aparecem com seguro de vida; o saldo, só com previdência.
 
 ---
 
-## 3. Fórmulas por etapa
+## 3. Fórmulas
 
-### Receitas e despesas (fluxo de caixa)
+Taxas anuais viram mensais por equivalência composta: `i = (1 + anual)^(1/12) − 1`.
+Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 
-- Itens com frequência **Anual** (13º, PLR, IPVA, IPTU...) são divididos por 12.
-- `Renda = Σ receitas mensais` · `Renda passiva = Σ receitas do tipo Passiva`
-- `Parcelas = Σ parcela estimada de cada dívida`
-- `Sobra = Renda − Despesas − Parcelas` · `Taxa de poupança = Sobra ÷ Renda`
-- **Regra de processo:** parcelas de empréstimos e financiamentos vão em **Dívidas**, nunca em Despesas, para não contar duas vezes.
+### Renda e despesas
+- `Renda = renda + renda do cônjuge + outras fontes` (frequência Anual ÷ 12).
+- **Renda passiva** = outras fontes do tipo Aluguel, Dividendos/Juros e Pensão/Aposentadoria.
+- `Despesas = fixas + variáveis`. As fixas incluem os dependentes e as parcelas.
+- `Sobra = Renda − Despesas` · `Taxa de poupança = Sobra ÷ Renda`.
+- `Comprometimento = Parcelas ÷ Renda` (alerta acima do limite dos parâmetros, padrão 30%).
 
-### Patrimônio
-
-- **Financeiro** = Reserva/Caixa + Renda fixa + Renda variável + Previdência.
-- **Reserva disponível** = itens financeiros com liquidez *Diária* ou *Até 30 dias*.
-- **Para aposentadoria** = Renda fixa + Renda variável + Previdência.
-- `Patrimônio líquido = Patrimônio total − Saldo das dívidas`.
+### Balanço patrimonial
+- **Ativos** = imóveis + móveis + investimentos + previdência + participação em empresa.
+- **Passivos** = saldo dos financiamentos + empréstimos. Empréstimos não informam saldo, então ele é estimado por `parcela × prazo restante`, um teto que inclui juros.
+- Consórcio não é passivo: é compromisso mensal (entra nas parcelas).
+- `Patrimônio líquido = Ativos − Passivos`.
 
 ### Reserva de emergência
+- Reserva = "quanto com liquidez diária" (Investimentos).
+- `Meta = Despesas × meses da meta` · `Meses cobertos = Reserva ÷ Despesas`.
 
-- `Custo mensal = Despesas + Parcelas`
-- `Meta = Custo mensal × meses da meta` · `Meses cobertos = Reserva disponível ÷ Custo mensal`
+### Objetivos
+- `Aporte mensal = valor futuro × i ÷ ((1 + i)^meses − 1)`, com `i` = retorno nominal mensal.
+- **Probabilidade sugerida** ("sug." ao lado da régua): a sobra mensal é distribuída entre os objetivos na ordem Essencial → Desejo → Sonho e, dentro de cada grupo, por prioridade. A sugestão é a parte do aporte que a sobra cobre, limitada a 95%. O consultor decide o valor final.
 
-### Dívidas
-
-- Parcela estimada pela **Tabela Price**: `PMT = Saldo × i ÷ (1 − (1 + i)^−n)`, com `i` = taxa mensal equivalente e `n` = prazo em meses.
-- `Juros a pagar = PMT × n − Saldo`.
-- **Dívida cara:** tipo Cartão ou taxa ≥ 30% a.a. Entra como prioridade Alta no plano.
-- `Comprometimento = Parcelas ÷ Renda` (alerta acima do limite).
-
-### Sonhos
-
-Valores em R$ de hoje, com retorno real:
-`Aporte mensal = (Valor − Acumulado × (1+i)^n) × i ÷ ((1+i)^n − 1)`, com `i` = retorno real mensal e `n` = prazo em meses.
-
-### Filhos (educação)
-
-- `Custo hoje = Mensalidade da faculdade × 12 × duração`
-- `Custo futuro = Custo hoje × (1 + inflação educacional)^anos até o ingresso`
-- `Aporte mensal` para acumular o custo futuro, rendendo `(1 + inflação) × (1 + retorno real) − 1` ao ano.
-- `Valor presente` (usado no seguro) = custo futuro descontado pela mesma taxa.
-
-### Seguro de vida
-
+### Proteção (capital de seguro de vida)
 ```
-Manutenção  = max(0, Despesas − Renda passiva) × 12 × anos de proteção
-Dívidas     = saldo total (se "Quitar dívidas" = Sim)
-Educação    = valor presente da educação dos filhos (se incluído)
-Inventário  = Patrimônio total × % de inventário
-Necessidade = soma dos quatro itens
-Capital necessário = max(0, Necessidade − Patrimônio financeiro)
-Gap = max(0, Capital necessário − Capital atual)
+Manutenção = max(0, custo de vida − renda passiva − renda do cônjuge) × 12 × anos de proteção
+Quitação   = passivos
+Inventário = ativos × % de inventário
+Capital necessário = max(0, manutenção + quitação + inventário − investimentos − previdência)
+Gap = max(0, capital necessário − capital atual)
 ```
-O seguro pela empresa só entra no capital atual se "Considerar seguro da empresa" = Sim, porque termina com o vínculo.
+Custo de vida = despesas sem as parcelas, que já entram em quitação. O seguro da empresa não entra no capital atual.
 
-### Aposentadoria (independência financeira)
-
-Valores reais (R$ de hoje):
+### Futuro (independência financeira)
 ```
-Renda desejada  = Renda passiva alvo (ou Despesas anuais ÷ 12)
-Patrimônio alvo = (Renda desejada − Renda passiva atual) × 12 ÷ taxa de retirada   (4% → 25×)
-Gap             = Patrimônio alvo − Patrimônio já destinado
-Aporte necessário = PMT que leva o patrimônio atual ao alvo até a idade alvo
+Renda desejada  = informada (ou custo de vida)
+Outras rendas   = informada (ou renda passiva)
+Patrimônio necessário = (renda desejada − outras rendas) × 12 ÷ 4%    (25×)
+Projeção = investimentos + previdência hoje, investindo a sobra atual todo mês, a retorno real
+Independência = projeção ÷ patrimônio necessário
+Aporte necessário = aporte mensal que leva o patrimônio de hoje ao necessário até a idade de aposentadoria
 ```
-Campos em branco usam valores automáticos: idade pela data de nascimento, despesas anuais = Despesas × 12, patrimônio destinado = renda fixa + variável + previdência.
-O gráfico compara a **trajetória atual** (aporte atual) com a **trajetória técnica necessária**.
-
-### Alavancagem (financiamento × consórcio × poupar)
-
-```
-Financiamento: parcela pela Tabela Price; total = parcela × meses
-Consórcio:     total = Valor × (1 + taxa de administração + fundo de reserva); parcela = total ÷ meses
-Economia vs financiamento = total do financiamento − total do consórcio
-```
-**Comparativo de patrimônio:** as três estratégias usam o **mesmo orçamento mensal** (a maior parcela). A diferença entre o orçamento e a parcela de cada estratégia fica investida ao "retorno investido". O bem valoriza pela "valorização do bem".
-- *Poupar e comprar à vista:* investe o orçamento todo e compra no fim do prazo (se o saldo alcançar).
-- *Financiamento:* usa o bem imediatamente.
-- *Consórcio + investido:* usa o bem na contemplação (sorteio ou lance).
-
-**Parcela saudável:** a parcela do consórcio precisa caber em `Renda × limite − parcelas atuais`.
-
-> **Diferença em relação à versão anterior:** na versão original o custo do financiamento era calculado como `Valor × (1 + taxa)^anos`, juros compostos sobre o valor total sem amortização. Isso superestima o custo: R$ 740 mil para R$ 500 mil a 14% em 3 anos, contra R$ 608 mil pela Tabela Price. Esta versão usa a Tabela Price. Se preferir a fórmula antiga, altere `alavancagem()` em `src/lib/calculos.ts`.
+Valores reais (R$ de hoje).
 
 ---
 
-## 4. Pilares e nota LIFE
+## 4. Diagnóstico
 
-Cada pilar recebe uma nota de 0 a 100. Status: **Saudável** ≥ 75, **Atenção** ≥ 45, **Crítico** abaixo disso.
+### Pilares (6.1 Panorama) e nota LIFE
+Nota de 0 a 100 por pilar. Status: Saudável ≥ 75 · Atenção ≥ 45 · Crítico abaixo disso.
 
 | Pilar | Régua |
 |---|---|
-| Fluxo de caixa | Taxa de poupança ÷ 20% (sobra negativa = crítico) |
-| Reserva de emergência | Meses cobertos ÷ meta |
-| Dívidas | 100 − (comprometimento ÷ limite) × 60; com dívida cara a nota fica em no máximo 40 e o status é crítico |
-| Proteção | Capital atual ÷ capital necessário |
-| Independência financeira | Aporte atual ÷ aporte necessário |
-| Sonhos | (Sobra − aporte de aposentadoria) ÷ aporte necessário para os sonhos |
+| Fluxo de caixa | taxa de poupança ÷ 20% (sobra negativa = crítico) |
+| Reserva de emergência | meses cobertos ÷ meta |
+| Dívidas | 100 − (comprometimento ÷ limite) × 60 |
+| Proteção | capital atual ÷ capital necessário |
+| Independência financeira | projeção ÷ patrimônio necessário |
+| Objetivos | sobra ÷ aporte necessário dos objetivos |
 
-**Nota LIFE** = média dos pilares com dados preenchidos.
+**Nota LIFE** = média dos pilares com dados.
 
-## 5. Plano de ação
+### Pontos fortes (6.3) e pontos de atuação (6.4)
+Gerados automaticamente a partir das regras em `pontos()`, como poupança ≥ 20%, reserva completa, imóveis quitados, empréstimos ativos e veículos sem seguro. O consultor pode acrescentar pontos manuais. A seção 6.4 mostra a probabilidade de cada objetivo, atual × com plano.
 
-As sugestões são geradas na ordem recomendada:
+### Matriz de oportunidades (6.6) — ecossistema
+Quatro quadrantes, detectados a partir dos dados:
+- **Seguros:** vida (gap), invalidez/DIT, saúde, auto/náutico sem seguro, residencial, empresarial, seguro de sócio.
+- **Patrimonial:** consórcio para objetivos de Casa e Veículo, troca/ampliação de bens, portabilidade de financiamento, planejamento sucessório/holding (2+ imóveis ou patrimônio ≥ R$ 2 mi).
+- **Investimentos:** começar a investir, completar a reserva, assessoria, suitability, aumentar o patrimônio financeiro.
+- **Futuro:** previdência privada, plano de independência, fundo de educação dos filhos.
 
-1. Fluxo negativo ou poupança baixa
-2. Dívidas caras e comprometimento acima do limite
-3. Reserva de emergência
-4. Proteção (seguro de vida, invalidez/DIT)
-5. Aposentadoria
-6. Educação dos filhos
-7. Sonhos (por prioridade)
-8. Alavancagem
+Cada oportunidade vai ao plano de ação com um clique (botão "Levar ao plano").
 
-O consultor escolhe com o cliente o que entra no plano. Cada ação recebe pilar, prioridade, prazo sugerido (30/90/180 dias), responsável e status. As ações com prazo vencido ou nos próximos 7 dias aparecem no sino de notificações.
+### Plano de ação (6.7) e cronograma (7.2)
+- Cada ação tem área, prioridade (Alta, Média, Baixa), prazo (Curto, Médio, Longo) e status.
+- O cronograma distribui as ações em **Curto (até 3 meses), Médio (3 a 12) e Longo (acima de 12)**, a partir da data do encontro de fechamento (ou de hoje).
 
-## 6. Acompanhamento
-
-Em cada revisão, use **Registrar fotografia** na etapa Histórico. O sistema grava os indicadores do dia (nota LIFE, renda, despesas, sobra, patrimônio, dívidas, patrimônio líquido, reserva, independência e cobertura do seguro) e monta a linha do tempo de evolução.
+### Jornada (7.1)
+Encontros padrão: Conexão → Raio-X → Diagnóstico completo → Fechamento → Acompanhamento trimestral. Cada um tem data e status (Pendente, Agendada, Realizada). Encontros atrasados ou nos próximos 7 dias aparecem no sino do cabeçalho.

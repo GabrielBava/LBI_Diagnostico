@@ -8,17 +8,13 @@
 
 import { useSyncExternalStore } from "react";
 import type { Cliente } from "@/types";
-import {
-  CAMPOS_ALAVANCAGEM,
-  CAMPOS_APOSENTADORIA,
-  CAMPOS_PARAMETROS,
-  CAMPOS_SEGURO,
-  padroes,
-} from "@/config/campos";
+import { CAMPOS_PARAMETROS, CAMPOS_PROTECAO, CAMPOS_FUTURO, JORNADA_PADRAO, padroes } from "@/config/campos";
 import { CONFIG_PADRAO, type ConfigConsultor } from "@/config/defaults";
 import { uid } from "./format";
+import { migrarV1 } from "./migracao";
 
-const CHAVE_CLIENTES = "life-diagnostico:clientes";
+const CHAVE_CLIENTES = "life-diagnostico-v2:clientes";
+const CHAVE_CLIENTES_V1 = "life-diagnostico:clientes";
 const CHAVE_CONFIG = "life-diagnostico:config";
 
 const ler = <T,>(chave: string, padrao: T): T => {
@@ -53,20 +49,32 @@ export function normalizar(c: Partial<Cliente> & { id: string }): Cliente {
     atualizadoEm: c.atualizadoEm ?? agora,
     cadastro: { ...(c.cadastro ?? {}) },
     parametros: { ...padroes(CAMPOS_PARAMETROS), ...(c.parametros ?? {}) },
-    sonhos: c.sonhos ?? [],
-    filhos: c.filhos ?? [],
-    receitas: c.receitas ?? [],
-    despesas: c.despesas ?? [],
-    patrimonio: c.patrimonio ?? [],
-    dividas: c.dividas ?? [],
-    seguro: { ...padroes(CAMPOS_SEGURO), ...(c.seguro ?? {}) },
-    aposentadoria: { ...padroes(CAMPOS_APOSENTADORIA), ...(c.aposentadoria ?? {}) },
-    alavancagem: { ...padroes(CAMPOS_ALAVANCAGEM), ...(c.alavancagem ?? {}) },
+    objetivos: c.objetivos ?? [],
+    dependentes: c.dependentes ?? [],
+    despesas: { ...(c.despesas ?? {}) },
+    despesasExtras: c.despesasExtras ?? [],
+    renda: { ...(c.renda ?? {}) },
+    outrasRendas: c.outrasRendas ?? [],
+    imoveis: c.imoveis ?? [],
+    moveis: c.moveis ?? [],
+    financiamentos: c.financiamentos ?? [],
+    consorcios: c.consorcios ?? [],
+    emprestimos: c.emprestimos ?? [],
+    projetos: c.projetos ?? [],
+    corporativo: { ...(c.corporativo ?? {}) },
+    protecao: { ...padroes(CAMPOS_PROTECAO), ...(c.protecao ?? {}) },
+    investimentos: { ...(c.investimentos ?? {}) },
+    futuro: { ...padroes(CAMPOS_FUTURO), ...(c.futuro ?? {}) },
+    pontosFortes: c.pontosFortes ?? [],
+    pontosNegativos: c.pontosNegativos ?? [],
     plano: c.plano ?? [],
-    historico: c.historico ?? [],
+    jornada: c.jornada?.length
+      ? c.jornada
+      : JORNADA_PADRAO.map((r) => ({ id: uid(), titulo: r.titulo, descricao: r.descricao, status: "Pendente" })),
     notas: c.notas ?? {},
     naoAplica: c.naoAplica ?? {},
     roteiroFeito: c.roteiroFeito ?? {},
+    ocultos: c.ocultos ?? {},
   };
 }
 
@@ -78,7 +86,16 @@ const ouvintes = new Set<() => void>();
 const avisar = () => ouvintes.forEach((f) => f());
 
 const carregar = (): Cliente[] => {
-  if (!cache) cache = ler<Cliente[]>(CHAVE_CLIENTES, []).map(normalizar);
+  if (!cache) {
+    const v2 = ler<Cliente[] | null>(CHAVE_CLIENTES, null);
+    if (v2) cache = v2.map(normalizar);
+    else {
+      // Primeira abertura da versão 2: traz os clientes da versão anterior
+      // (os dados antigos continuam guardados, sem alteração).
+      cache = ler<Record<string, unknown>[]>(CHAVE_CLIENTES_V1, []).map((v1) => normalizar(migrarV1(v1)));
+      if (cache.length) gravar(CHAVE_CLIENTES, cache);
+    }
+  }
   return cache;
 };
 const persistir = (lista: Cliente[]) => {
@@ -112,7 +129,6 @@ export function duplicarCliente(id: string) {
     criadoEm: agora,
     atualizadoEm: agora,
     cadastro: { ...c.cadastro, nome: `${c.cadastro.nome ?? "Cliente"} (cópia)` },
-    historico: [],
   });
   persistir([copia, ...carregar()]);
   return copia;
@@ -120,13 +136,15 @@ export function duplicarCliente(id: string) {
 
 export function exportarJSON(ids?: string[]) {
   const dados = ids ? carregar().filter((c) => ids.includes(c.id)) : carregar();
-  return JSON.stringify({ app: "diagnostico-life", versao: 1, exportadoEm: new Date().toISOString(), clientes: dados }, null, 2);
+  return JSON.stringify({ app: "diagnostico-life", versao: 2, exportadoEm: new Date().toISOString(), clientes: dados }, null, 2);
 }
 
 /** Importa clientes de um backup. Clientes com o mesmo id são substituídos. */
 export function importarJSON(texto: string) {
   const json = JSON.parse(texto);
-  const recebidos: Cliente[] = (Array.isArray(json) ? json : json.clientes ?? []).map(normalizar);
+  const lista: Record<string, unknown>[] = Array.isArray(json) ? json : json.clientes ?? [];
+  // Backups da versão 1 (com "sonhos"/"receitas") são convertidos automaticamente.
+  const recebidos: Cliente[] = lista.map((c) => normalizar("sonhos" in c || "receitas" in c ? migrarV1(c) : (c as unknown as Cliente)));
   const porId = new Map(carregar().map((c) => [c.id, c]));
   recebidos.forEach((c) => porId.set(c.id, c));
   persistir([...porId.values()]);

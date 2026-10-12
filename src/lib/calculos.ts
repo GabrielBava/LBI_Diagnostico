@@ -7,6 +7,7 @@
 // =====================================================================
 
 import type { Cliente, Item, Secao, Valor } from "@/types";
+import { CATEGORIAS_DESPESA, OPCOES } from "@/config/campos";
 
 // ---------------------------------------------------------------------
 //  Leitura segura de valores
@@ -20,9 +21,9 @@ export const n = (v: Valor): number => {
   return 0;
 };
 /** Número informado ou `undefined` quando o campo está em branco (para valores automáticos). */
-export const nOpt = (v: Valor): number | undefined =>
-  v === undefined || v === null || v === "" ? undefined : n(v);
+export const nOpt = (v: Valor): number | undefined => (v === undefined || v === null || v === "" ? undefined : n(v));
 export const s = (v: Valor): string => (v === undefined || v === null ? "" : String(v));
+export const sim = (v: Valor) => v === "Sim" || v === true;
 const pct = (v: Valor) => n(v) / 100;
 const soma = (itens: Item[], f: (i: Item) => number) => itens.reduce((t, i) => t + f(i), 0);
 
@@ -66,272 +67,308 @@ export const idadePorNascimento = (iso: string) => {
   return idade;
 };
 
-/** Valor mensal equivalente (itens com frequência "Anual" são divididos por 12). */
+/** Valor mensal equivalente (frequência "Anual" é dividida por 12). */
 export const mensal = (i: Item) => (s(i.frequencia) === "Anual" ? n(i.valor) / 12 : n(i.valor));
+
+export const temConjuge = (c: Cliente) => OPCOES.comConjuge.includes(s(c.cadastro.estadoCivil));
 
 // ---------------------------------------------------------------------
 //  Parâmetros do cliente
 // ---------------------------------------------------------------------
-export const parametros = (p: Secao) => ({
-  inflacao: pct(p.inflacaoGeral),
-  inflacaoEdu: pct(p.inflacaoEducacional),
-  retornoReal: pct(p.retornoReal),
-  mesesReserva: n(p.mesesReserva) || 6,
-  limite: pct(p.limiteComprometimento) || 0.3,
-});
-
-// ---------------------------------------------------------------------
-//  Fluxo de caixa
-// ---------------------------------------------------------------------
-export const PATRIMONIO_FINANCEIRO = ["Reserva / Caixa", "Renda fixa", "Renda variável", "Previdência"];
-export const PATRIMONIO_APOSENTADORIA = ["Renda fixa", "Renda variável", "Previdência"];
-export const LIQUIDEZ_RESERVA = ["Diária", "Até 30 dias"];
-
-export const parcelaDivida = (d: Item) => pmt(n(d.saldo), taxaMensal(pct(d.taxa)), n(d.prazo));
-
-export function fluxo(c: Cliente) {
-  const renda = soma(c.receitas, mensal);
-  const rendaPassiva = soma(
-    c.receitas.filter((r) => s(r.tipo).startsWith("Passiva")),
-    mensal,
-  );
-  const despesas = soma(c.despesas, mensal);
-  const parcelas = soma(c.dividas, parcelaDivida);
-  const sobra = renda - despesas - parcelas;
-  const despesasPorTipo = c.despesas.reduce<Record<string, number>>((acc, d) => {
-    const t = s(d.tipo) || "Outros";
-    acc[t] = (acc[t] || 0) + mensal(d);
-    return acc;
-  }, {});
+export const parametros = (p: Secao) => {
+  const inflacao = pct(p.inflacaoGeral);
+  const retornoReal = pct(p.retornoReal);
   return {
-    renda,
-    rendaPassiva,
-    despesas,
-    parcelas,
-    sobra,
-    taxaPoupanca: renda > 0 ? sobra / renda : 0,
-    comprometimento: renda > 0 ? parcelas / renda : 0,
-    despesasPorTipo,
+    inflacao,
+    retornoReal,
+    /** Retorno nominal = (1 + inflação) × (1 + retorno real) − 1 */
+    nominal: (1 + inflacao) * (1 + retornoReal) - 1,
+    mesesReserva: n(p.mesesReserva) || 6,
+    limite: pct(p.limiteComprometimento) || 0.3,
+  };
+};
+
+// ---------------------------------------------------------------------
+//  Sucessão (dependentes)
+// ---------------------------------------------------------------------
+export const custoDependente = (d: Item) => n(d.mensalidade) + n(d.auxilio);
+
+export function sucessao(c: Cliente) {
+  const filhos = c.dependentes.filter((d) => s(d.categoria) === "Filho(a)" || s(d.categoria) === "Enteado(a)");
+  return {
+    filhos: filhos.length,
+    dependentes: c.dependentes.length,
+    custoMensal: soma(c.dependentes, custoDependente),
+    mensalidades: soma(c.dependentes, (d) => n(d.mensalidade)),
+    auxilios: soma(c.dependentes, (d) => n(d.auxilio)),
   };
 }
 
 // ---------------------------------------------------------------------
-//  Patrimônio e dívidas
+//  Financiamentos e dívidas
+// ---------------------------------------------------------------------
+export function dividas(c: Cliente) {
+  const parcelasFin = soma(c.financiamentos, (f) => n(f.parcela));
+  const parcelasCons = soma(c.consorcios, (f) => n(f.parcela));
+  const parcelasEmp = soma(c.emprestimos, (f) => n(f.parcela));
+  const saldoFin = soma(c.financiamentos, (f) => n(f.saldo) || n(f.parcela) * n(f.prazo));
+  // Empréstimos não informam saldo: estimado por parcela × prazo restante (teto, inclui juros).
+  const saldoEmp = soma(c.emprestimos, (f) => n(f.parcela) * n(f.prazo));
+  const creditoConsorcio = soma(c.consorcios, (f) => n(f.credito));
+  return {
+    parcelasFin,
+    parcelasCons,
+    parcelasEmp,
+    parcelas: parcelasFin + parcelasCons + parcelasEmp,
+    /** Parcelas que geram dívida (consórcio é compromisso, mas não passivo). */
+    parcelasDivida: parcelasFin + parcelasEmp,
+    saldoFin,
+    saldoEmp,
+    passivos: saldoFin + saldoEmp,
+    creditoConsorcio,
+  };
+}
+
+// ---------------------------------------------------------------------
+//  Renda, despesas e fluxo de caixa
+// ---------------------------------------------------------------------
+export const RENDA_PASSIVA = ["Aluguel", "Dividendos / Juros", "Pensão / Aposentadoria"];
+
+export function renda(c: Cliente) {
+  const principal = n(c.renda.renda);
+  const conjuge = temConjuge(c) ? n(c.renda.rendaConjuge) : 0;
+  const outras = soma(c.outrasRendas, mensal);
+  const passiva = soma(
+    c.outrasRendas.filter((r) => RENDA_PASSIVA.includes(s(r.tipo))),
+    mensal,
+  );
+  return { principal, conjuge, outras, passiva, total: principal + conjuge + outras };
+}
+
+export function despesas(c: Cliente) {
+  const dv = dividas(c);
+  const dep = sucessao(c);
+  const porCategoria: { id: string; label: string; bloco: "Fixa" | "Variável"; valor: number; automatico?: boolean }[] = [];
+
+  CATEGORIAS_DESPESA.forEach((cat) => {
+    let valor = n(c.despesas[cat.id]);
+    let automatico = false;
+    // Parcelas informadas em "Financiamentos e dívidas" substituem o valor manual.
+    if (cat.id === "financiamentos" && dv.parcelas > 0) {
+      valor = dv.parcelas;
+      automatico = true;
+    }
+    porCategoria.push({ id: cat.id, label: cat.label, bloco: cat.bloco, valor, automatico });
+  });
+  if (dep.custoMensal > 0)
+    porCategoria.push({ id: "dependentes", label: "Dependentes (Sucessão)", bloco: "Fixa", valor: dep.custoMensal, automatico: true });
+  c.despesasExtras.forEach((e) =>
+    porCategoria.push({
+      id: e.id,
+      label: s(e.descricao) || "Outra despesa",
+      bloco: s(e.bloco) === "Variável" ? "Variável" : "Fixa",
+      valor: n(e.valor),
+    }),
+  );
+
+  const fixas = porCategoria.filter((x) => x.bloco === "Fixa").reduce((t, x) => t + x.valor, 0);
+  const variaveis = porCategoria.filter((x) => x.bloco === "Variável").reduce((t, x) => t + x.valor, 0);
+  const parcelas = porCategoria.find((x) => x.id === "financiamentos")?.valor ?? 0;
+  return {
+    porCategoria,
+    fixas,
+    variaveis,
+    total: fixas + variaveis,
+    parcelas,
+    /** Custo de vida sem parcelas (usado no seguro de vida). */
+    custoVida: fixas + variaveis - parcelas,
+  };
+}
+
+export function fluxo(c: Cliente) {
+  const r = renda(c);
+  const d = despesas(c);
+  const dv = dividas(c);
+  const sobra = r.total - d.total;
+  return {
+    renda: r.total,
+    rendaPassiva: r.passiva,
+    rendaConjuge: r.conjuge,
+    fixas: d.fixas,
+    variaveis: d.variaveis,
+    despesas: d.total,
+    parcelas: d.parcelas,
+    sobra,
+    taxaPoupanca: r.total > 0 ? sobra / r.total : 0,
+    comprometimento: r.total > 0 ? dv.parcelas / r.total : 0,
+  };
+}
+
+// ---------------------------------------------------------------------
+//  Patrimônio e balanço patrimonial
 // ---------------------------------------------------------------------
 export function patrimonio(c: Cliente) {
-  const total = soma(c.patrimonio, (i) => n(i.valor));
-  const financeiro = soma(
-    c.patrimonio.filter((i) => PATRIMONIO_FINANCEIRO.includes(s(i.tipo))),
-    (i) => n(i.valor),
-  );
-  const reserva = soma(
-    c.patrimonio.filter(
-      (i) => PATRIMONIO_FINANCEIRO.includes(s(i.tipo)) && LIQUIDEZ_RESERVA.includes(s(i.liquidez)),
-    ),
-    (i) => n(i.valor),
-  );
-  const paraAposentadoria = soma(
-    c.patrimonio.filter((i) => PATRIMONIO_APOSENTADORIA.includes(s(i.tipo))),
-    (i) => n(i.valor),
-  );
-  const dividas = soma(c.dividas, (d) => n(d.saldo));
-  const porTipo = c.patrimonio.reduce<Record<string, number>>((acc, i) => {
-    const t = s(i.tipo) || "Outros";
-    acc[t] = (acc[t] || 0) + n(i.valor);
-    return acc;
-  }, {});
-  return { total, financeiro, reserva, paraAposentadoria, dividas, liquido: total - dividas, porTipo };
+  const imoveis = soma(c.imoveis, (i) => n(i.valor));
+  const moveis = soma(c.moveis, (i) => n(i.valor));
+  const investimentos = sim(c.investimentos.temInvestimento) ? n(c.investimentos.valor) : 0;
+  const previdencia = sim(c.protecao.temPrevidencia) ? n(c.protecao.valorPrevidencia) : 0;
+  const empresa = sim(c.corporativo.possuiEmpresa) ? n(c.corporativo.valorParticipacao) : 0;
+  const dv = dividas(c);
+  const ativos = imoveis + moveis + investimentos + previdencia + empresa;
+  return {
+    imoveis,
+    moveis,
+    investimentos,
+    previdencia,
+    empresa,
+    financeiro: investimentos + previdencia,
+    ativos,
+    passivos: dv.passivos,
+    liquido: ativos - dv.passivos,
+    reserva: sim(c.investimentos.temInvestimento) ? Math.min(n(c.investimentos.liquidez), investimentos || Infinity) : 0,
+    linhasAtivo: [
+      { nome: "Imóveis", valor: imoveis },
+      { nome: "Móveis (veículos e embarcações)", valor: moveis },
+      { nome: "Investimentos", valor: investimentos },
+      { nome: "Previdência privada", valor: previdencia },
+      { nome: "Participação em empresa", valor: empresa },
+    ],
+    linhasPassivo: [
+      { nome: "Financiamentos (saldo)", valor: dv.saldoFin },
+      { nome: "Empréstimos e dívidas (parcelas a pagar)", valor: dv.saldoEmp },
+    ],
+  };
 }
 
 export function reservaEmergencia(c: Cliente) {
   const { mesesReserva } = parametros(c.parametros);
-  const f = fluxo(c);
-  const custoMensal = f.despesas + f.parcelas;
+  const custo = despesas(c).total;
   const atual = patrimonio(c).reserva;
-  const meta = custoMensal * mesesReserva;
+  const meta = custo * mesesReserva;
+  return { atual, meta, falta: Math.max(0, meta - atual), meses: custo > 0 ? atual / custo : 0, mesesMeta: mesesReserva };
+}
+
+// ---------------------------------------------------------------------
+//  Objetivos (valor futuro em R$ nominais, rendendo o retorno nominal)
+// ---------------------------------------------------------------------
+const ORDEM_TIPO: Record<string, number> = { Essencial: 0, Desejo: 1, Sonho: 2 };
+const ORDEM_PRIORIDADE: Record<string, number> = { Alta: 0, Média: 1, Baixa: 2 };
+
+export function objetivo(c: Cliente, o: Item) {
+  const { nominal } = parametros(c.parametros);
+  const meses = Math.max(0, n(o.prazoMeses));
+  return { meses, aporte: aporteNecessario(n(o.valorFuturo), 0, taxaMensal(nominal), meses) };
+}
+
+/**
+ * Probabilidade sugerida: distribui a sobra mensal entre os objetivos na ordem
+ * Essencial → Desejo → Sonho e, dentro de cada um, por prioridade. A sugestão
+ * é a parte do aporte necessário que a sobra consegue cobrir (limitada a 95%).
+ */
+export function objetivos(c: Cliente) {
+  const sobra = Math.max(0, fluxo(c).sobra);
+  const ordenados = [...c.objetivos].sort(
+    (a, b) =>
+      (ORDEM_TIPO[s(a.tipo)] ?? 9) - (ORDEM_TIPO[s(b.tipo)] ?? 9) ||
+      (ORDEM_PRIORIDADE[s(a.prioridade)] ?? 9) - (ORDEM_PRIORIDADE[s(b.prioridade)] ?? 9),
+  );
+  let disponivel = sobra;
+  const sugestao: Record<string, number> = {};
+  const aportes: Record<string, number> = {};
+  ordenados.forEach((o) => {
+    const { aporte } = objetivo(c, o);
+    aportes[o.id] = aporte;
+    const coberto = aporte > 0 ? Math.min(aporte, disponivel) : 0;
+    disponivel -= coberto;
+    sugestao[o.id] = aporte > 0 ? Math.min(95, Math.round(((coberto / aporte) * 100) / 5) * 5) : 0;
+  });
+  const aporteTotal = Object.values(aportes).reduce((t, x) => t + x, 0);
+  const porTipo = (t: string) => c.objetivos.filter((o) => s(o.tipo) === t);
   return {
-    atual,
-    meta,
-    falta: Math.max(0, meta - atual),
-    meses: custoMensal > 0 ? atual / custoMensal : 0,
-    mesesMeta: mesesReserva,
-  };
-}
-
-/** Dívidas consideradas caras: cartão ou taxa acima de 30% a.a. */
-export const dividaCara = (d: Item) => s(d.tipo) === "Cartão" || n(d.taxa) >= 30;
-
-// ---------------------------------------------------------------------
-//  Sonhos (valores em R$ de hoje, com retorno real)
-// ---------------------------------------------------------------------
-export function sonho(c: Cliente, i: Item) {
-  const { retornoReal } = parametros(c.parametros);
-  const meses = Math.max(0, n(i.prazo) * 12);
-  const aporte = aporteNecessario(n(i.valor), n(i.acumulado), taxaMensal(retornoReal), meses);
-  return { meses, aporte, falta: Math.max(0, n(i.valor) - n(i.acumulado)) };
-}
-
-export function sonhos(c: Cliente) {
-  const lista = c.sonhos.map((i) => ({ item: i, ...sonho(c, i) }));
-  return { lista, aporteTotal: lista.reduce((t, x) => t + x.aporte, 0), valorTotal: soma(c.sonhos, (i) => n(i.valor)) };
-}
-
-// ---------------------------------------------------------------------
-//  Educação dos filhos
-//  Custo da faculdade cresce pela inflação educacional; o dinheiro rende
-//  inflação geral + retorno real. Resultado em R$ nominais.
-// ---------------------------------------------------------------------
-export function educacao(c: Cliente, f: Item) {
-  const { inflacao, inflacaoEdu, retornoReal } = parametros(c.parametros);
-  const semFaculdade = s(f.faculdade) === "Não planejado" || n(f.mensalidadeFaculdade) <= 0;
-  const anosAte = Math.max(0, n(f.idadeIngresso || 18) - n(f.idade));
-  const custoHoje = semFaculdade ? 0 : n(f.mensalidadeFaculdade) * 12 * n(f.duracaoFaculdade || 5);
-  const custoFuturo = custoHoje * Math.pow(1 + inflacaoEdu, anosAte);
-  const nominal = (1 + inflacao) * (1 + retornoReal) - 1;
-  const aporte = aporteNecessario(custoFuturo, 0, taxaMensal(nominal), anosAte * 12);
-  const valorPresente = custoFuturo / Math.pow(1 + nominal, anosAte);
-  return { anosAte, custoHoje, custoFuturo, aporte, valorPresente };
-}
-
-export function educacaoTotal(c: Cliente) {
-  const lista = c.filhos.map((f) => ({ item: f, ...educacao(c, f) }));
-  return {
-    lista,
-    aporteTotal: lista.reduce((t, x) => t + x.aporte, 0),
-    valorPresenteTotal: lista.reduce((t, x) => t + x.valorPresente, 0),
-    custoFuturoTotal: lista.reduce((t, x) => t + x.custoFuturo, 0),
+    sugestao,
+    aportes,
+    aporteTotal,
+    valorTotal: soma(c.objetivos, (o) => n(o.valorFuturo)),
+    cabeNaSobra: aporteTotal <= sobra,
+    porTipo: Object.fromEntries(OPCOES.tipoObjetivo.map((t) => [t, porTipo(t)])) as Record<string, Item[]>,
   };
 }
 
 // ---------------------------------------------------------------------
-//  Seguro de vida — necessidade de capital
+//  Proteção — capital de seguro de vida necessário
 // ---------------------------------------------------------------------
-export function seguroVida(c: Cliente) {
-  const sg = c.seguro;
-  const f = fluxo(c);
+export function protecao(c: Cliente) {
+  const pr = c.protecao;
+  const d = despesas(c);
+  const r = renda(c);
   const p = patrimonio(c);
-  const anos = n(sg.anosProtecao) || 5;
-  const manutencao = Math.max(0, f.despesas - f.rendaPassiva) * 12 * anos;
-  const dividas = s(sg.quitarDividas) !== "Não" ? p.dividas : 0;
-  const educacaoFilhos = s(sg.incluirEducacao) !== "Não" ? educacaoTotal(c).valorPresenteTotal : 0;
-  const inventario = p.total * pct(sg.custoInventario);
-  const necessidadeBruta = manutencao + dividas + educacaoFilhos + inventario;
-  const recursos = p.financeiro;
-  const necessario = Math.max(0, necessidadeBruta - recursos);
-  const atual = n(sg.capitalAtual) + (s(sg.contarSeguroEmpresa) === "Sim" ? n(sg.capitalEmpresa) : 0);
+  const anos = n(pr.anosProtecao) || 5;
+  // A renda do cônjuge e a renda passiva continuam se o cliente faltar.
+  const manutencao = Math.max(0, d.custoVida - r.passiva - r.conjuge) * 12 * anos;
+  const quitacao = p.passivos;
+  const inventario = p.ativos * pct(pr.custoInventario);
+  const necessidade = manutencao + quitacao + inventario;
+  const necessario = Math.max(0, necessidade - p.financeiro);
+  const atual = sim(pr.temSeguroVida) ? n(pr.capitalAtual) : 0;
   return {
-    componentes: { manutencao, dividas, educacaoFilhos, inventario },
-    necessidadeBruta,
-    recursos,
+    componentes: { manutencao, quitacao, inventario },
+    anos,
+    necessidade,
+    recursos: p.financeiro,
     necessario,
     atual,
+    empresa: n(pr.seguroEmpresa),
     gap: Math.max(0, necessario - atual),
-    cobertura: necessario > 0 ? Math.min(1, atual / necessario) : 1,
+    cobertura: necessario > 0 ? Math.min(1, atual / necessario) : atual > 0 ? 1 : 0,
   };
 }
 
 // ---------------------------------------------------------------------
-//  Aposentadoria / independência financeira (valores reais, R$ de hoje)
+//  Futuro — independência financeira (valores reais, R$ de hoje)
 // ---------------------------------------------------------------------
-export function aposentadoria(c: Cliente) {
-  const a = c.aposentadoria;
+export const TAXA_RETIRADA = 0.04; // regra dos 4% → patrimônio = 25× a renda anual
+
+export function futuro(c: Cliente) {
+  const fu = c.futuro;
   const f = fluxo(c);
-  const idadeAuto = idadePorNascimento(s(c.cadastro.nascimento));
-  const idadeAtual = nOpt(a.idadeAtual) ?? idadeAuto ?? 0;
-  const idadeAlvo = n(a.idadeAlvo);
-  const anos = Math.max(0, idadeAlvo - idadeAtual);
-  const despesasAnuaisAuto = f.despesas * 12;
-  const despesasAnuais = nOpt(a.despesasAnuais) ?? despesasAnuaisAuto;
-  const rendaAlvo = nOpt(a.rendaPassivaAlvo) ?? despesasAnuais / 12;
-  const rendaPassivaAtual = n(a.rendaPassivaAtual);
-  const taxaRetirada = pct(a.taxaRetirada) || 0.04;
-  const multiplicador = 1 / taxaRetirada;
-  const alvo = Math.max(0, rendaAlvo - rendaPassivaAtual) * 12 * multiplicador;
-  const patrimonioAuto = patrimonio(c).paraAposentadoria;
-  const atual = nOpt(a.patrimonioDestinado) ?? patrimonioAuto;
-  const i = taxaMensal(pct(a.retornoReal));
+  const d = despesas(c);
+  const p = patrimonio(c);
+  const { retornoReal } = parametros(c.parametros);
+  const idadeAtual = idadePorNascimento(s(c.cadastro.nascimento)) ?? 0;
+  const idadeAposentadoria = n(fu.idadeAposentadoria) || 60;
+  const anos = Math.max(0, idadeAposentadoria - idadeAtual);
+  const rendaDesejadaAuto = d.custoVida;
+  const rendaDesejada = nOpt(fu.rendaDesejada) ?? rendaDesejadaAuto;
+  const outrasAuto = f.rendaPassiva;
+  const outras = nOpt(fu.outrasRendas) ?? outrasAuto;
+  const alvo = (Math.max(0, rendaDesejada - outras) * 12) / TAXA_RETIRADA;
+  const atual = p.financeiro;
+  const aporteAtual = Math.max(0, f.sobra);
+  const i = taxaMensal(retornoReal);
   const meses = anos * 12;
+  const projetado = valorFuturo(atual, aporteAtual, i, meses);
   const aporte = aporteNecessario(alvo, atual, i, meses);
-  const aporteAtual = n(a.aporteAtual);
-  const projetadoAtual = valorFuturo(atual, aporteAtual, i, meses);
-
   const anoBase = new Date().getFullYear();
-  const serie = Array.from({ length: anos + 1 }, (_, k) => ({
-    ano: anoBase + k,
-    idade: idadeAtual + k,
-    atual: Math.round(valorFuturo(atual, aporteAtual, i, k * 12)),
-    necessaria: Math.round(valorFuturo(atual, aporte, i, k * 12)),
-  }));
-
   return {
     idadeAtual,
-    idadeAuto,
-    idadeAlvo,
+    idadeAposentadoria,
     anos,
-    despesasAnuais,
-    despesasAnuaisAuto,
-    rendaAlvo,
-    multiplicador,
+    rendaDesejada,
+    rendaDesejadaAuto,
+    outras,
+    outrasAuto,
     alvo,
     atual,
-    patrimonioAuto,
-    gap: Math.max(0, alvo - atual),
-    progresso: alvo > 0 ? Math.min(1, atual / alvo) : 0,
-    aporte,
     aporteAtual,
-    projetadoAtual,
-    rendaProjetada: (projetadoAtual * taxaRetirada) / 12 + rendaPassivaAtual,
-    serie,
-  };
-}
-
-// ---------------------------------------------------------------------
-//  Alavancagem patrimonial: financiamento x consórcio x poupar
-//  Comparação justa: as três estratégias usam o MESMO orçamento mensal
-//  (a parcela do financiamento) durante o prazo.
-// ---------------------------------------------------------------------
-export function alavancagem(c: Cliente) {
-  const a = c.alavancagem;
-  const valor = n(a.valorBem);
-  const anos = Math.max(0, n(a.prazoAnos));
-  const meses = anos * 12;
-  const iFin = taxaMensal(pct(a.taxaFinanciamento));
-  const iInv = taxaMensal(pct(a.retornoInvestido));
-  const valorizacao = pct(a.valorizacaoBem);
-
-  const parcelaFin = pmt(valor, iFin, meses);
-  const totalFin = parcelaFin * meses;
-  const totalCons = valor * (1 + pct(a.taxaConsorcio) + pct(a.fundoReserva));
-  const parcelaCons = meses > 0 ? totalCons / meses : 0;
-  const bemFinal = valor * Math.pow(1 + valorizacao, anos);
-
-  const orcamento = Math.max(parcelaFin, parcelaCons);
-  const patrimonioFin = bemFinal + valorFuturo(0, orcamento - parcelaFin, iInv, meses);
-  const patrimonioCons = bemFinal + valorFuturo(0, orcamento - parcelaCons, iInv, meses);
-  const poupado = valorFuturo(0, orcamento, iInv, meses);
-
-  const f = fluxo(c);
-  const { limite } = parametros(c.parametros);
-  const capacidade = Math.max(0, f.renda * limite - f.parcelas);
-
-  return {
-    valor,
-    anos,
-    meses,
-    parcelaFin,
-    totalFin,
-    parcelaCons,
-    totalCons,
-    economia: totalFin - totalCons,
-    bemFinal,
-    poupado,
-    poupadoCompra: poupado >= bemFinal,
-    capacidade,
-    parcelaSaudavel: f.renda > 0 ? parcelaCons <= capacidade : undefined,
-    comparativo: [
-      { nome: "Poupar e comprar à vista", valor: poupado, uso: poupado >= bemFinal ? `Ao final de ${anos} anos` : "Saldo insuficiente no prazo" },
-      { nome: "Financiamento bancário", valor: patrimonioFin, uso: "Imediato" },
-      { nome: "Consórcio + investido", valor: patrimonioCons, uso: "Na contemplação (sorteio ou lance)" },
-    ],
+    projetado,
+    aporte,
+    independencia: alvo > 0 ? projetado / alvo : 0,
+    rendaProjetada: (projetado * TAXA_RETIRADA) / 12 + outras,
+    serie: Array.from({ length: anos + 1 }, (_, k) => ({
+      ano: anoBase + k,
+      idade: idadeAtual + k,
+      atual: Math.round(valorFuturo(atual, aporteAtual, i, k * 12)),
+      necessaria: Math.round(valorFuturo(atual, aporte, i, k * 12)),
+    })),
   };
 }

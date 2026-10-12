@@ -157,3 +157,83 @@ export function LinhaValor({ rotulo, valor, forte }: { rotulo: ReactNode; valor:
     </div>
   );
 }
+
+// ---------------------------------------------------------------------
+//  Padrão de botões
+//  primario   -> ação principal (dourado)
+//  secundario -> ação alternativa (contorno)
+//  fantasma   -> ação discreta (texto)
+// ---------------------------------------------------------------------
+const VARIANTES = {
+  primario: "bg-gold text-primary-foreground shadow-sm hover:brightness-105",
+  secundario: "border border-primary/60 text-primary hover:bg-primary/10",
+  fantasma: "text-muted-foreground hover:bg-muted hover:text-foreground",
+};
+
+export function Botao({
+  children,
+  onClick,
+  variante = "secundario",
+  pequeno,
+  disabled,
+  title,
+  className = "",
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  variante?: keyof typeof VARIANTES;
+  pequeno?: boolean;
+  disabled?: boolean;
+  title?: string;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-md font-semibold transition disabled:opacity-50 ${
+        pequeno ? "h-8 px-3 text-[11px]" : "h-10 px-4 text-xs"
+      } ${VARIANTES[variante]} ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Botão de adicionar item: largo, tracejado, sempre no fim da lista. */
+export function BotaoAdicionar({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="no-print flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border text-xs font-semibold text-muted-foreground transition hover:border-primary/60 hover:bg-primary/5 hover:text-primary"
+    >
+      <span className="text-base leading-none">+</span> {children}
+    </button>
+  );
+}
+
+/** Sub-bloco dentro de uma seção (ex.: "Imóveis", "Despesas fixas"). */
+export function SubBloco({
+  titulo,
+  total,
+  children,
+  className = "",
+}: {
+  titulo: ReactNode;
+  total?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`rounded-xl border border-border bg-secondary/20 p-4 ${className}`}>
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{titulo}</h3>
+        {total !== undefined && <span className="text-sm font-semibold tabular-nums">{total}</span>}
+      </div>
+      {children}
+    </div>
+  );
+}

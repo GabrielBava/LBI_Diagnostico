@@ -1,254 +1,232 @@
 // =====================================================================
 //  ROTEIRO DA CONVERSA (storytelling da coleta de dados)
 //  ---------------------------------------------------------------------
-//  Para cada etapa:
-//    objetivo   -> por que esta etapa existe (o que o consultor busca)
-//    abertura   -> frase para abrir o assunto com o cliente
-//    perguntas  -> perguntas-chave (viram checklist marcável na tela)
-//    atencao    -> pontos de atenção / boas práticas para o consultor
-//    transicao  -> frase-ponte que conecta com a próxima etapa
+//  ABERTURA_ETAPA: frase que o consultor usa ao entrar em cada etapa
+//  (aparece no divisor entre as etapas, na versão consultor).
 //
-//  Edite livremente: o texto aparece no painel "Roteiro da conversa",
-//  que fica oculto no Modo apresentação (tela compartilhada com o cliente).
+//  ROTEIRO: para cada seção
+//    objetivo  -> por que a seção existe
+//    abertura  -> frase para abrir o assunto com o cliente
+//    perguntas -> perguntas-chave (checklist marcável)
+//    atencao   -> pontos de atenção para o consultor
+//
+//  Tudo aqui fica oculto na versão apresentação.
 // =====================================================================
-
-import type { EtapaId } from "./etapas";
 
 export interface Roteiro {
   objetivo: string;
   abertura: string;
   perguntas: string[];
   atencao: string[];
-  transicao?: string;
 }
 
-export const ROTEIRO: Record<EtapaId, Roteiro> = {
-  apresentacao: {
-    objetivo:
-      "Gerar confiança e alinhar expectativas: o cliente precisa entender como o processo funciona, quanto tempo leva e o que vai receber.",
-    abertura:
-      "Antes de falarmos de números, quero entender a sua história. O Diagnóstico LIFE funciona como um check-up: primeiro entendemos onde você quer chegar, depois olhamos onde você está hoje e, no final, entregamos um plano claro de como chegar lá.",
-    perguntas: [
-      "O que te motivou a buscar este diagnóstico agora?",
-      "Se daqui a 12 meses estivéssemos comemorando, o que teria acontecido na sua vida financeira?",
-      "De 0 a 10, como você se sente hoje em relação ao seu dinheiro? Por quê?",
-      "Quem mais participa das decisões financeiras da família?",
-    ],
-    atencao: [
-      "Ouça mais do que fala (80/20). Ainda não é hora de recomendar nada.",
-      "Anote as palavras exatas do cliente: elas voltam na apresentação do diagnóstico.",
-      "Combine o processo: 3 encontros + acompanhamento.",
-    ],
-    transicao: "Perfeito. Vou registrar alguns dados básicos para personalizar as suas projeções.",
-  },
+export const ABERTURA_ETAPA: Record<string, string> = {
+  conexao:
+    "Antes de falar de números, quero entender a sua história: quem é você, quem depende de você e onde você quer chegar.",
+  "raio-x":
+    "Agora que sabemos onde você quer chegar, vamos olhar com honestidade para onde você está hoje. Sem julgamento: é um raio-x.",
+  protecao: "Tudo o que planejamos depende da sua capacidade de gerar renda. Vamos ver o que protege a sua família hoje.",
+  investimentos: "Vamos entender como você investe hoje e como se sente em relação a risco.",
+  pre: "Com o que você me contou, já consigo mostrar uma primeira leitura. É uma visão breve; o diagnóstico completo vem na próxima conversa.",
+  completo: "Lembra do que você me disse no início? Agora vamos ver o que os números dizem e o que vamos fazer a respeito.",
+  jornada: "Para o plano sair do papel, vamos combinar os próximos passos, com datas e responsáveis.",
+};
+
+export const ROTEIRO: Record<string, Roteiro> = {
   cadastro: {
-    objetivo: "Registrar os dados de base que alimentam todas as projeções (idade, família, regime de trabalho).",
-    abertura: "Vou fazer algumas perguntas rápidas. Elas são importantes para os cálculos de aposentadoria e de proteção.",
+    objetivo: "Registrar os dados que alimentam as projeções: idade, família e regime de trabalho.",
+    abertura: "Vou fazer algumas perguntas rápidas. Elas são importantes para os cálculos de futuro e de proteção.",
     perguntas: [
       "Qual a sua data de nascimento?",
-      "Estado civil e regime de bens? O cônjuge participa das decisões?",
-      "Qual a sua profissão e o regime de trabalho (CLT, empresário, autônomo)?",
-      "Quem depende financeiramente de você hoje?",
+      "Estado civil? O cônjuge participa das decisões financeiras?",
+      "Qual a sua ocupação e o regime de trabalho?",
+      "Tem filhos? Quantos?",
     ],
     atencao: [
-      "Renda instável (empresário/autônomo) pede meta de reserva maior: ajuste em Parâmetros.",
-      "Confirme os parâmetros macro (inflação e retorno real) antes de seguir.",
+      "Empresário ou autônomo: ajuste a meta de reserva para 12 meses nos parâmetros.",
+      "Ao informar a quantidade de filhos, os cartões já aparecem em Sucessão.",
     ],
-    transicao:
-      "Agora vem a parte mais importante: quero entender os seus sonhos. Tudo o que fizermos daqui para frente será para viabilizá-los.",
   },
-  sonhos: {
-    objetivo: "Dar propósito ao plano. Sonho com valor e prazo vira meta, e meta gera disciplina.",
-    abertura: "Imagine a sua vida daqui a 5, 10 e 20 anos. O que você quer ter realizado?",
+  institucional: {
+    objetivo: "Apresentar o Grupo Life Brasil e alinhar como o planejamento vai funcionar.",
+    abertura:
+      "Antes de seguirmos, quero te mostrar quem somos e como trabalhamos. O planejamento é um processo: hoje entendemos você, depois entregamos o diagnóstico e o plano.",
     perguntas: [
-      "Qual sonho você já adiou por causa de dinheiro?",
-      "Quanto custa esse sonho hoje? Em quanto tempo quer realizá-lo?",
-      "Por que isso é importante para você? (registre no campo “Por que é importante?”)",
-      "Se só pudesse realizar um deles, qual seria?",
-      "Já tem algum valor guardado para algum desses sonhos?",
+      "O que te motivou a buscar um planejamento agora?",
+      "De 0 a 10, como você se sente hoje em relação ao seu dinheiro?",
+      "Se daqui a 12 meses estivéssemos comemorando, o que teria acontecido?",
     ],
-    atencao: [
-      "Transforme desejos vagos em metas com valor e prazo. Se o cliente não souber o valor, estimem juntos na hora.",
-      "Os valores estão em R$ de hoje: o sistema considera o retorno real dos investimentos.",
-      "A motivação do cliente (o “porquê”) aparece no diagnóstico e no plano.",
-    ],
-    transicao: "Muitos desses sonhos envolvem a família. Vamos falar dos filhos e do planejamento da educação deles.",
+    atencao: ["Anote as palavras exatas do cliente: elas voltam no diagnóstico completo.", "Combine as próximas reuniões."],
   },
-  filhos: {
-    objetivo: "Dimensionar a educação dos filhos e entender quem depende do cliente (impacta seguro de vida).",
-    abertura: "Educação é um dos maiores investimentos de uma família, e o custo sobe acima da inflação.",
+  objetivos: {
+    objetivo: "Dar propósito ao plano, separando o que é essencial, o que é desejo e o que é sonho.",
+    abertura: "Imagine a sua vida daqui a 1, 5 e 10 anos. O que não pode faltar? O que você gostaria de ter? E o que seria um sonho?",
     perguntas: [
-      "Quantos filhos e quais as idades?",
-      "Estudam em escola pública ou particular? Qual a mensalidade?",
-      "Vocês imaginam faculdade particular, pública ou no exterior?",
-      "Pretendem ter mais filhos?",
+      "O que é essencial para você e sua família nos próximos anos?",
+      "Quanto custa cada objetivo e em quanto tempo quer realizá-lo?",
+      "De 0 a 10, quanto esse objetivo muda a sua vida?",
+      "Hoje, qual a chance de isso acontecer? E com um plano?",
+      "Por que isso é importante para você?",
     ],
     atencao: [
-      "A inflação educacional (Parâmetros) corrige o custo da faculdade até o ingresso.",
-      "Sem filhos? Marque “Não se aplica” e registre planos futuros nas anotações.",
+      "Valor futuro: o valor na data do objetivo (o sistema calcula o aporte com o retorno nominal).",
+      "A probabilidade sugerida considera a sobra mensal distribuída do essencial para o sonho.",
     ],
-    transicao:
-      "Agora que sabemos onde vocês querem chegar, vamos olhar para o presente, começando pelo que entra todo mês.",
   },
-  receitas: {
-    objetivo: "Conhecer todas as fontes de renda, sua estabilidade e o que é renda ativa x passiva.",
-    abertura: "Vamos mapear tudo que entra: salário, pró-labore, aluguéis, dividendos, bônus.",
+  sucessao: {
+    objetivo: "Mapear quem depende financeiramente do cliente e o custo mensal com cada um.",
+    abertura: "Vamos falar de quem depende de você hoje: filhos e outras pessoas que você ajuda.",
     perguntas: [
-      "Qual a sua renda líquida mensal (já descontados os impostos)?",
-      "Recebe 13º, férias, PLR ou bônus? Em que meses?",
-      "A renda é estável ou varia? Qual foi a média dos últimos 12 meses?",
-      "Existe renda do cônjuge ou de aluguéis/investimentos?",
+      "Em que fase escolar cada filho está?",
+      "Escola pública ou particular? Qual a mensalidade?",
+      "Você ajuda pais, enteados ou outras pessoas todo mês?",
     ],
     atencao: [
-      "Use sempre renda LÍQUIDA.",
-      "Rendas anuais (13º, PLR, bônus) entram com frequência “Anual”: o sistema divide por 12.",
-      "Renda variável: use uma média conservadora.",
+      "Mensalidades e auxílios daqui entram automaticamente nas despesas fixas (não lance de novo).",
+      "Esse custo também pesa no cálculo de proteção (seguro de vida).",
     ],
-    transicao: "Agora o outro lado da balança: para onde vai esse dinheiro.",
   },
   despesas: {
-    objetivo: "Revelar o custo de vida real e encontrar espaço para os sonhos.",
-    abertura:
-      "Não existe julgamento aqui. O objetivo é enxergar o padrão de gastos para encontrar espaço para os seus sonhos.",
+    objetivo: "Revelar o custo de vida real, separando o que é fixo do que é variável.",
+    abertura: "Não existe julgamento aqui. Vamos passar categoria por categoria para entender para onde vai o dinheiro.",
     perguntas: [
-      "Moradia: aluguel/condomínio, contas da casa, funcionários?",
-      "Transporte, alimentação, saúde, educação, lazer e assinaturas?",
-      "Quais gastos anuais costumam ser esquecidos? (IPVA, IPTU, seguros, material escolar)",
+      "Quanto gasta com casa (aluguel, condomínio, contas)?",
+      "Quanto gasta com mercado e alimentação fora?",
+      "Quais gastos anuais costumam ser esquecidos? (IPVA, IPTU, seguros, viagens)",
       "Qual gasto você cortaria primeiro? E qual nunca cortaria?",
     ],
     atencao: [
-      "Parcelas de empréstimos e financiamentos vão na etapa Dívidas, para não contar duas vezes.",
-      "Confira com as faturas do cartão: as pessoas costumam subestimar os gastos variáveis em 20–30%.",
-      "Classifique o tipo (Fixa, Variável, Luxo...): é isso que mostra onde dá para ajustar.",
+      "Gastos anuais: divida por 12.",
+      "Financiamento/Dívidas é preenchido sozinho com as parcelas da seção 8.",
+      "Confira com as faturas do cartão: os gastos variáveis costumam ser subestimados.",
     ],
-    transicao: "Visto o fluxo do mês, vamos olhar o que você já construiu até aqui.",
+  },
+  renda: {
+    objetivo: "Conhecer todas as fontes de renda da família.",
+    abertura: "Agora o lado de quem entra: sua renda, a do cônjuge e outras fontes.",
+    perguntas: [
+      "Qual a sua renda líquida mensal?",
+      "E a do cônjuge?",
+      "Recebe PLR, bônus, aluguéis ou dividendos?",
+    ],
+    atencao: ["Sempre renda líquida.", "Bônus e PLR: use frequência Anual."],
   },
   patrimonio: {
-    objetivo: "Mapear os bens e investimentos, a liquidez e onde o dinheiro está aplicado.",
-    abertura: "Vamos listar tudo o que você já construiu: investimentos, previdência, imóveis, veículos, empresa.",
+    objetivo: "Mapear imóveis e bens móveis, se estão quitados e se estão protegidos.",
+    abertura: "Vamos listar o que você já construiu: imóveis, carros e outros bens.",
     perguntas: [
-      "Onde estão seus investimentos e em quanto tempo consegue resgatar?",
-      "Tem previdência privada? PGBL ou VGBL? Quem são os beneficiários?",
-      "Imóveis: são para morar ou geram renda?",
-      "Existe uma reserva de emergência separada?",
+      "Quais imóveis você tem? São para morar, renda ou investimento?",
+      "Estão quitados?",
+      "Seus veículos têm seguro? Pensa em trocar ou ampliar?",
     ],
-    atencao: [
-      "Liquidez importa tanto quanto valor: só conta como reserva o que tem liquidez diária ou até 30 dias.",
-      "Renda fixa, renda variável e previdência formam o patrimônio para aposentadoria.",
-    ],
-    transicao: "Para fechar o raio-x, precisamos ver o que está comprometido: as dívidas.",
+    atencao: ["Investimentos financeiros entram na etapa 4.", "Bens sem seguro viram oportunidade na matriz."],
   },
   dividas: {
-    objetivo: "Entender o custo das dívidas e quanto da renda está comprometida com parcelas.",
+    objetivo: "Entender os compromissos mensais: financiamentos, consórcios e empréstimos.",
     abertura: "Dívida não é necessariamente ruim. O que importa é o custo e se ela cabe no seu mês.",
     perguntas: [
-      "Quais dívidas existem hoje? Saldo devedor, taxa e prazo restante?",
-      "Usa cheque especial ou o rotativo do cartão?",
-      "Qual parcela mais pesa no mês?",
-      "Alguma dívida foi feita para adquirir patrimônio (imóvel, empresa)?",
+      "Tem financiamento? Qual a parcela, o prazo e o saldo?",
+      "Participa de consórcio? Já foi contemplado?",
+      "Tem empréstimos, cheque especial ou cartão parcelado?",
     ],
-    atencao: [
-      "Cartão rotativo e cheque especial são prioridade máxima no plano.",
-      "A parcela é estimada pela Tabela Price a partir do saldo, taxa e prazo.",
-      "Sem dívidas? Marque “Não se aplica”.",
-    ],
-    transicao:
-      "Com o retrato do presente completo, vamos proteger o que foi construído e planejar o futuro, começando pela proteção da família.",
+    atencao: ["As parcelas daqui alimentam a categoria Financiamento/Dívidas das despesas.", "Empréstimos pessoais são prioridade no plano."],
   },
-  seguro: {
-    objetivo: "Garantir que a família e os sonhos estejam protegidos se a renda do cliente faltar.",
-    abertura:
-      "Tudo o que planejamos depende da sua capacidade de gerar renda. A pergunta é: se você faltasse amanhã, o plano continuaria?",
+  projetos: {
+    objetivo: "Registrar projetos em andamento ou planejados que vão exigir recursos.",
+    abertura: "Tem algum projeto em mente? Uma reforma, um negócio, um investimento?",
+    perguntas: ["Qual o projeto e quanto deve custar?", "Para quando?", "Já começou ou ainda é uma ideia?"],
+    atencao: ["Projetos com data viram objetivos ou ações no plano."],
+  },
+  corporativo: {
+    objetivo: "Entender a relação do cliente com empresas: participação, proteção e benefícios.",
+    abertura: "Você tem empresa ou participação em alguma sociedade?",
     perguntas: [
-      "Por quantos anos sua família precisaria manter o padrão de vida sem a sua renda?",
-      "Você tem seguro de vida hoje? Qual o capital e quem são os beneficiários?",
-      "Tem seguro pela empresa? (geralmente cobre 12–24 salários e acaba com o vínculo)",
+      "Qual o ramo e o faturamento médio?",
+      "Quantos sócios e funcionários?",
+      "A empresa tem seguro, plano de saúde e acordo de sócios?",
+    ],
+    atencao: ["Empresa sem seguro de sócio ou acordo societário é oportunidade de proteção."],
+  },
+  protecao: {
+    objetivo: "Avaliar se a família e o padrão de vida estão protegidos se a renda faltar.",
+    abertura: "Se você faltasse amanhã, o plano continuaria? Vamos ver o que protege a sua família hoje.",
+    perguntas: [
+      "Tem seguro de vida individual? Qual o capital?",
+      "Tem seguro pela empresa? (termina com o vínculo)",
       "Se ficasse impossibilitado de trabalhar, como pagaria as contas?",
-      "Já pensou nos custos de inventário (ITCMD, advogados, custas)?",
+      "Tem plano de saúde e previdência privada?",
     ],
-    atencao: [
-      "Seguro de empresa não é proteção definitiva: por padrão ele não entra na conta.",
-      "Inventário pode travar o patrimônio por meses: o seguro dá liquidez imediata à família.",
-      "O capital necessário já desconta o patrimônio financeiro existente.",
-    ],
-    transicao: "Protegida a família, vamos olhar para você no futuro: a sua independência financeira.",
+    atencao: ["O seguro da empresa não entra no capital atual.", "O capital necessário já desconta os investimentos e a previdência."],
   },
-  aposentadoria: {
-    objetivo: "Definir a meta de independência financeira e o esforço mensal necessário para chegar lá.",
-    abertura:
-      "Independência financeira é quando trabalhar passa a ser uma escolha. Vamos calcular quanto você precisa acumular e quanto falta.",
+  investimentos: {
+    objetivo: "Entender a experiência, o perfil e a estrutura de investimentos do cliente.",
+    abertura: "Como você investe hoje? E como se sente quando o investimento oscila?",
     perguntas: [
-      "Com que idade você gostaria de ter a opção de parar de trabalhar?",
-      "Quanto precisaria por mês, em valores de hoje, para viver bem?",
-      "Conta com INSS, aluguéis ou outra renda passiva no futuro?",
-      "Quanto consegue investir por mês hoje para esse objetivo?",
+      "Como avalia seu conhecimento sobre investimentos?",
+      "Se o investimento caísse 10% em um mês, o que faria?",
+      "Quanto tem investido? Quanto pode resgatar no mesmo dia?",
+      "Tem assessor?",
     ],
-    atencao: [
-      "Os valores são reais (já descontada a inflação): use retorno real conservador, 3–5% a.a.",
-      "Patrimônio alvo = renda anual desejada ÷ taxa de retirada (4% = 25×).",
-      "Mostre a diferença entre a trajetória atual e a necessária no gráfico.",
-    ],
-    transicao: "E se pudermos antecipar algum sonho sem comprometer o futuro? Vamos ver estratégias de alavancagem.",
+    atencao: ["O valor com liquidez diária é a reserva de emergência do diagnóstico."],
   },
-  alavancagem: {
-    objetivo: "Comparar as formas de adquirir um bem (poupar, financiar, consórcio) e escolher a mais eficiente.",
-    abertura:
-      "Quando você compra um bem, existe o custo do bem e o custo do tempo. Vamos comparar as alternativas lado a lado.",
-    perguntas: [
-      "Qual bem você quer adquirir e quando precisa dele?",
-      "Precisa usar imediatamente ou pode planejar?",
-      "Qual parcela cabe confortavelmente no seu mês?",
-    ],
-    atencao: [
-      "A parcela não deve ultrapassar o limite de comprometimento da renda (Parâmetros).",
-      "Consórcio depende de contemplação (sorteio ou lance): alinhe a expectativa de prazo.",
-      "Sem bem em vista? Marque “Não se aplica”.",
-    ],
-    transicao: "Temos todas as peças. Agora vou consolidar tudo em um diagnóstico e mostrar as prioridades.",
+  "plano-atual": {
+    objetivo: "Mostrar uma primeira leitura, ainda na reunião de coleta.",
+    abertura: "Com o que você me contou, olha o retrato de hoje.",
+    perguntas: ["Isso faz sentido com o que você sente no dia a dia?", "O que mais te surpreendeu?"],
+    atencao: ["É uma visão breve: não entre em recomendações ainda.", "Agende a reunião do diagnóstico completo."],
   },
-  "visao-geral": {
-    objetivo: "Mostrar o retrato completo de forma visual e conectar os números aos sonhos do cliente.",
-    abertura: "Lembra o que você me disse no início? Vamos ver o que os números dizem sobre isso.",
-    perguntas: [
-      "O que mais te surpreendeu neste retrato?",
-      "Isso faz sentido com o que você sente no dia a dia?",
-      "Qual destes pontos você gostaria de resolver primeiro?",
-    ],
-    atencao: [
-      "Comece pelos pontos fortes, depois os alertas.",
-      "Use as palavras do cliente (motivação dos sonhos).",
-      "Mostre no máximo 3 prioridades: foco gera ação.",
-    ],
-    transicao: "Agora vamos transformar o diagnóstico em ações concretas, com prazo e responsável.",
+  panorama: {
+    objetivo: "Abrir a apresentação com a nota LIFE e os pilares.",
+    abertura: "Vamos começar pelo panorama geral: onde você está bem e onde precisa de atenção.",
+    perguntas: ["Concorda com essa leitura?"],
+    atencao: ["Comece pelos pontos fortes."],
   },
-  plano: {
-    objetivo: "Fechar compromissos: ações claras, priorizadas, com prazo e responsável.",
+  "plano-atual-completo": {
+    objetivo: "Detalhar categorias, fluxo de caixa e balanço patrimonial.",
+    abertura: "Aqui está o detalhe: para onde vai cada real e o que você tem e deve.",
+    perguntas: ["Alguma categoria te surpreendeu?"],
+    atencao: ["Use o fluxo para mostrar a sobra real."],
+  },
+  "pontos-fortes": {
+    objetivo: "Reconhecer o que o cliente já faz bem e deve manter.",
+    abertura: "Antes dos ajustes, quero destacar o que você já faz muito bem.",
+    perguntas: ["O que mais te orgulha na sua vida financeira?"],
+    atencao: ["Acrescente pontos que os números não mostram."],
+  },
+  "pontos-negativos": {
+    objetivo: "Mostrar os pontos de atuação e a probabilidade de cada objetivo acontecer.",
+    abertura: "Agora os pontos onde vamos atuar. Repare na diferença entre o cenário atual e o cenário com plano.",
+    perguntas: ["Qual destes pontos mais te incomoda?"],
+    atencao: ["No máximo 3 a 5 pontos em destaque.", "Conecte cada ponto a um objetivo do cliente."],
+  },
+  futuro: {
+    objetivo: "Calcular a independência financeira com os dados do cliente.",
+    abertura: "Independência financeira é quando trabalhar passa a ser uma escolha. Vamos ver quando isso acontece para você.",
+    perguntas: ["Com que idade gostaria de ter essa opção?", "Quanto precisaria por mês, em valores de hoje?", "Conta com INSS ou aluguéis?"],
+    atencao: ["Valores reais (já descontada a inflação).", "A projeção considera investir toda a sobra mensal atual."],
+  },
+  oportunidades: {
+    objetivo: "Mapear as oportunidades do ecossistema (uso interno do consultor).",
+    abertura: "",
+    perguntas: [],
+    atencao: ["Seção oculta na versão apresentação por padrão.", "Leve as oportunidades para o plano de ação com um clique."],
+  },
+  "plano-acao": {
+    objetivo: "Fechar ações priorizadas, por área e prazo.",
     abertura: "Um plano só funciona se for executável. Vamos escolher juntos as primeiras ações.",
-    perguntas: [
-      "Qual destas ações você consegue começar ainda esta semana?",
-      "O que pode te impedir de cumprir este plano?",
-      "Quando fazemos a nossa próxima revisão?",
-    ],
-    atencao: [
-      "Ordem recomendada: fluxo → dívidas caras → reserva → proteção → futuro → sonhos.",
-      "Comece com 3 a 5 ações. Plano grande demais não sai do papel.",
-      "Agende o acompanhamento antes de encerrar a reunião.",
-    ],
-    transicao: "Combinado! Vou registrar esta fotografia do seu diagnóstico para acompanharmos a evolução.",
+    perguntas: ["Qual destas ações você consegue começar esta semana?", "O que pode te impedir de cumprir o plano?"],
+    atencao: ["Comece com 3 a 5 ações de curto prazo."],
   },
-  historico: {
-    objetivo: "Acompanhar a evolução, celebrar conquistas e ajustar a rota.",
-    abertura: "Vamos comparar onde você estava e onde está agora.",
-    perguntas: [
-      "O que funcionou desde a nossa última conversa?",
-      "O que mudou na sua vida (trabalho, família, objetivos)?",
-      "Surgiu algum novo sonho?",
-      "Quais ações do plano ficaram travadas? Por quê?",
-    ],
-    atencao: [
-      "Registre uma fotografia do diagnóstico em cada reunião.",
-      "Celebre as conquistas: isso reforça o comportamento.",
-      "Atualize as etapas que mudaram e gere um novo PDF.",
-    ],
+  "jornada-cliente": {
+    objetivo: "Mostrar ao cliente a jornada completa e onde ele está.",
+    abertura: "Esta é a nossa jornada juntos. Vamos marcar as próximas datas.",
+    perguntas: ["Qual a melhor data para a próxima reunião?"],
+    atencao: ["Saia da reunião com a próxima data marcada."],
+  },
+  cronograma: {
+    objetivo: "Distribuir as ações do plano no tempo.",
+    abertura: "Assim fica a implementação ao longo dos próximos meses.",
+    perguntas: ["Esse ritmo é viável para você?"],
+    atencao: ["Curto: até 3 meses · Médio: 3 a 12 meses · Longo: acima de 12 meses."],
   },
 };

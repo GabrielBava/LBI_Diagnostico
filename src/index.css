@@ -73,9 +73,10 @@ body {
   color: transparent;
 }
 
-/* Campos de formulário padrão */
+/* Campos de formulário padrão (40px de altura) */
 .inp {
   width: 100%;
+  min-height: 40px;
   background: rgb(var(--input));
   border: 1px solid rgb(var(--border));
   border-radius: 6px;
@@ -93,10 +94,11 @@ body {
   align-items: center;
   gap: 6px;
   width: 100%;
+  height: 40px;
   background: rgb(var(--input));
   border: 1px solid rgb(var(--border));
   border-radius: 6px;
-  padding: 6px 10px;
+  padding: 0 10px;
 }
 .inp-wrap input {
   width: 100%;
@@ -120,12 +122,44 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
-/* Linhas de listas: todos os campos com a mesma altura */
-.lista-compacta .inp,
-.lista-compacta .inp-wrap {
-  height: 34px;
-  padding-top: 0;
-  padding-bottom: 0;
+/* Régua deslizante (percentuais e notas) */
+.regua {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, rgb(var(--primary)) var(--pct, 0%), rgb(var(--muted)) var(--pct, 0%));
+  cursor: pointer;
+}
+.regua::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid rgb(var(--primary));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+}
+.regua::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid rgb(var(--primary));
+}
+
+/* Campos condicionais aparecem suavemente */
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.aparecer {
+  animation: aparecer 0.2s ease-out;
+}
+
+/* Âncoras das seções compensam o cabeçalho fixo */
+.secao-ancora {
+  scroll-margin-top: 120px;
 }
 
 /* Barra de rolagem discreta */

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, Eye, EyeOff, Moon, Settings, Sun, X } from "lucide-react";
+import { Bell, Moon, Settings, Sun, X } from "lucide-react";
 import { APP } from "@/config/defaults";
 import { usePreferencias } from "@/lib/preferencias";
 import { lerConfig, salvarConfig, useClientes } from "@/lib/storage";
@@ -25,18 +25,18 @@ const botaoIcone =
   "relative flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition hover:bg-muted hover:text-foreground";
 
 export function Header() {
-  const { tema, alternarTema, apresentacao, alternarApresentacao } = usePreferencias();
+  const { tema, alternarTema } = usePreferencias();
   const [config, setConfig] = useState(lerConfig());
   const [painel, setPainel] = useState<"notificacoes" | "config" | null>(null);
   const clientes = useClientes();
 
-  // Notificações: ações do plano pendentes com prazo vencido ou nos próximos 7 dias.
+  // Notificações: encontros da jornada não realizados, atrasados ou nos próximos 7 dias.
   const hoje = new Date().toISOString().slice(0, 10);
   const limite = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
   const alertas = clientes.flatMap((c) =>
-    c.plano
-      .filter((a) => s(a.status) !== "Concluída" && s(a.prazo) && s(a.prazo) <= limite)
-      .map((a) => ({ cliente: c, acao: a, vencida: s(a.prazo) < hoje })),
+    c.jornada
+      .filter((r) => s(r.status) !== "Realizada" && s(r.data) && s(r.data) <= limite)
+      .map((r) => ({ cliente: c, acao: r, vencida: s(r.data) < hoje })),
   );
 
   return (
@@ -49,17 +49,6 @@ export function Header() {
         {APP.versao}
       </span>
       <div className="ml-auto flex items-center gap-1 sm:gap-2">
-        <button
-          type="button"
-          onClick={alternarApresentacao}
-          title={apresentacao ? "Sair do modo apresentação" : "Modo apresentação: oculta roteiro e anotações"}
-          className={`flex h-8 items-center gap-1.5 rounded-md px-2 text-xs transition ${
-            apresentacao ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          {apresentacao ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          <span className="hidden lg:inline">{apresentacao ? "Modo apresentação" : "Modo consultor"}</span>
-        </button>
         <div className="relative">
           <button type="button" aria-label="Notificações" className={botaoIcone} onClick={() => setPainel(painel === "notificacoes" ? null : "notificacoes")}>
             <Bell className="h-4 w-4" />
@@ -67,19 +56,19 @@ export function Header() {
           </button>
           {painel === "notificacoes" && (
             <div className="absolute right-0 top-10 w-80 rounded-xl border border-border bg-popover p-3 shadow-xl">
-              <div className="mb-2 text-xs font-semibold">Ações com prazo próximo</div>
-              {alertas.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma ação vencida ou para os próximos 7 dias.</p>}
+              <div className="mb-2 text-xs font-semibold">Próximos encontros</div>
+              {alertas.length === 0 && <p className="text-xs text-muted-foreground">Nenhum encontro atrasado ou nos próximos 7 dias.</p>}
               <ul className="max-h-72 space-y-1 overflow-auto">
                 {alertas.map(({ cliente, acao, vencida }) => (
                   <li key={acao.id}>
                     <Link
-                      to={`/clientes/${cliente.id}?etapa=plano`}
+                      to={`/clientes/${cliente.id}?secao=jornada-cliente`}
                       onClick={() => setPainel(null)}
                       className="block rounded-md px-2 py-1.5 text-xs hover:bg-muted"
                     >
-                      <div className="font-medium">{s(acao.acao) || "Ação sem título"}</div>
+                      <div className="font-medium">{s(acao.titulo) || "Encontro"}</div>
                       <div className={vencida ? "text-destructive" : "text-muted-foreground"}>
-                        {s(cliente.cadastro.nome)} · {vencida ? "venceu" : "vence"} em {fmtData(s(acao.prazo))}
+                        {s(cliente.cadastro.nome)} · {vencida ? "atrasado desde" : "em"} {fmtData(s(acao.data))}
                       </div>
                     </Link>
                   </li>

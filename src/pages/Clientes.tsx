@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Copy, Download, FlaskConical, Plus, Search, Trash2, Upload } from "lucide-react";
-import { progresso } from "@/config/etapas";
+import { progresso } from "@/config/estrutura";
 import { BarraProgresso, BotaoContorno, BotaoOuro } from "@/components/ui";
 import { s } from "@/lib/calculos";
 import { notaGeral, pilares } from "@/lib/diagnostico";
@@ -32,7 +32,7 @@ export default function Clientes() {
     const nome = prompt("Nome do cliente:");
     if (nome === null) return;
     const c = salvarCliente(novoCliente(nome.trim()));
-    navigate(`/clientes/${c.id}?etapa=apresentacao`);
+    navigate(`/clientes/${c.id}`);
   };
 
   const importar = async (f: File) => {
@@ -115,7 +115,7 @@ export default function Clientes() {
                   </div>
                   <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>Progresso {prog.pct}%</span>
-                    <span>{prog.proxima ? `Próxima: ${prog.proxima.label}` : "Pronto para apresentar"}</span>
+                    <span>{prog.proxima ? `Próxima: ${prog.proxima.titulo}` : "Coleta completa"}</span>
                   </div>
                   <BarraProgresso valor={prog.pct} className="mt-1" />
                 </Link>
