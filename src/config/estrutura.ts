@@ -34,7 +34,7 @@ import {
   Wallet,
 } from "lucide-react";
 import type { Cliente } from "@/types";
-import { financiamentosDoPatrimonio, n, renda, s } from "@/lib/calculos";
+import { financiamentosDoPatrimonio, n, nOpt, renda, s } from "@/lib/calculos";
 import { GRUPOS_DESPESA } from "./despesas";
 
 export interface Etapa {
@@ -131,7 +131,9 @@ export const SECOES: SecaoDef[] = [
     coleta: true,
     opcional: true,
     concluida: (c) =>
-      c.dependentes.some((d) => !!s(d.nome) || !!s(d.nivelEscola) || n(d.mensalidade) > 0 || n(d.auxilio) > 0) ||
+      c.dependentes.some(
+        (d) => !!s(d.nome) || nOpt(d.idade) !== undefined || !!s(d.nivelEscola) || n(d.mensalidade) > 0 || n(d.auxilio) > 0,
+      ) ||
       (s(c.cadastro.temFilhos) === "Não" && c.dependentes.length === 0),
   },
 

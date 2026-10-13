@@ -35,7 +35,7 @@ function QuadroReserva() {
         <strong className="tabular-nums">{meses(r.meses)}</strong>.
         {estimativa !== undefined && diferente && <span className="text-muted-foreground"> O cliente estima {meses(estimativa)}.</span>}
       </p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Kpi rotulo="Reserva informada" valor={fmtBRL(r.atual)} />
         <Kpi
           rotulo="Cobertura"

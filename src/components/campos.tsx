@@ -97,17 +97,19 @@ export function CampoNumero({
   );
 }
 
-/** Opções curtas como botões; clicar de novo na opção marcada limpa a escolha. */
+/** Opções curtas como botões; clicar de novo na opção marcada limpa a escolha (exceto se `obrigatorio`). */
 export function Chips({
   opcoes,
   valor,
   onChange,
   ariaLabel,
+  obrigatorio = false,
 }: {
   opcoes: string[];
   valor: Valor;
   onChange: (v: string | undefined) => void;
   ariaLabel?: string;
+  obrigatorio?: boolean;
 }) {
   return (
     <div role="radiogroup" aria-label={ariaLabel} className="flex flex-wrap gap-1.5">
@@ -119,7 +121,7 @@ export function Chips({
             type="button"
             role="radio"
             aria-checked={ativo}
-            onClick={() => onChange(ativo ? undefined : o)}
+            onClick={() => (ativo ? !obrigatorio && onChange(undefined) : onChange(o))}
             className={`h-9 rounded-full border px-3.5 text-xs font-medium transition ${
               ativo
                 ? "border-transparent bg-gold text-primary-foreground shadow-sm"
@@ -148,9 +150,14 @@ export function Interruptor({ label, valor, onChange }: { label: string; valor: 
       }`}
     >
       <span className={ligado ? "font-medium" : "text-muted-foreground"}>{label}</span>
-      <span className={`relative h-5 w-9 shrink-0 rounded-full transition ${ligado ? "bg-gold" : "bg-muted"}`}>
+      {/* Desligado: trilho com borda para aparecer também no tema claro. */}
+      <span
+        className={`relative h-5 w-9 shrink-0 rounded-full border transition ${
+          ligado ? "border-transparent bg-gold" : "border-muted-foreground/45 bg-muted"
+        }`}
+      >
         <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${ligado ? "left-[18px]" : "left-0.5"}`}
+          className={`absolute top-px h-4 w-4 rounded-full bg-white shadow ring-1 ring-black/10 transition-all ${ligado ? "left-[17px]" : "left-px"}`}
         />
       </span>
     </button>
@@ -421,7 +428,7 @@ export function Controle({
         />
       );
     case "chips":
-      return <Chips opcoes={campo.opcoes ?? []} valor={valor} onChange={onChange} ariaLabel={campo.label} />;
+      return <Chips opcoes={campo.opcoes ?? []} valor={valor} onChange={onChange} ariaLabel={campo.label} obrigatorio={campo.obrigatorio} />;
     case "simnao":
       return <Chips opcoes={["Sim", "Não"]} valor={valor} onChange={onChange} ariaLabel={campo.label} />;
     case "multichips":
@@ -524,10 +531,14 @@ export function Formulario({
     <div className={`grid grid-cols-1 gap-x-4 gap-y-4 ${grid}`}>
       {visiveis.map((original) => {
         const c = original.opcoesSe ? { ...original, opcoes: original.opcoesSe(dados, cliente) } : original;
-        const span = SPAN[Math.min(c.largura ?? 1, colunas)];
+        const span = `${SPAN[Math.min(c.largura ?? 1, colunas)]} ${c.novaLinha ? "sm:col-start-1" : ""}`;
         if (c.tipo === "switch")
           return (
-            <div key={c.key} className={`aparecer self-end ${span}`}>
+            <div key={c.key} className={`aparecer ${span}`}>
+              {/* Espaço do rótulo: alinha o interruptor com a caixa dos campos vizinhos. */}
+              <span aria-hidden="true" className="mb-1.5 hidden text-[11px] sm:block">
+                &nbsp;
+              </span>
               <Controle campo={c} valor={dados[c.key]} onChange={(v) => onChange(c.key, v)} />
             </div>
           );

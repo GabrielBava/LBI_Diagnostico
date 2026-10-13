@@ -257,7 +257,7 @@ export default function Despesas() {
     const pct = pctRenda(total);
     return (
       <SubBloco
-        titulo={bloco === "Fixa" ? "Despesas fixas" : "Despesas variáveis"}
+        titulo={bloco === "Fixa" ? (d.parcelas > 0 ? "Despesas fixas (sem parcelas)" : "Despesas fixas") : "Despesas variáveis"}
         total={
           <span>
             {fmtBRL(total)}

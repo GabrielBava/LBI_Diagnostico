@@ -26,6 +26,11 @@ import {
 
 export type Status = "ok" | "atencao" | "critico" | "sem-dados";
 
+/** Dívidas de juros altos (as demais categorias, como consignado e FIES, não são "crédito caro"). */
+const DIVIDAS_CARAS = ["Cartão de crédito", "Cheque especial", "Carnê / crediário", "Renegociação", "Empréstimo pessoal"];
+/** Dívida cara ou sem categoria (dados antigos). */
+const dividaCara = (categoria: string) => !categoria || DIVIDAS_CARAS.includes(categoria);
+
 export interface Pilar {
   id: string;
   nome: string;
@@ -174,7 +179,8 @@ export function pontos(c: Cliente): { fortes: Ponto[]; negativos: Ponto[] } {
       negativos.push({
         id: "poupanca-baixa",
         area: "Fluxo de caixa",
-        texto: `Taxa de poupança de ${fmtPct(f.taxaPoupanca)}, abaixo dos 20% recomendados.`,
+        // Uma casa decimal, arredondando para baixo: 19,96% não pode aparecer como "20%, abaixo dos 20%".
+        texto: `Taxa de poupança de ${(Math.floor(f.taxaPoupanca * 1000) / 10).toLocaleString("pt-BR")}%, abaixo dos 20% recomendados.`,
       });
   }
   // Modelo 50-30-20 (o mesmo do pré-diagnóstico).
@@ -217,12 +223,14 @@ export function pontos(c: Cliente): { fortes: Ponto[]; negativos: Ponto[] } {
     });
   if (c.emprestimos.length > 0) {
     const categorias = [...new Set(c.emprestimos.map((e) => s(e.categoria)).filter(Boolean))];
+    const caras = c.emprestimos.some((e) => dividaCara(s(e.categoria)));
     negativos.push({
       id: "emprestimos",
       area: "Dívidas",
-      texto: `${c.emprestimos.length} dívida(s) ativa(s)${categorias.length ? ` (${categorias.join(", ")})` : ""} somando ${fmtBRL(
-        dv.parcelasEmp,
-      )}/mês: crédito caro.`,
+      texto:
+        `${c.emprestimos.length} dívida(s) ativa(s)${categorias.length ? ` (${categorias.join(", ")})` : ""}` +
+        (dv.parcelasEmp > 0 ? ` somando ${fmtBRL(dv.parcelasEmp)}/mês` : "") +
+        (caras ? ": crédito caro." : "."),
     });
   }
 
@@ -363,8 +371,13 @@ export function oportunidades(c: Cliente): Oportunidade[] {
     out.push({ id: "op-socio", quadrante: "Seguros", titulo: "Seguro de sócio (key person)", detalhe: "Protege a continuidade da empresa.", prioridade: "Média", prazo: "Médio" });
 
   // Patrimonial
+  // Futuras aquisições que já viram consórcio: o objetivo do mesmo segmento não repete a sugestão.
+  const aquisicoes = sim(c.patrimonioGeral.pretendeAdquirir) ? c.aquisicoes.filter((a) => n(a.valorDesejado) > 0) : [];
+  const segmentoComConsorcio = (segmento: string) =>
+    aquisicoes.some((a) => s(a.segmento) === segmento && ["Financiamento", "Consórcio"].includes(s(a.estrategia)));
   c.objetivos
     .filter((o) => ["Casa", "Veículo"].includes(s(o.categoria)) && n(o.valorFuturo) > 0)
+    .filter((o) => !segmentoComConsorcio(s(o.categoria) === "Casa" ? "Imóvel" : "Veículo"))
     .forEach((o) =>
       out.push({
         id: `op-cons-${o.id}`,
@@ -388,24 +401,23 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       prazo: "Médio",
     });
   // Futuras aquisições (7 · Patrimônio): consórcio no lugar do financiamento; à vista pede investimento dedicado.
-  if (sim(c.patrimonioGeral.pretendeAdquirir))
-    c.aquisicoes
-      .filter((a) => n(a.valorDesejado) > 0)
-      .forEach((a) => {
-        const nome = [s(a.categoria), s(a.tipo)].filter(Boolean).join(" ").toLowerCase() || s(a.segmento).toLowerCase() || "aquisição";
-        const valor = fmtBRL(n(a.valorDesejado));
-        if (s(a.estrategia) === "Financiamento" || s(a.estrategia) === "Consórcio")
-          out.push({
-            id: `op-aq-${a.id}`,
-            quadrante: "Patrimonial",
-            titulo: `Consórcio para ${s(a.segmento).toLowerCase() || "aquisição"} (${nome})`,
-            detalhe:
-              s(a.estrategia) === "Financiamento"
-                ? `Carta de ${valor} em vez de financiamento: sem juros, só taxa de administração.`
-                : `Carta de ${valor}, como o cliente pretende.`,
-            prioridade: "Média",
-            prazo: "Médio",
-          });
+  aquisicoes.forEach((a) => {
+    // Imóvel: "Casa · Veraneio"; veículo: "Carro · Novo".
+    const partes = s(a.segmento) === "Veículo" ? [s(a.categoria), s(a.tipo)] : [s(a.tipo), s(a.categoria)];
+    const nome = partes.filter(Boolean).join(" · ") || s(a.segmento) || "aquisição";
+    const valor = fmtBRL(n(a.valorDesejado));
+    if (s(a.estrategia) === "Financiamento" || s(a.estrategia) === "Consórcio")
+      out.push({
+        id: `op-aq-${a.id}`,
+        quadrante: "Patrimonial",
+        titulo: `Consórcio para ${nome}`,
+        detalhe:
+          s(a.estrategia) === "Financiamento"
+            ? `Carta de ${valor} em vez de financiamento: sem juros, só taxa de administração.`
+            : `Carta de ${valor}, como o cliente pretende.`,
+        prioridade: "Média",
+        prazo: "Médio",
+      });
         else if (s(a.estrategia) === "À vista")
           out.push({
             id: `op-aq-${a.id}`,
@@ -450,12 +462,14 @@ export function oportunidades(c: Cliente): Oportunidade[] {
   if (sim(c.investimentos.temInvestimento) && s(c.investimentos.temAssessor) === "Não")
     out.push({ id: "op-assessoria", quadrante: "Investimentos", titulo: "Assessoria de investimentos", detalhe: "Cliente investe sem acompanhamento.", prioridade: "Média", prazo: "Curto" });
   const ct = cartoes(c);
-  if (ct.semMilhas.length && ct.gasto >= 3000)
+  // Só o gasto dos cartões que não acumulam pontos.
+  const gastoSemMilhas = ct.semMilhas.reduce((t, k) => t + n(k.gastoMensal), 0);
+  if (gastoSemMilhas >= 3000)
     out.push({
       id: "op-cartao",
       quadrante: "Investimentos",
       titulo: "Cartão com milhas ou cashback",
-      detalhe: `Gasta ${fmtBRL(ct.gasto)}/mês no cartão sem acumular pontos.`,
+      detalhe: `Gasta ${fmtBRL(gastoSemMilhas)}/mês em cartão sem acumular pontos.`,
       prioridade: "Baixa",
       prazo: "Curto",
     });
@@ -540,8 +554,15 @@ export function sugestoes(c: Cliente): Sugestao[] {
     out.push({ id: "sg-deficit", acao: `Eliminar o déficit de ${fmtBRL(-f.sobra)}/mês revisando despesas variáveis`, area: "Fluxo de caixa", prioridade: "Alta", prazo: "Curto" });
   else if (f.renda > 0 && f.taxaPoupanca < 0.1)
     out.push({ id: "sg-poupanca", acao: "Elevar a taxa de poupança para ao menos 10% da renda", area: "Fluxo de caixa", prioridade: "Média", prazo: "Curto" });
-  if (c.emprestimos.length > 0)
-    out.push({ id: "sg-emprestimos", acao: "Quitar ou renegociar as dívidas mais caras (cartão, cheque especial, empréstimos)", area: "Dívidas", prioridade: "Alta", prazo: "Curto" });
+  const caras = [...new Set(c.emprestimos.filter((e) => dividaCara(s(e.categoria))).map((e) => s(e.categoria) || "empréstimos"))];
+  if (caras.length)
+    out.push({
+      id: "sg-emprestimos",
+      acao: `Quitar ou renegociar as dívidas caras (${caras.join(", ").toLowerCase()})`,
+      area: "Dívidas",
+      prioridade: "Alta",
+      prazo: "Curto",
+    });
   if (f.comprometimento > limite)
     out.push({ id: "sg-comprometimento", acao: `Reduzir parcelas para menos de ${fmtPct(limite)} da renda`, area: "Dívidas", prioridade: "Alta", prazo: "Médio" });
   if (r.falta > 0)

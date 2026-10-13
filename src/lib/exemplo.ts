@@ -86,6 +86,7 @@ export function clienteExemplo(): Cliente {
       { id: i(), segmento: "Veículo", categoria: "Carro", tipo: "Novo", valorDesejado: 180000, estrategia: "Financiamento" },
     ],
     financiamentos: [],
+    consorcios: [{ id: i(), tipo: "Serviços", parcela: 450, prazo: 30, credito: 12000, contemplado: false }],
     emprestimos: [{ id: i(), categoria: "Empréstimo pessoal", instituicao: "Banco X", parcela: 1100, prazo: 18 }],
     corporativo: { possuiEmpresa: "Não" },
     protecao: {
@@ -98,7 +99,9 @@ export function clienteExemplo(): Cliente {
       seguroEmpresa: 250000,
       temInvalidez: "Não",
       temSaude: "Sim",
-      temPrevidencia: "Não",
+      temPrevidencia: "Sim",
+      tipoPrevidencia: "VGBL",
+      valorPrevidencia: 40000,
       horizonte: 5,
     },
     investimentos: {

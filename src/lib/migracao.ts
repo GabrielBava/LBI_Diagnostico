@@ -86,6 +86,7 @@ export function migrarV1(v1: V1): Partial<Cliente> & { id: string } {
       categoria: "Filho(a)",
       nome: f.nome,
       escola: f.escola === "Pública" || f.escola === "Particular" ? f.escola : undefined,
+      idade: num(f.idade) > 0 ? num(f.idade) : undefined,
       nivelEscola: nivelPorIdade(num(f.idade), f.escola, num(f.mensalidadeEscola)),
       mensalidade: f.mensalidadeEscola,
     })),
@@ -272,12 +273,13 @@ export function atualizarV6(c: Partial<Cliente> & { id: string }): Partial<Clien
   const imoveis = (c.imoveis ?? []).map(situacao);
   const moveis = (c.moveis ?? []).map(situacao);
 
-  // Parcelas que eram digitadas em Despesas (sem dívida cadastrada) viram um financiamento.
-  const temDividas =
-    (c.financiamentos ?? []).length + (c.consorcios ?? []).length + (c.emprestimos ?? []).length > 0 ||
-    [...imoveis, ...moveis].some((b) => b.situacao === "Financiado" && (num(b.parcela) > 0 || num(b.saldo) > 0));
+  // Parcelas digitadas em Despesas valiam quando nenhuma dívida tinha parcela (mesma regra da v5):
+  // nesse caso viram um financiamento, para o total não cair.
+  const parcelasCadastradas =
+    [...(c.financiamentos ?? []), ...(c.consorcios ?? []), ...(c.emprestimos ?? [])].reduce((t, d) => t + num(d.parcela), 0) +
+    [...imoveis, ...moveis].filter((b) => b.situacao === "Financiado").reduce((t, b) => t + num(b.parcela), 0);
   const financiamentos =
-    parcelasDigitadas > 0 && !temDividas
+    parcelasDigitadas > 0 && parcelasCadastradas <= 0
       ? [...(c.financiamentos ?? []), { id: uid(), tipo: "Outro", parcela: parcelasDigitadas }]
       : c.financiamentos;
 

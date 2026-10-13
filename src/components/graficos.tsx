@@ -36,7 +36,8 @@ export function BarrasHorizontais({
   if (!ordenados.length) return <p className="py-6 text-center text-xs text-muted-foreground">Sem valores para exibir.</p>;
   const h = altura ?? Math.max(120, ordenados.length * 40 + 20);
   return (
-    <div style={{ height: h }}>
+    // overflow-hidden: o tooltip (rótulos longos) não cria rolagem lateral no celular.
+    <div className="overflow-hidden" style={{ height: h }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={ordenados} layout="vertical" margin={{ top: 0, right: 72, bottom: 0, left: 0 }} barCategoryGap={8}>
           <XAxis type="number" hide />
@@ -456,7 +457,7 @@ function Coluna({
   total: number;
   titulo: string;
   subtitulo: string;
-  /** Renda: o que passa dela fica listrado (déficit) por cima dos segmentos. */
+  /** Renda: com déficit, uma linha tracejada marca a renda e o excedente é rotulado acima. */
   deficitAcimaDe?: number;
   /** Valor no topo da coluna (só na renda; as outras repetem a mesma altura). */
   mostrarTotal?: boolean;
@@ -489,11 +490,21 @@ function Coluna({
             );
           })}
         {deficitAcimaDe !== undefined && total > deficitAcimaDe && (
-          <div
-            className="absolute -inset-x-1 rounded-t border-2 border-destructive"
-            style={{ bottom: px(deficitAcimaDe), height: px(total) - px(deficitAcimaDe), background: TEXTURA_DEFICIT }}
-            title={`Déficit: ${fmtBRL(total - deficitAcimaDe)}`}
-          />
+          <>
+            {/* Linha da renda sobre a coluna: o que passa dela é o déficit (sem cobrir os segmentos). */}
+            <div
+              className="absolute -inset-x-2 border-t-2 border-dashed border-foreground"
+              style={{ bottom: px(deficitAcimaDe) - 1 }}
+              title={`Renda: ${fmtBRL(deficitAcimaDe)}`}
+            />
+            <span
+              className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1 whitespace-nowrap text-xs font-semibold tabular-nums text-destructive"
+              style={{ bottom: px(total) + 4 }}
+            >
+              <TrendingDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              Déficit {fmtBRL(total - deficitAcimaDe)}
+            </span>
+          </>
         )}
         {mostrarTotal && (
           <span
@@ -506,7 +517,7 @@ function Coluna({
       </div>
       <div className="mt-1.5 w-full border-t border-border pt-1.5 text-center text-xs leading-tight">
         <span className="block font-semibold">{titulo}</span>
-        <span className="block truncate text-muted-foreground">{subtitulo}</span>
+        <span className="block text-muted-foreground">{subtitulo}</span>
       </div>
     </div>
   );
@@ -538,13 +549,13 @@ export function Grafico503020({
   const atual: Segmento[] = [
     { id: "nec", nome: "Necessidades (hoje)", valor: nec, estilo: azul, rotulo: pct(nec) },
     { id: "des", nome: "Desejos (hoje)", valor: des, estilo: laranja, rotulo: pct(des) },
-    ...(sobra > 0 ? [{ id: "sobra", nome: "Sobra (poupança hoje)", valor: sobra, estilo: {}, classe: tracejado, rotulo: pct(sobra) }] : []),
+    ...(sobra > 0 ? [{ id: "sobra", nome: "Poupança e investimentos (sobra)", valor: sobra, estilo: {}, classe: tracejado, rotulo: pct(sobra) }] : []),
   ];
 
   const modelo: Segmento[] = [
     { id: "nec", nome: "Necessidades (50%)", valor: r * 0.5, estilo: azul, rotulo: "50%" },
     { id: "des", nome: "Desejos (30%)", valor: r * 0.3, estilo: laranja, rotulo: "30%" },
-    { id: "pou", nome: "Poupança (20%)", valor: r * 0.2, estilo: {}, classe: tracejado, rotulo: "20%" },
+    { id: "pou", nome: "Poupança e investimentos (20%)", valor: r * 0.2, estilo: {}, classe: tracejado, rotulo: "20%" },
   ];
 
   const legenda = [
@@ -552,8 +563,14 @@ export function Grafico503020({
     { nome: "Necessidades", valor: nec, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={azul} /> },
     { nome: "Desejos", valor: des, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={laranja} /> },
     ...(deficit > 0
-      ? [{ nome: "Déficit", valor: deficit, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-destructive" style={{ background: TEXTURA_DEFICIT }} /> }]
-      : [{ nome: "Sobra / poupança", valor: sobra, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-dashed border-success bg-success/15" /> }]),
+      ? [{ nome: "Déficit (acima da linha da renda)", valor: deficit, amostra: <span className="h-0 w-3 shrink-0 border-t-2 border-dashed border-foreground" /> }]
+      : [
+          {
+            nome: "Poupança e investimentos (sobra)",
+            valor: sobra,
+            amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-dashed border-success bg-success/15" />,
+          },
+        ]),
   ];
 
   return (
@@ -581,7 +598,8 @@ export function Grafico503020({
           segmentos={atual}
           deficitAcimaDe={deficit > 0 ? r : undefined}
         />
-        <Coluna titulo="Modelo 50-30-20" subtitulo={`ideal sobre ${fmtBRL(r)}`} topo={topo} total={r} segmentos={modelo} />
+        {/* Hífens inseparáveis: "50‑30‑20" não quebra no celular. */}
+        <Coluna titulo="Modelo 50‑30‑20" subtitulo="ideal" topo={topo} total={r} segmentos={modelo} />
       </div>
       <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
         {legenda.map((l) => (

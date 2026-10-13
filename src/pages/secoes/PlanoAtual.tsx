@@ -79,7 +79,8 @@ export default function PlanoAtual() {
       </SubBloco>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
-        <SubBloco titulo="Análise 50-30-20">
+        {/* No desktop a análise acompanha a rolagem da lista de categorias ao lado. */}
+        <SubBloco titulo="Análise 50-30-20" className="lg:sticky lg:top-20">
           {m.renda <= 0 ? (
             <p className="text-sm text-muted-foreground">Informe a renda para comparar com o modelo.</p>
           ) : (
@@ -91,19 +92,17 @@ export default function PlanoAtual() {
                   const ehPoupanca = p.id === "Poupança";
                   const cor = COR_PARTE[p.id];
                   const situacao = ok
-                    ? ehPoupanca
-                      ? "Na meta ou acima"
-                      : "Dentro do ideal"
+                    ? "Dentro da meta"
                     : ehPoupanca
-                      ? `${fmtBRL(-p.diferenca)} abaixo do ideal`
-                      : `${fmtBRL(p.diferenca)} acima do ideal`;
+                      ? `${fmtBRL(-p.diferenca)} abaixo`
+                      : `${fmtBRL(p.diferenca)} acima`;
                   return (
                     <li key={p.id}>
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                         <span className="text-sm font-semibold">
                           {p.label}{" "}
                           <span className="text-xs font-normal text-muted-foreground">
-                            · {ehPoupanca ? `ideal: pelo menos ${fmtPct(p.meta)}` : `ideal até ${fmtPct(p.meta)}`}
+                            · meta: {ehPoupanca ? `pelo menos ${fmtPct(p.meta)}` : `até ${fmtPct(p.meta)}`}
                           </span>
                         </span>
                         <span className="text-sm tabular-nums">
@@ -112,10 +111,12 @@ export default function PlanoAtual() {
                       </div>
                       {/* Barra em % da renda; o traço marca a meta do modelo. */}
                       <div className="relative mt-1.5 h-2.5 rounded-full bg-muted/60">
-                        <div
-                          className={`h-full rounded-full ${ehPoupanca ? "border border-dashed border-success bg-success/25" : ""}`}
-                          style={{ width: `${Math.min(100, p.pct * 100)}%`, background: cor }}
-                        />
+                        {p.pct > 0 && (
+                          <div
+                            className={`h-full rounded-full ${ehPoupanca ? "border border-dashed border-success bg-success/25" : ""}`}
+                            style={{ width: `${Math.min(100, p.pct * 100)}%`, background: cor }}
+                          />
+                        )}
                         <span
                           className="absolute -top-1 h-[18px] w-0.5 rounded bg-foreground"
                           style={{ left: `calc(${p.meta * 100}% - 1px)` }}
@@ -198,7 +199,7 @@ export default function PlanoAtual() {
             );
           })}
           <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-border pt-2 text-sm">
-            <span className="font-semibold">{m.sobra >= 0 ? "Sobra para poupar e investir" : "Déficit"}</span>
+            <span className="font-semibold">{m.sobra >= 0 ? "Poupança e investimentos (sobra)" : "Déficit"}</span>
             <span className={`font-semibold tabular-nums ${m.sobra < 0 ? "text-destructive" : ""}`}>
               {fmtBRL(Math.abs(m.sobra))}
               {m.renda > 0 && <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">{fmtPct(Math.abs(m.sobra) / m.renda)}</span>}

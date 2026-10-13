@@ -64,7 +64,7 @@ export default function Panorama() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi rotulo="Renda mensal" valor={fmtBRL(f.renda)} />
         <Kpi rotulo="Despesas mensais" valor={fmtBRL(f.despesas)} />
         <Kpi rotulo="Sobra" valor={fmtBRL(f.sobra)} tom={f.sobra < 0 ? "perigo" : "neutro"} detalhe={f.renda > 0 ? fmtPct(f.taxaPoupanca) : undefined} />

@@ -19,6 +19,8 @@
 //    min / max / passo-> limites (slider / contador / número)
 //    mostrarSe        -> regra para exibir o campo (ex.: cônjuge só se casado)
 //    somenteConsultor -> oculto na versão apresentação
+//    novaLinha        -> começa uma linha nova (o campo que ele revela fica ao lado)
+//    obrigatorio      -> chips sem opção de desmarcar (ex.: Quitado / Financiado)
 // =====================================================================
 
 import type { LucideIcon } from "lucide-react";
@@ -65,6 +67,10 @@ export interface CampoDef {
   icones?: Record<string, LucideIcon>;
   /** Opções que dependem dos dados (ex.: "Cônjuge" só para casados). Substitui `opcoes`. */
   opcoesSe?: (dados: Secao, cliente: Cliente) => string[];
+  /** Começa uma linha nova na grade (o campo condicional seguinte abre ao lado, sem mexer nos demais). */
+  novaLinha?: boolean;
+  /** Chips: clicar na opção marcada não desmarca (sempre há uma escolha). */
+  obrigatorio?: boolean;
 }
 
 const sim = (v: Valor) => v === "Sim" || v === true;
@@ -350,30 +356,33 @@ export const CAMPOS_CARTAO: CampoDef[] = [
   { key: "cartao", label: "Qual cartão", tipo: "texto", largura: 2, placeholder: "Banco / bandeira / categoria" },
   { key: "limite", label: "Limite", tipo: "moeda" },
   { key: "gastoMensal", label: "Quanto gasta por mês", tipo: "moeda" },
-  { key: "milhas", label: "Acumula milhas / pontos", tipo: "switch", largura: 2 },
+  // Cada flag começa uma linha e o campo que ela abre fica ao lado.
+  { key: "milhas", label: "Acumula milhas / pontos", tipo: "switch", largura: 2, novaLinha: true },
   { key: "programa", label: "Programa", tipo: "texto", placeholder: "Ex.: Smiles, Livelo", largura: 2, mostrarSe: (d) => d.milhas === true },
-  { key: "pagaAnuidade", label: "Paga anuidade", tipo: "switch", largura: 2 },
-  {
-    key: "valorAnuidade",
-    label: "Valor da anuidade (por ano)",
-    tipo: "moeda",
-    largura: 2,
-    ajuda: "Entra em Despesas · Outras despesas fixas (÷ 12).",
-    mostrarSe: (d) => d.pagaAnuidade === true,
-  },
+  { key: "pagaAnuidade", label: "Paga anuidade", tipo: "switch", largura: 2, novaLinha: true },
+  { key: "valorAnuidade", label: "Valor da anuidade (por ano)", tipo: "moeda", largura: 2, mostrarSe: (d) => d.pagaAnuidade === true },
 ];
 
 // ---------------------------------------------------------------------
 //  7 · Patrimônio
 // ---------------------------------------------------------------------
 
-/** Bem financiado? (dados antigos usavam o campo `quitado`, sim/não). */
-export const bemFinanciado = (d: Secao) => (d.situacao ? d.situacao === "Financiado" : d.quitado !== true);
-const SITUACAO_BEM: CampoDef = { key: "situacao", label: "Situação", tipo: "chips", opcoes: OPCOES.situacaoBem, padrao: "Quitado", largura: 2 };
+/** Bem financiado? Sem situação marcada, vale o campo antigo `quitado` (sim/não) ou, sem ele, Quitado. */
+export const bemFinanciado = (d: Secao) => (d.situacao ? d.situacao === "Financiado" : d.quitado === false);
+const SITUACAO_BEM: CampoDef = {
+  key: "situacao",
+  label: "Situação",
+  tipo: "chips",
+  opcoes: OPCOES.situacaoBem,
+  padrao: "Quitado",
+  obrigatorio: true,
+  novaLinha: true,
+  largura: 2,
+};
 
 /** Campos que aparecem quando o bem está financiado. */
 const CAMPOS_FINANCIAMENTO_DO_BEM: CampoDef[] = [
-  { key: "instituicao", label: "Instituição", tipo: "texto", placeholder: "Banco / financeira", mostrarSe: bemFinanciado },
+  { key: "instituicao", label: "Instituição", tipo: "texto", placeholder: "Banco / financeira", mostrarSe: bemFinanciado, novaLinha: true },
   { key: "parcela", label: "Parcela", tipo: "moeda", mostrarSe: bemFinanciado },
   { key: "prazo", label: "Prazo restante (meses)", tipo: "numero", mostrarSe: bemFinanciado },
   { key: "saldo", label: "Saldo devedor (se souber)", tipo: "moeda", mostrarSe: bemFinanciado },
@@ -394,18 +403,19 @@ export const CAMPOS_MOVEL: CampoDef[] = [
   { key: "valor", label: "Valor de mercado", tipo: "moeda" },
   SITUACAO_BEM,
   { key: "temSeguro", label: "Tem seguro", tipo: "switch", largura: 2 },
-  { key: "manutencaoAnual", label: "Manutenção (por ano)", tipo: "moeda", ajuda: "Revisões, pneus, reparos" },
-  { key: "ipvaAnual", label: "IPVA e licenciamento (por ano)", tipo: "moeda", ajuda: "Entram em Despesas · Transporte (÷ 12)." },
-  { key: "pensaAmpliacao", label: "Pensa em ampliação / troca", tipo: "switch", largura: 2 },
+  // Financiado abre os campos logo abaixo da situação.
+  ...CAMPOS_FINANCIAMENTO_DO_BEM,
+  { key: "manutencaoAnual", label: "Manutenção (por ano)", tipo: "moeda", novaLinha: true },
+  { key: "ipvaAnual", label: "IPVA e licenciamento (por ano)", tipo: "moeda" },
+  { key: "pensaAmpliacao", label: "Pensa em ampliação / troca", tipo: "switch", largura: 2, novaLinha: true },
   {
     key: "modeloDesejado",
-    label: "Modelo / carro de desejo",
+    label: "Modelo de desejo",
     tipo: "texto",
     placeholder: "Ex.: SUV híbrido",
     largura: 2,
     mostrarSe: (d) => d.pensaAmpliacao === true,
   },
-  ...CAMPOS_FINANCIAMENTO_DO_BEM,
 ];
 
 /** Pergunta que abre as futuras aquisições (fica em 7 · Patrimônio). */
@@ -415,7 +425,7 @@ export const CAMPOS_PATRIMONIO_GERAL: CampoDef[] = [
 
 const ehImovel = (d: Secao) => d.segmento !== "Veículo";
 export const CAMPOS_AQUISICAO: CampoDef[] = [
-  { key: "segmento", label: "Segmento", tipo: "chips", opcoes: OPCOES.segmentoAquisicao, padrao: "Imóvel", largura: 2 },
+  { key: "segmento", label: "Segmento", tipo: "chips", opcoes: OPCOES.segmentoAquisicao, padrao: "Imóvel", obrigatorio: true, largura: 2 },
   {
     key: "categoria",
     label: "Categoria",
@@ -502,10 +512,11 @@ export const CAMPOS_PROTECAO: CampoDef[] = [
   { key: "temSeguroVida", label: "Tem seguro de vida individual?", tipo: "simnao", largura: 2 },
   { key: "capitalAtual", label: "Capital segurado", tipo: "moeda", mostrarSe: (d) => sim(d.temSeguroVida) },
   { key: "premioAtual", label: "Prêmio mensal", tipo: "moeda", mostrarSe: (d) => sim(d.temSeguroVida) },
-  { key: "seguroEmpresa", label: "Seguro de vida pela empresa", tipo: "moeda", ajuda: "Termina quando o vínculo acaba." },
+  { key: "seguroEmpresa", label: "Seguro de vida pela empresa", tipo: "moeda", largura: 2, ajuda: "Termina quando o vínculo acaba." },
   { key: "temInvalidez", label: "Cobertura de invalidez / DIT", tipo: "simnao" },
   { key: "temSaude", label: "Plano de saúde", tipo: "simnao" },
-  { key: "temPrevidencia", label: "Previdência privada", tipo: "simnao" },
+  // Previdência em linha própria: o tipo e o saldo abrem ao lado.
+  { key: "temPrevidencia", label: "Previdência privada", tipo: "simnao", novaLinha: true },
   { key: "tipoPrevidencia", label: "Tipo de plano", tipo: "chips", opcoes: OPCOES.tipoPrevidencia, largura: 2, mostrarSe: (d) => sim(d.temPrevidencia) },
   { key: "valorPrevidencia", label: "Saldo da previdência", tipo: "moeda", mostrarSe: (d) => sim(d.temPrevidencia) },
 ];
@@ -566,7 +577,7 @@ export const ESTILOS_VIDA: { id: string; fator: number; descricao: string }[] = 
 /** O estilo de vida é escolhido nos cartões da seção 12 (campo "estiloVida"). */
 export const CAMPOS_FUTURO: CampoDef[] = [
   { key: "idadeAposentadoria", label: "Idade de aposentadoria", tipo: "numero", padrao: 60, sufixo: "anos", largura: 4 },
-  { key: "rendaDesejada", label: "Renda desejada /mês", tipo: "moeda", largura: 2, ajuda: "Em valores de hoje. Em branco = sugestão pelo estilo de vida." },
+  { key: "rendaDesejada", label: "Renda desejada /mês", tipo: "moeda", largura: 2, ajuda: "Em valores de hoje. Em branco, o diagnóstico usa o estilo de vida." },
   { key: "outrasRendas", label: "Outras fontes de renda /mês", tipo: "moeda", largura: 2, ajuda: "INSS, aluguéis, previdência. Em branco = aluguéis e aposentadorias atuais (juros e dividendos já vêm dos investimentos)." },
 ];
 

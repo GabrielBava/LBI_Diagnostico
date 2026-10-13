@@ -83,7 +83,7 @@ export default function Futuro() {
               renda desejada de {fmtBRL(fu.rendaDesejada)}/mês.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <Kpi tom="ouro" rotulo={`Patrimônio necessário (${Math.round(1 / TAXA_RETIRADA)}x)`} valor={fmtBRL(fu.alvo)} />
             <Kpi rotulo="Investimentos e previdência hoje" valor={fmtBRL(fu.atual)} detalhe="A reserva de emergência não entra na projeção" />
             <Kpi rotulo="Aporte necessário" valor={fmtBRL(fu.aporte)} sufixo="/mês" tom={fu.aporte > fu.aporteAtual ? "alerta" : "sucesso"} />

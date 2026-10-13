@@ -42,14 +42,16 @@
   --muted-foreground: 98 102 114;
   --secondary: 243 240 233;
   --primary: 166 118 34;
-  --primary-foreground: 255 255 255;
+  /* Texto escuro sobre o dourado: o branco não passa de 3,5:1 no gradiente claro. */
+  --primary-foreground: 22 17 8;
   --accent: 37 99 235;
   --success: 22 150 80;
-  --warning: 196 120 10;
+  --warning: 160 95 0;
   --destructive: 210 50 50;
   --gradient-gold: linear-gradient(135deg, #d9b25e 0%, #b8862f 50%, #8f6220 100%);
   --serie-1: #a67622;
-  --serie-2: #2a78d6;
+  /* Mesmo azul do escuro: rótulos escuros dentro da barra com ≥ 5:1. */
+  --serie-2: #3987e5;
   --serie-3: #eb6834;
   color-scheme: light;
 }

@@ -183,7 +183,6 @@ export const ROTEIRO: Record<string, Roteiro> = {
     atencao: [
       "Compare os meses que o cliente imagina com os meses calculados pelas despesas.",
       "PGBL só faz sentido com declaração completa do IR (6 · Renda).",
-      "O cálculo do que contratar (educacional, padrão de vida e sucessão) fica em 6.2.",
     ],
   },
   aposentadoria: {
@@ -196,8 +195,7 @@ export const ROTEIRO: Record<string, Roteiro> = {
       "Vai contar com INSS, aluguéis ou previdência?",
     ],
     atencao: [
-      "Com a renda desejada em branco, o cálculo usa o custo de vida atual ajustado pelo estilo de vida.",
-      "A projeção aparece no diagnóstico (6.5).",
+      "Se o cliente não souber a renda desejada, o estilo de vida escolhido orienta o diagnóstico.",
     ],
   },
   investimentos: {

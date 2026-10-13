@@ -63,7 +63,7 @@ export function FinalizarColeta() {
           </div>
           {prog.pendentes.length > 0 && (
             <p className="mt-2 text-xs text-muted-foreground">
-              Faltam:{" "}
+              {prog.pendentes.length === 1 ? "Falta" : "Faltam"}:{" "}
               {prog.pendentes.map((x, i) => (
                 <span key={x.id}>
                   {i > 0 && ", "}

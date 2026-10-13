@@ -29,7 +29,7 @@ export default function Dividas() {
   const temDoPatrimonio = dv.doPatrimonio.length > 0;
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Kpi tom="ouro" rotulo="Parcelas mensais" valor={fmtBRL(dv.parcelas)} detalhe="Entram no total de despesas" />
         <Kpi rotulo="Saldo devedor" valor={fmtBRL(dv.passivos)} detalhe="Financiamentos + empréstimos" />
         <Kpi
@@ -97,7 +97,6 @@ export default function Dividas() {
           itens={cliente.emprestimos}
           onChange={(i) => setLista("emprestimos", i)}
           textoAdicionar="Adicionar dívida ou empréstimo"
-          colunas={3}
           tituloItem={(x, i) => [s(x.categoria), s(x.instituicao)].filter(Boolean).join(" · ") || `Dívida ${i + 1}`}
         />
       </SubBloco>

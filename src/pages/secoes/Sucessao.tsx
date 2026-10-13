@@ -66,11 +66,14 @@ export default function Sucessao() {
             )}
           </span>
         )}
-        rodapeItem={(d) => (
-          <>
-            Custo mensal: <strong className="text-foreground">{fmtBRL(custoDependente(d))}</strong>
-          </>
-        )}
+        // Só com custo: cartões ainda vazios não mostram "R$ 0".
+        rodapeItem={(d) =>
+          custoDependente(d) > 0 ? (
+            <>
+              Custo mensal: <strong className="text-foreground">{fmtBRL(custoDependente(d))}</strong>
+            </>
+          ) : null
+        }
       />
     </div>
   );

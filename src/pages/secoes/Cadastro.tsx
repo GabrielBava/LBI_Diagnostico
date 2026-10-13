@@ -2,12 +2,12 @@ import { CAMPOS_CADASTRO, CAMPOS_PARAMETROS } from "@/config/campos";
 import { Formulario } from "@/components/campos";
 import { SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { idadePorNascimento, s } from "@/lib/calculos";
+import { idadePorNascimento, nOpt, s } from "@/lib/calculos";
 import { uid } from "@/lib/format";
 import { usePreferencias } from "@/lib/preferencias";
 import type { Cliente, Item, Valor } from "@/types";
 
-const vazio = (d: Item) => !s(d.nome) && !s(d.nivelEscola) && !d.mensalidade && !d.auxilio;
+const vazio = (d: Item) => !s(d.nome) && !s(d.nivelEscola) && !d.mensalidade && !d.auxilio && nOpt(d.idade) === undefined;
 
 /** Ajusta os cartões de filhos em Sucessão para a quantidade informada no cadastro. */
 function sincronizarFilhos(dependentes: Item[], qtd: number, inclusivePreenchidos = false): Item[] {

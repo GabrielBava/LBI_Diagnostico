@@ -3,17 +3,17 @@
 // Manutenção e IPVA dos veículos entram em Despesas · Transporte.
 import type { ReactNode } from "react";
 import { Car, CheckCircle2, Landmark } from "lucide-react";
-import { CAMPOS_AQUISICAO, CAMPOS_IMOVEL, CAMPOS_MOVEL, CAMPOS_PATRIMONIO_GERAL } from "@/config/campos";
+import { CAMPOS_AQUISICAO, CAMPOS_IMOVEL, CAMPOS_MOVEL, CAMPOS_PATRIMONIO_GERAL, padroes } from "@/config/campos";
 import { Formulario } from "@/components/campos";
 import { ListaItens } from "@/components/ListaEditor";
 import { SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { bemQuitado, dividas, n, patrimonio, s, sim } from "@/lib/calculos";
-import { fmtBRL } from "@/lib/format";
+import { fmtBRL, uid } from "@/lib/format";
 import type { Item } from "@/types";
 
 export default function Patrimonio() {
-  const { cliente, setCampo, setLista, irPara } = useCliente();
+  const { cliente, atualizar, setLista, irPara } = useCliente();
   const p = patrimonio(cliente);
   const fin = dividas(cliente).doPatrimonio;
   const pretende = sim(cliente.patrimonioGeral.pretendeAdquirir);
@@ -112,7 +112,17 @@ export default function Patrimonio() {
           dados={cliente.patrimonioGeral}
           cliente={cliente}
           colunas={4}
-          onChange={(k, v) => setCampo("patrimonioGeral", k, v)}
+          // "Sim" com a lista vazia já abre a primeira aquisição (os campos aparecem no clique).
+          onChange={(k, v) =>
+            atualizar((c) => ({
+              ...c,
+              patrimonioGeral: { ...c.patrimonioGeral, [k]: v },
+              aquisicoes:
+                k === "pretendeAdquirir" && v === "Sim" && c.aquisicoes.length === 0
+                  ? [{ id: uid(), ...padroes(CAMPOS_AQUISICAO) }]
+                  : c.aquisicoes,
+            }))
+          }
         />
         {pretende && (
           <div className="mt-4">
