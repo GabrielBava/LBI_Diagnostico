@@ -19,13 +19,14 @@ function TituloObjetivo({ o }: { o: Item }) {
   const categoria = s(o.categoria);
   const Icone = categoria ? ICONES_OBJETIVO[categoria] : undefined;
   return (
-    <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
+    // Em tela estreita a categoria desce para baixo do título (não espreme as palavras).
+    <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-semibold text-foreground">
       {Icone && (
         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-gold text-primary-foreground">
           <Icone className="h-4 w-4" aria-hidden="true" />
         </span>
       )}
-      <span className="min-w-0 break-words">{s(o.titulo) || "Novo objetivo"}</span>
+      <span className="min-w-0 hyphens-auto break-words">{s(o.titulo) || "Novo objetivo"}</span>
       {categoria && <span className="shrink-0 text-xs font-normal text-muted-foreground">{categoria}</span>}
     </span>
   );

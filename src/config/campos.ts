@@ -334,7 +334,13 @@ export const CAMPOS_RENDA_CLIENTE: CampoDef[] = [
 
 /** Renda extra do cliente (campo único, abaixo da estimativa bruta ↔ líquida). */
 export const CAMPOS_RENDA_EXTRA: CampoDef[] = [
-  { key: "rendaExtra", label: "Renda extra mensal", tipo: "moeda", largura: 2, ajuda: "Comissões, freelas, bicos (valor líquido)." },
+  {
+    key: "rendaExtra",
+    label: "Renda extra mensal",
+    tipo: "moeda",
+    largura: 2,
+    ajuda: "Comissões, freelas, bicos (líquido). Bônus, PLR, aluguéis e renda de outra pessoa vão em Outras rendas.",
+  },
 ];
 
 /** Renda do cônjuge (só para casado(a) ou união estável). */
@@ -356,7 +362,7 @@ export const CAMPOS_OUTRA_RENDA: CampoDef[] = [
     largura: 2,
   },
   { key: "descricao", label: "Fonte", tipo: "texto", largura: 2, placeholder: "Ex.: Aluguel sala comercial" },
-  { key: "tipo", label: "Tipo", tipo: "select", opcoes: OPCOES.tipoOutraRenda, padrao: "Renda extra / freelance" },
+  { key: "tipo", label: "Tipo", tipo: "select", opcoes: OPCOES.tipoOutraRenda, padrao: "Outros" },
   { key: "valor", label: "Valor líquido", tipo: "moeda" },
   { key: "frequencia", label: "Frequência", tipo: "chips", opcoes: OPCOES.frequencia, padrao: "Mensal", largura: 2 },
 ];

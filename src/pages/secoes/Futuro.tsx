@@ -91,7 +91,9 @@ export default function Futuro() {
             <Kpi rotulo="Aporte necessário" valor={fmtBRL(fu.aporte)} sufixo="/mês" tom={fu.aporte > fu.aporteAtual ? "alerta" : "sucesso"} />
             <Kpi rotulo="Renda projetada" valor={fmtBRL(fu.rendaProjetada)} sufixo="/mês" />
           </div>
-          {fu.anos > 0 && <GraficoFuturo serie={fu.serie} />}
+          {fu.anos > 0 && (
+            <GraficoFuturo serie={fu.serie} rotuloAtual={fu.aporteInformado ? `Investindo ${fmtBRL(fu.aporteAtual)}/mês` : "Investindo a sobra atual"} />
+          )}
           <p className="text-[11px] text-muted-foreground">Valores reais (R$ de hoje), retorno real definido nos parâmetros e retirada de 4% ao ano.</p>
         </>
       )}

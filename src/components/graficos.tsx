@@ -186,7 +186,14 @@ export function BarrasDuplas({
 }
 
 /** Projeção patrimonial: trajetória atual × trajetória necessária. */
-export function GraficoFuturo({ serie }: { serie: { ano: number; idade: number; atual: number; necessaria: number }[] }) {
+export function GraficoFuturo({
+  serie,
+  rotuloAtual = "Investindo a sobra atual",
+}: {
+  serie: { ano: number; idade: number; atual: number; necessaria: number }[];
+  /** Nome da série do ritmo atual (sobra ou investimento mensal informado). */
+  rotuloAtual?: string;
+}) {
   return (
     <div className="h-72">
       <ResponsiveContainer width="100%" height="100%">
@@ -211,7 +218,7 @@ export function GraficoFuturo({ serie }: { serie: { ano: number; idade: number; 
             formatter={(v: number, nome: string) => [fmtBRL(v), nome]}
           />
           <Legend wrapperStyle={{ fontSize: 11, color: corEixo }} />
-          <Area type="monotone" dataKey="atual" name="Investindo a sobra atual" stroke="var(--serie-2)" strokeWidth={2} fill="url(#gAtual)" dot={false} isAnimationActive={false} />
+          <Area type="monotone" dataKey="atual" name={rotuloAtual} stroke="var(--serie-2)" strokeWidth={2} fill="url(#gAtual)" dot={false} isAnimationActive={false} />
           <Area type="monotone" dataKey="necessaria" name="Trajetória necessária" stroke="var(--serie-1)" strokeWidth={2} fill="url(#gNec)" dot={false} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>

@@ -79,12 +79,12 @@ export default function Renda() {
         <Formulario campos={CAMPOS_RENDA_IR} dados={cliente.renda} cliente={cliente} colunas={4} onChange={(key, v) => setCampo("renda", key, v)} />
       </SubBloco>
 
-      <SubBloco titulo="Outras rendas · extra ou de outra pessoa">
+      <SubBloco titulo="Outras rendas · bônus, PLR, aluguel ou de outra pessoa">
         <ListaItens
           campos={CAMPOS_OUTRA_RENDA}
           itens={cliente.outrasRendas}
           onChange={(i) => setLista("outrasRendas", i)}
-          textoAdicionar="Adicionar renda extra ou de outra pessoa"
+          textoAdicionar="Adicionar outra renda"
           tituloItem={(x, i) => `${s(x.descricao) || `Renda ${i + 1}`}${s(x.pessoa) ? ` · ${s(x.pessoa)}` : ""}`}
           rodapeItem={(i) =>
             s(i.pessoa) === "Cônjuge" && !temConjuge(cliente) ? (

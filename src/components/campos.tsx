@@ -2,11 +2,11 @@
 // Padrões: campos com 40px de altura, opções curtas em "chips",
 // sim/não como seletor segmentado, flags como interruptor (switch),
 // percentuais e notas com régua deslizante.
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Check, Minus, Plus, type LucideIcon } from "lucide-react";
 import type { CampoDef } from "@/config/campos";
 import type { Cliente, Secao, Valor } from "@/types";
-import { mascaraMoeda, moedaCampo, textoParaNumero } from "@/lib/format";
+import { mascaraMoeda, moedaCampo, numeroDaMascara, textoParaNumero } from "@/lib/format";
 import { usePreferencias } from "@/lib/preferencias";
 
 export function Rotulo({ children }: { children: React.ReactNode }) {
@@ -33,31 +33,81 @@ export function CampoMoeda({
   const numero = typeof valor === "number" ? valor : textoParaNumero(String(valor ?? ""));
   const [texto, setTexto] = useState(moedaCampo(numero));
   const [editando, setEditando] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+  // O usuário digitou um ponto: aí o texto fica como está e o ponto vale como milhar
+  // ("30.000") ou decimal ("1234.56"), conforme os dígitos depois dele.
+  const pontoDigitado = useRef(false);
+  // Posição do cursor a restaurar depois de remascarar (em nº de dígitos/vírgula à esquerda).
+  const cursor = useRef<number | null>(null);
   useEffect(() => {
     if (!editando) setTexto(moedaCampo(numero));
   }, [numero, editando]);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || cursor.current === null) return;
+    let pos = 0;
+    for (let vistos = 0; pos < texto.length && vistos < cursor.current; pos++) if (/[\d,]/.test(texto[pos])) vistos++;
+    el.setSelectionRange(pos, pos);
+    cursor.current = null;
+  }, [texto]);
+
+  /** Aplica a máscara, grava o número e guarda onde o cursor deve ficar. */
+  const aplicar = (bruto: string, posCursor: number) => {
+    const mascarado = mascaraMoeda(bruto);
+    cursor.current = bruto.slice(0, posCursor).replace(/[^\d,]/g, "").length;
+    setTexto(mascarado);
+    onChange(numeroDaMascara(mascarado));
+  };
 
   return (
     <div className="inp-wrap" data-readonly={disabled ? "true" : undefined}>
       <span className="shrink-0 select-none text-xs font-medium text-muted-foreground">R$</span>
       <input
+        ref={ref}
         inputMode="decimal"
         aria-label={ariaLabel}
         disabled={disabled}
         placeholder={automatico !== undefined ? `${moedaCampo(Math.round(automatico))} (auto)` : placeholder}
         className="placeholder:text-muted-foreground/50"
         value={texto}
-        onFocus={() => setEditando(true)}
+        onFocus={() => {
+          setEditando(true);
+          pontoDigitado.current = false;
+          // Sem centavos, o ",00" sai durante a edição: digitar no fim continua o número.
+          if (numero !== undefined && Number.isInteger(numero)) setTexto(mascaraMoeda(String(numero)));
+        }}
+        onPaste={(e) => {
+          // Colado de planilha/banco: aceita "1234.56", "1,234.56", "R$ 1.234,56".
+          const colado = textoParaNumero(e.clipboardData.getData("text"));
+          if (colado === undefined) return;
+          e.preventDefault();
+          const v = Math.round(colado * 100) / 100;
+          setTexto(Number.isInteger(v) ? mascaraMoeda(String(v)) : moedaCampo(v));
+          onChange(v);
+        }}
         onChange={(e) => {
-          // Digitando no fim do campo, o milhar já aparece formatado (30000 → 30.000).
-          const noFim = e.target.selectionStart === e.target.value.length;
-          const novo = noFim ? mascaraMoeda(e.target.value) : e.target.value;
-          setTexto(novo);
-          onChange(textoParaNumero(novo));
+          const el = e.target;
+          let bruto = el.value;
+          if ((e.nativeEvent as InputEvent).data === "." && !pontoDigitado.current) {
+            // Primeiro ponto digitado: tira os pontos de milhar automáticos para ler o número cru.
+            const pos = el.selectionStart ?? bruto.length;
+            bruto = `${bruto.slice(0, pos - 1).replace(/\./g, "")}.${bruto.slice(pos).replace(/\./g, "")}`;
+            pontoDigitado.current = true;
+          }
+          if (pontoDigitado.current) {
+            const limpo = bruto.replace(/[^\d,.]/g, "");
+            const v = textoParaNumero(limpo);
+            setTexto(limpo);
+            onChange(v === undefined ? undefined : Math.round(v * 100) / 100);
+            return;
+          }
+          aplicar(bruto, el.selectionStart ?? bruto.length);
         }}
         onBlur={() => {
           setEditando(false);
-          setTexto(moedaCampo(textoParaNumero(texto)));
+          const v = pontoDigitado.current ? textoParaNumero(texto) : numeroDaMascara(texto);
+          pontoDigitado.current = false;
+          setTexto(moedaCampo(v === undefined ? undefined : Math.round(v * 100) / 100));
         }}
       />
     </div>
@@ -148,11 +198,11 @@ export function Interruptor({ label, valor, onChange }: { label: string; valor: 
       role="switch"
       aria-checked={ligado}
       onClick={() => onChange(!ligado)}
-      className={`flex h-10 w-full items-center justify-between gap-3 rounded-md border px-3 text-left text-sm transition ${
+      className={`flex h-10 w-full items-center justify-between gap-2 rounded-md border px-2.5 text-left text-[13px] transition ${
         ligado ? "border-primary/50 bg-primary/10" : "border-border bg-input"
       }`}
     >
-      <span className={ligado ? "font-medium" : "text-muted-foreground"}>{label}</span>
+      <span className={`min-w-0 leading-tight ${ligado ? "font-medium" : "text-muted-foreground"}`}>{label}</span>
       {/* Desligado: trilho com borda para aparecer também no tema claro. */}
       <span
         className={`relative h-5 w-9 shrink-0 rounded-full border transition ${
@@ -499,11 +549,11 @@ export function Controle({
   }
 }
 
-const SPAN: Record<number, string> = {
-  1: "",
-  2: "sm:col-span-2",
-  3: "sm:col-span-2 lg:col-span-3",
-  4: "sm:col-span-2 lg:col-span-4",
+/** Largura dos campos por nº de colunas da grade (4 colunas só a partir de xl: com o menu lateral, lg é estreito). */
+const SPAN: Record<number, Record<number, string>> = {
+  2: { 1: "", 2: "sm:col-span-2" },
+  3: { 1: "", 2: "sm:col-span-2", 3: "sm:col-span-2 lg:col-span-3" },
+  4: { 1: "", 2: "sm:col-span-2", 3: "sm:col-span-2 xl:col-span-3", 4: "sm:col-span-2 xl:col-span-4" },
 };
 
 /**
@@ -528,14 +578,14 @@ export function Formulario({
   sugestoes?: Record<string, number | undefined>;
 }) {
   const { apresentacao } = usePreferencias();
-  const grid = colunas === 2 ? "sm:grid-cols-2" : colunas === 3 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-4";
+  const grid = colunas === 2 ? "sm:grid-cols-2" : colunas === 3 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-4";
   const visiveis = campos.filter((c) => (!c.mostrarSe || c.mostrarSe(dados, cliente)) && !(apresentacao && c.somenteConsultor));
   return (
     <div className={`grid grid-cols-1 gap-x-4 gap-y-4 ${grid}`}>
       {visiveis.map((original) => {
         const c = original.opcoesSe ? { ...original, opcoes: original.opcoesSe(dados, cliente) } : original;
-        const inicio = c.novaLinha ? "sm:col-start-1" : c.meioLinha ? (colunas === 4 ? "sm:col-start-1 lg:col-start-3" : "sm:col-start-1") : "";
-        const span = `${SPAN[Math.min(c.largura ?? 1, colunas)]} ${inicio}`;
+        const inicio = c.novaLinha ? "sm:col-start-1" : c.meioLinha ? (colunas === 4 ? "sm:col-start-1 xl:col-start-3" : "sm:col-start-1") : "";
+        const span = `${SPAN[colunas][Math.min(c.largura ?? 1, colunas)]} ${inicio}`;
         if (c.tipo === "switch")
           return (
             <div key={c.key} className={`aparecer ${span}`}>

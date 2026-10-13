@@ -33,7 +33,10 @@ export const moedaCampo = (v: number | undefined | null) =>
     ? ""
     : v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-/** Máscara enquanto digita: milhar com ponto e até 2 casas depois da vírgula ("30000,5" → "30.000,5"). */
+/**
+ * Máscara enquanto digita (padrão brasileiro: ponto = milhar, vírgula = centavos):
+ * "30000,5" → "30.000,5"; os pontos digitados são ignorados (o milhar é refeito).
+ */
 export const mascaraMoeda = (t: string) => {
   const limpo = t.replace(/[^\d,]/g, "");
   if (!limpo) return "";
@@ -43,15 +46,30 @@ export const mascaraMoeda = (t: string) => {
   return resto.length ? `${milhar},${resto.join("").slice(0, 2)}` : milhar;
 };
 
-/** Converte texto digitado ("4.000", "1.234,56", "1234.5") em número. */
+/**
+ * Converte texto colado ou importado em número: "4.000", "1.234,56", "1234.5", "1,234.56", "R$ 30.000,00".
+ * Com ponto e vírgula juntos, o último dos dois é o separador decimal.
+ */
 export const textoParaNumero = (t: string): number | undefined => {
   const s = t.replace(/[^\d,.-]/g, "").trim();
   if (!s) return undefined;
   let normal = s;
-  if (s.includes(",")) normal = s.replace(/\./g, "").replace(",", ".");
+  const virgula = s.lastIndexOf(",");
+  const ponto = s.lastIndexOf(".");
+  if (virgula >= 0 && ponto >= 0) normal = virgula > ponto ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+  else if (virgula >= 0) normal = s.replace(/,/g, (_m, i) => (i === virgula ? "." : ""));
   else if ((s.match(/\./g) || []).length > 1 || /\.\d{3}$/.test(s)) normal = s.replace(/\./g, "");
   const n = Number(normal);
   return Number.isFinite(n) ? n : undefined;
+};
+
+/** Número do texto mascarado do campo (ponto = milhar, vírgula = centavos, no máximo 2 casas). */
+export const numeroDaMascara = (t: string): number | undefined => {
+  const limpo = t.replace(/[^\d,]/g, "");
+  if (!limpo || limpo === ",") return undefined;
+  const [inteiro, ...resto] = limpo.split(",");
+  const n = Number(`${inteiro || "0"}.${resto.join("").slice(0, 2) || "0"}`);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : undefined;
 };
 
 export const fmtData = (iso?: string) => {

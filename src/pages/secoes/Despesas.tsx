@@ -19,7 +19,7 @@ type Bloco = "Fixa" | "Variável";
 function Linha({ rotulo, dica, children }: { rotulo: ReactNode; dica?: ReactNode; children: ReactNode }) {
   return (
     // O valor encolhe em blocos estreitos (2 colunas em lg) para o rótulo não partir palavras.
-    <div className="grid grid-cols-[minmax(0,1fr)_minmax(104px,42%)] items-center gap-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_min(160px,42%)]">
+    <div className="grid grid-cols-[minmax(0,1fr)_minmax(124px,46%)] max-[379px]:grid-cols-1 max-[379px]:gap-1 items-center gap-3 py-1.5 sm:grid-cols-[minmax(0,1fr)_min(160px,42%)]">
       <div className="min-w-0">
         <div className="hyphens-auto break-words text-sm leading-tight">{rotulo}</div>
         {dica && <div className="truncate text-[11px] text-muted-foreground">{dica}</div>}

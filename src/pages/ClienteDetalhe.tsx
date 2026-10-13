@@ -51,7 +51,8 @@ export default function ClienteDetalhe() {
           <Link to="/clientes" className="no-print flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
             <ArrowLeft className="h-3 w-3" /> Clientes
           </Link>
-          <div className="min-w-0 flex-1">
+          {/* Largura mínima para o nome: em telas menores os botões descem para a linha de baixo. */}
+          <div className="min-w-[12rem] flex-1">
             <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">Diagnóstico financeiro</div>
             <div className="truncate text-xl font-semibold">{s(cliente.cadastro.nome) || "Novo cliente"}</div>
           </div>
