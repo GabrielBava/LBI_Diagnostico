@@ -27,6 +27,7 @@
   /* séries de gráficos (validadas para daltonismo no fundo escuro) */
   --serie-1: #b8892f;
   --serie-2: #3987e5;
+  --serie-3: #d95926;
   color-scheme: dark;
 }
 
@@ -49,6 +50,7 @@
   --gradient-gold: linear-gradient(135deg, #d9b25e 0%, #b8862f 50%, #8f6220 100%);
   --serie-1: #a67622;
   --serie-2: #2a78d6;
+  --serie-3: #eb6834;
   color-scheme: light;
 }
 

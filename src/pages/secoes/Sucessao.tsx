@@ -3,14 +3,13 @@
 // e a config esconde a escolaridade para quem não é escolar (ex.: Pai / Mãe).
 import { CAMPOS_DEPENDENTE, OPCOES } from "@/config/campos";
 import { ListaItens } from "@/components/ListaEditor";
-import { Botao, Kpi } from "@/components/ui";
+import { Botao } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { custoDependente, rotuloDependente, s, sucessao } from "@/lib/calculos";
+import { custoDependente, ehEscolar, n, nOpt, rotuloDependente, s } from "@/lib/calculos";
 import { fmtBRL } from "@/lib/format";
 
 export default function Sucessao() {
   const { cliente, atualizar, irPara } = useCliente();
-  const su = sucessao(cliente);
   const itens = cliente.dependentes;
   const temFilhos = s(cliente.cadastro.temFilhos);
   const semFilhos = temFilhos === "Não";
@@ -24,13 +23,7 @@ export default function Sucessao() {
 
   return (
     <div className="space-y-4">
-      {itens.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Kpi tom="ouro" rotulo="Filhos" valor={su.filhos} detalhe={semFilhos ? "Informado no cadastro: não tem filhos" : "Vem do cadastro"} />
-          <Kpi rotulo="Dependentes no total" valor={su.dependentes} />
-          <Kpi rotulo="Custo mensal" valor={fmtBRL(su.custoMensal)} sufixo="/mês" detalhe="Entra nas despesas fixas automaticamente" />
-        </div>
-      ) : (
+      {itens.length === 0 && (
         <div className="flex flex-col gap-3 rounded-xl border border-border bg-secondary/20 p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="min-w-0 text-sm text-muted-foreground">{vazio}</p>
           {!semFilhos && (
@@ -66,6 +59,11 @@ export default function Sucessao() {
           <span className="text-sm font-semibold text-foreground">
             {rotuloDependente(itens, d)}
             {s(d.nome) && s(d.categoria) && <span className="ml-2 text-xs font-normal text-muted-foreground">{s(d.categoria)}</span>}
+            {ehEscolar(d) && nOpt(d.idade) !== undefined && (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {n(d.idade)} {n(d.idade) === 1 ? "ano" : "anos"}
+              </span>
+            )}
           </span>
         )}
         rodapeItem={(d) => (

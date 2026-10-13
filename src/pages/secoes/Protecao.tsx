@@ -1,9 +1,9 @@
-// 11 · Proteção: reserva de emergência, seguros, saúde e previdência.
+// 11 · Proteção: reserva de emergência, seguros, saúde e previdência (PGBL/VGBL).
 // O cálculo do que contratar (educacional, padrão de vida e sucessão) fica em 6.2 · Plano atual.
 import { CircleCheck, TriangleAlert } from "lucide-react";
 import { CAMPOS_PROTECAO } from "@/config/campos";
 import { Formulario } from "@/components/campos";
-import { Botao, Kpi, SubBloco } from "@/components/ui";
+import { Kpi, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { despesas, nOpt, reservaEmergencia, sim } from "@/lib/calculos";
 import { fmtBRL } from "@/lib/format";
@@ -60,21 +60,13 @@ function QuadroReserva() {
 }
 
 export default function Protecao() {
-  const { cliente, setCampo, irPara } = useCliente();
+  const { cliente, setCampo } = useCliente();
   const mostrarReserva = sim(cliente.protecao.temReserva) && despesas(cliente).total > 0;
 
   return (
     <div className="space-y-4">
       <Formulario campos={CAMPOS_PROTECAO} dados={cliente.protecao} cliente={cliente} onChange={(k, v) => setCampo("protecao", k, v)} />
       {mostrarReserva && <QuadroReserva />}
-      <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="min-w-0 text-xs text-muted-foreground">
-          O cálculo do que contratar (educacional, padrão de vida e sucessão) está em 6.2 · Plano atual.
-        </p>
-        <Botao pequeno variante="fantasma" className="no-print -ml-3 shrink-0 self-start sm:ml-0 sm:self-auto" onClick={() => irPara("plano-atual-completo")}>
-          Ver em 6.2
-        </Botao>
-      </div>
     </div>
   );
 }

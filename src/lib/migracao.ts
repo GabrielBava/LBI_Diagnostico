@@ -217,5 +217,69 @@ export function atualizarV4(c: Partial<Cliente> & { id: string }): Partial<Clien
       })
     : c.dependentes;
 
-  return { ...c, versaoDados: 5, despesas, despesasExtras: extras, renda, investimentos, protecao, dependentes };
+  return { ...c, versaoDados: Math.max(5, c.versaoDados ?? 0), despesas, despesasExtras: extras, renda, investimentos, protecao, dependentes };
+}
+
+/**
+ * Subcategorias de despesa removidas na versão 6: o valor já salvo vira um
+ * item extra (com o nome antigo) para não sumir do total.
+ */
+export const DESPESAS_REMOVIDAS: Record<string, { grupo: string; descricao: string }> = {
+  "mercado.limpeza": { grupo: "mercado", descricao: "Limpeza e higiene" },
+  "transporte.manutencao": { grupo: "transporte", descricao: "Manutenção do veículo" },
+  "transporte.ipva": { grupo: "transporte", descricao: "IPVA e licenciamento" },
+  "impostos.ir": { grupo: "outrasFixas", descricao: "Imposto de renda (parcelas)" },
+  "impostos.outros": { grupo: "outrasFixas", descricao: "Outros impostos e taxas" },
+  "servicosFinanceiros.tarifas": { grupo: "outrasFixas", descricao: "Tarifas bancárias" },
+  "servicosFinanceiros.anuidade": { grupo: "outrasFixas", descricao: "Anuidade de cartão" },
+  "compras.casa": { grupo: "outros", descricao: "Casa e decoração" },
+  "compras.eletronicos": { grupo: "outros", descricao: "Eletrônicos" },
+  "compras.presentes": { grupo: "outros", descricao: "Presentes" },
+};
+/** Blocos removidos na versão 6 → bloco que recebe os itens extras. */
+const GRUPOS_REMOVIDOS: Record<string, string> = {
+  impostos: "outrasFixas",
+  servicosFinanceiros: "outrasFixas",
+  compras: "outros",
+  financiamentos: "outrasFixas",
+};
+
+/**
+ * Versão 6: despesas sem os blocos removidos, parcelas só em 8 · Financiamento
+ * e crédito, situação do bem (Quitado/Financiado) no lugar do sim/não "quitado".
+ * Roda uma vez por cliente (marcador versaoDados).
+ */
+export function atualizarV6(c: Partial<Cliente> & { id: string }): Partial<Cliente> & { id: string } {
+  if ((c.versaoDados ?? 0) >= 6) return c;
+  const despesas: Record<string, number | undefined> = {};
+  const extras: Item[] = (c.despesasExtras ?? []).map((e) =>
+    GRUPOS_REMOVIDOS[String(e.grupo)] ? { ...e, grupo: GRUPOS_REMOVIDOS[String(e.grupo)] } : e,
+  );
+  let parcelasDigitadas = 0;
+  Object.entries(c.despesas ?? {}).forEach(([chave, valor]) => {
+    const removida = DESPESAS_REMOVIDAS[chave];
+    if (chave === "financiamentos.parcelas") parcelasDigitadas = num(valor);
+    else if (removida) {
+      if (num(valor) > 0) extras.push({ id: uid(), grupo: removida.grupo, descricao: removida.descricao, valor });
+    } else despesas[chave] = valor;
+  });
+
+  const situacao = (b: Item): Item => {
+    if (b.situacao) return b;
+    const { quitado, ...resto } = b;
+    return { ...resto, situacao: quitado === true ? "Quitado" : "Financiado" };
+  };
+  const imoveis = (c.imoveis ?? []).map(situacao);
+  const moveis = (c.moveis ?? []).map(situacao);
+
+  // Parcelas que eram digitadas em Despesas (sem dívida cadastrada) viram um financiamento.
+  const temDividas =
+    (c.financiamentos ?? []).length + (c.consorcios ?? []).length + (c.emprestimos ?? []).length > 0 ||
+    [...imoveis, ...moveis].some((b) => b.situacao === "Financiado" && (num(b.parcela) > 0 || num(b.saldo) > 0));
+  const financiamentos =
+    parcelasDigitadas > 0 && !temDividas
+      ? [...(c.financiamentos ?? []), { id: uid(), tipo: "Outro", parcela: parcelasDigitadas }]
+      : c.financiamentos;
+
+  return { ...c, versaoDados: 6, despesas, despesasExtras: extras, imoveis, moveis, financiamentos };
 }

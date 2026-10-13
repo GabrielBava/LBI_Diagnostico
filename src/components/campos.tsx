@@ -3,7 +3,7 @@
 // sim/não como seletor segmentado, flags como interruptor (switch),
 // percentuais e notas com régua deslizante.
 import { useEffect, useState } from "react";
-import { Check, MapPin, Minus, Plus, type LucideIcon } from "lucide-react";
+import { Check, Minus, Plus, type LucideIcon } from "lucide-react";
 import type { CampoDef } from "@/config/campos";
 import type { Cliente, Secao, Valor } from "@/types";
 import { moedaParaTexto, textoParaNumero } from "@/lib/format";
@@ -389,62 +389,17 @@ export function Contador({
   );
 }
 
-/** CEP com máscara; ao completar 8 dígitos busca o endereço (ViaCEP) e grava em `endereco`. */
-function CampoCep({ valor, onChange, definir }: { valor: Valor; onChange: (v: string) => void; definir: (key: string, v: Valor) => void }) {
-  const [estado, setEstado] = useState<"" | "buscando" | "erro">("");
-  const digitos = String(valor ?? "").replace(/\D/g, "");
-  useEffect(() => {
-    if (digitos.length !== 8) return;
-    let cancelado = false;
-    setEstado("buscando");
-    fetch(`https://viacep.com.br/ws/${digitos}/json/`)
-      .then((r) => r.json())
-      .then((j) => {
-        if (cancelado) return;
-        if (j.erro) return setEstado("erro");
-        definir("endereco", [j.logradouro, j.bairro, `${j.localidade}/${j.uf}`].filter(Boolean).join(", "));
-        setEstado("");
-      })
-      .catch(() => !cancelado && setEstado("erro"));
-    return () => {
-      cancelado = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [digitos]);
-  return (
-    <div>
-      <div className="inp-wrap">
-        <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <input
-          inputMode="numeric"
-          aria-label="CEP"
-          placeholder="00000-000"
-          value={String(valor ?? "")}
-          onChange={(e) => {
-            const d = e.target.value.replace(/\D/g, "").slice(0, 8);
-            onChange(d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d);
-          }}
-        />
-        {estado === "buscando" && <span className="text-[10px] text-muted-foreground">buscando…</span>}
-      </div>
-      {estado === "erro" && <span className="mt-1 block text-[11px] text-warning">CEP não encontrado (ou sem internet).</span>}
-    </div>
-  );
-}
-
 /** Renderiza o controle certo de acordo com o tipo do campo. */
 export function Controle({
   campo,
   valor,
   onChange,
-  definir,
   automatico,
   sugestao,
 }: {
   campo: CampoDef;
   valor: Valor;
   onChange: (v: Valor) => void;
-  definir: (key: string, v: Valor) => void;
   automatico?: number;
   sugestao?: number;
 }) {
@@ -492,8 +447,6 @@ export function Controle({
       );
     case "contador":
       return <Contador valor={valor} onChange={onChange} min={campo.min} max={campo.max} />;
-    case "cep":
-      return <CampoCep valor={valor} onChange={onChange} definir={definir} />;
     case "select": {
       const opcoes = campo.opcoes ?? [];
       const atual = valor === undefined || valor === null ? "" : String(valor);
@@ -575,7 +528,7 @@ export function Formulario({
         if (c.tipo === "switch")
           return (
             <div key={c.key} className={`aparecer self-end ${span}`}>
-              <Controle campo={c} valor={dados[c.key]} onChange={(v) => onChange(c.key, v)} definir={onChange} />
+              <Controle campo={c} valor={dados[c.key]} onChange={(v) => onChange(c.key, v)} />
             </div>
           );
         return (
@@ -585,12 +538,10 @@ export function Formulario({
               campo={c}
               valor={dados[c.key]}
               onChange={(v) => onChange(c.key, v)}
-              definir={onChange}
               automatico={automaticos[c.key]}
               sugestao={sugestoes[c.key]}
             />
             {c.ajuda && <span className="mt-1 block text-[11px] leading-snug text-muted-foreground/80">{c.ajuda}</span>}
-            {c.tipo === "cep" && dados.endereco && <span className="mt-1 block text-[11px] text-muted-foreground">{String(dados.endereco)}</span>}
           </div>
         );
       })}

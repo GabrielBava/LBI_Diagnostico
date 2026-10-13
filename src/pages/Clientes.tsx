@@ -109,13 +109,15 @@ export default function Clientes() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold tabular-nums text-primary">{prog.pct >= 50 ? nota : "—"}</div>
+                      <div className="text-lg font-bold tabular-nums text-primary">{c.coletaFinalizada ? nota : "—"}</div>
                       <div className="text-[9px] uppercase tracking-widest text-muted-foreground">Nota LIFE</div>
                     </div>
                   </div>
                   <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
                     <span>Progresso {prog.pct}%</span>
-                    <span>{prog.proxima ? `Próxima: ${prog.proxima.titulo}` : "Coleta completa"}</span>
+                    <span>
+                      {c.coletaFinalizada ? "Coleta finalizada" : prog.proxima ? `Próxima: ${prog.proxima.titulo}` : "Pronto para finalizar"}
+                    </span>
                   </div>
                   <BarraProgresso valor={prog.pct} className="mt-1" />
                 </Link>

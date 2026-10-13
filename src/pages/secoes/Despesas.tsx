@@ -1,13 +1,14 @@
 // 5 · Despesas — blocos (Casa, Mercado, Transporte...) com subcategorias.
 // Cada bloco é um cartão recolhível; os grupos e itens vêm de src/config/despesas.ts.
 // Subtotais e totais saem de despesas(c) para bater com os cálculos do diagnóstico.
+// As parcelas (8 · Financiamento e crédito) não são lançadas aqui: aparecem só no total.
 import { useState, type ReactNode } from "react";
 import { ChevronDown, Lock, Plus, Trash2 } from "lucide-react";
 import { GRUPOS_DESPESA, chaveDespesa, type GrupoDespesa } from "@/config/despesas";
 import { CampoMoeda } from "@/components/campos";
 import { Botao, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { custoDependente, despesas, dividas, fluxo, n, rotuloDependente, s } from "@/lib/calculos";
+import { custoDependente, despesas, fluxo, n, rotuloDependente, s, type LinhaAutomatica } from "@/lib/calculos";
 import { fmtBRL, fmtPct, uid } from "@/lib/format";
 import type { Item } from "@/types";
 
@@ -36,6 +37,12 @@ function ValorTravado({ valor }: { valor: number }) {
   );
 }
 
+/** Blocos que aparecem na tela (as parcelas são lançadas em 8 · Financiamento e crédito). */
+const GRUPOS_NA_TELA = GRUPOS_DESPESA.filter((g) => !g.foraDaTela);
+
+/** Nome da seção de origem das linhas automáticas. */
+const NOME_SECAO: Record<string, string> = { patrimonio: "7 · Patrimônio", renda: "6 · Renda" };
+
 /** Atalho para a seção de origem de um valor automático. */
 function LinkSecao({ id, children }: { id: string; children: ReactNode }) {
   const { irPara } = useCliente();
@@ -50,19 +57,19 @@ export default function Despesas() {
   const { cliente, atualizar, setLista } = useCliente();
   const d = despesas(cliente);
   const f = fluxo(cliente);
-  const dv = dividas(cliente);
 
   const valorGrupo = (id: string) => d.porCategoria.find((x) => x.id === id)?.valor ?? 0;
   const extrasDo = (id: string) => cliente.despesasExtras.filter((e) => s(e.grupo) === id);
-  /** O grupo está sendo preenchido por outra seção? */
-  const ehAutomatico = (g: GrupoDespesa) => g.automatico === "dependentes" || (g.automatico === "dividas" && dv.parcelas > 0);
+  const autoDo = (id: string): LinhaAutomatica[] => d.linhasAutomaticas[id] ?? [];
+  /** O grupo inteiro é preenchido por outra seção? */
+  const ehAutomatico = (g: GrupoDespesa) => g.automatico === "dependentes";
 
   // Abertos por padrão: grupos que já têm valor (ou itens extras).
   const [abertos, setAbertos] = useState<Set<string>>(
-    () => new Set(GRUPOS_DESPESA.filter((g) => valorGrupo(g.id) > 0 || extrasDo(g.id).length > 0).map((g) => g.id)),
+    () => new Set(GRUPOS_NA_TELA.filter((g) => valorGrupo(g.id) > 0 || extrasDo(g.id).length > 0).map((g) => g.id)),
   );
   const [novoId, setNovoId] = useState<string | null>(null);
-  const todosAbertos = abertos.size >= GRUPOS_DESPESA.length;
+  const todosAbertos = abertos.size >= GRUPOS_NA_TELA.length;
 
   const alternar = (id: string) =>
     setAbertos((atual) => {
@@ -71,7 +78,7 @@ export default function Despesas() {
       else prox.add(id);
       return prox;
     });
-  const alternarTodos = () => setAbertos(todosAbertos ? new Set() : new Set(GRUPOS_DESPESA.map((g) => g.id)));
+  const alternarTodos = () => setAbertos(todosAbertos ? new Set() : new Set(GRUPOS_NA_TELA.map((g) => g.id)));
 
   const definir = (chave: string, v: number | undefined) =>
     atualizar((c) => ({ ...c, despesas: { ...c.despesas, [chave]: v } }));
@@ -92,30 +99,6 @@ export default function Despesas() {
   // ------------------------------------------------------------------
   //  Conteúdo de cada grupo
   // ------------------------------------------------------------------
-  const conteudoDividas = (g: GrupoDespesa) => {
-    if (dv.parcelas <= 0) return conteudoManual(g);
-    const linhas = [
-      { rotulo: "Financiamentos", valor: dv.parcelasFin },
-      { rotulo: "Consórcios", valor: dv.parcelasCons },
-      { rotulo: "Empréstimos", valor: dv.parcelasEmp },
-    ].filter((x) => x.valor > 0);
-    return (
-      <>
-        <div className="divide-y divide-border/60">
-          {linhas.map((x) => (
-            <Linha key={x.rotulo} rotulo={x.rotulo}>
-              <ValorTravado valor={x.valor} />
-            </Linha>
-          ))}
-        </div>
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          Calculado em <LinkSecao id="dividas">8 · Financiamentos e dívidas</LinkSecao> e{" "}
-          <LinkSecao id="patrimonio">7 · Patrimônio</LinkSecao>
-        </p>
-      </>
-    );
-  };
-
   const conteudoDependentes = () => {
     if (cliente.dependentes.length === 0)
       return (
@@ -146,9 +129,10 @@ export default function Despesas() {
 
   const conteudoManual = (g: GrupoDespesa) => {
     const extras = g.automatico ? [] : extrasDo(g.id);
+    const auto = autoDo(g.id);
     return (
       <>
-        {(g.itens.length > 0 || extras.length > 0) && (
+        {(g.itens.length > 0 || extras.length > 0 || auto.length > 0) && (
           <div className="divide-y divide-border/60">
             {g.itens.map((it) => {
               const chave = chaveDespesa(g.id, it.id);
@@ -158,6 +142,19 @@ export default function Despesas() {
                 </Linha>
               );
             })}
+            {auto.map((x) => (
+              <Linha
+                key={x.id}
+                rotulo={x.label}
+                dica={
+                  <>
+                    Informado em <LinkSecao id={x.secao}>{NOME_SECAO[x.secao] ?? x.secao}</LinkSecao>
+                  </>
+                }
+              >
+                <ValorTravado valor={x.valor} />
+              </Linha>
+            ))}
             {extras.map((e) => (
               <div key={e.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-1.5 sm:grid-cols-[minmax(0,1fr)_160px_auto]">
                 <input
@@ -200,10 +197,13 @@ export default function Despesas() {
   const resumoGrupo = (g: GrupoDespesa) => {
     if (ehAutomatico(g)) return "automático";
     const extras = g.automatico ? [] : extrasDo(g.id);
-    const total = g.itens.length + extras.length;
+    const auto = autoDo(g.id);
+    const total = g.itens.length + extras.length + auto.length;
     if (total === 0) return "Nenhum item";
     const preenchidos =
-      g.itens.filter((it) => n(cliente.despesas[chaveDespesa(g.id, it.id)]) > 0).length + extras.filter((e) => n(e.valor) > 0).length;
+      g.itens.filter((it) => n(cliente.despesas[chaveDespesa(g.id, it.id)]) > 0).length +
+      extras.filter((e) => n(e.valor) > 0).length +
+      auto.length;
     return `${preenchidos} de ${total} ${total === 1 ? "preenchido" : "preenchidos"}`;
   };
 
@@ -244,11 +244,7 @@ export default function Despesas() {
         </button>
         {aberto && (
           <div id={idConteudo} className="border-t border-border px-3 pb-3 pt-1">
-            {g.automatico === "dividas"
-              ? conteudoDividas(g)
-              : g.automatico === "dependentes"
-                ? conteudoDependentes()
-                : conteudoManual(g)}
+            {g.automatico === "dependentes" ? conteudoDependentes() : conteudoManual(g)}
           </div>
         )}
       </div>
@@ -256,7 +252,8 @@ export default function Despesas() {
   };
 
   const parte = (bloco: Bloco) => {
-    const total = bloco === "Fixa" ? d.fixas : d.variaveis;
+    // As parcelas entram só no total geral (são lançadas na seção 8).
+    const total = bloco === "Fixa" ? d.fixas - d.parcelas : d.variaveis;
     const pct = pctRenda(total);
     return (
       <SubBloco
@@ -268,7 +265,7 @@ export default function Despesas() {
           </span>
         }
       >
-        <div className="grid items-start gap-3 lg:grid-cols-2">{GRUPOS_DESPESA.filter((g) => g.bloco === bloco).map(cartaoGrupo)}</div>
+        <div className="grid items-start gap-3 lg:grid-cols-2">{GRUPOS_NA_TELA.filter((g) => g.bloco === bloco).map(cartaoGrupo)}</div>
       </SubBloco>
     );
   };
@@ -286,12 +283,28 @@ export default function Despesas() {
       </div>
       {parte("Fixa")}
       {parte("Variável")}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-secondary/30 px-4 py-3">
-        <span className="text-sm text-muted-foreground">Total de despesas mensais</span>
-        <span className="text-lg font-semibold tabular-nums">
-          {fmtBRL(d.total)}
-          {pctTotal && <span className="ml-2 text-xs font-normal text-muted-foreground">{pctTotal}</span>}
-        </span>
+      <div className="rounded-xl border border-border bg-secondary/30 px-4 py-3">
+        {d.parcelas > 0 && (
+          <div className="mb-2 space-y-1 border-b border-border/60 pb-2 text-sm">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <span className="text-muted-foreground">Despesas fixas e variáveis</span>
+              <span className="tabular-nums">{fmtBRL(d.total - d.parcelas)}</span>
+            </div>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <span className="text-muted-foreground">
+                + Parcelas · <LinkSecao id="dividas">8 · Financiamento e crédito</LinkSecao>
+              </span>
+              <span className="tabular-nums">{fmtBRL(d.parcelas)}</span>
+            </div>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <span className="text-sm text-muted-foreground">Total de despesas mensais</span>
+          <span className="text-lg font-semibold tabular-nums">
+            {fmtBRL(d.total)}
+            {pctTotal && <span className="ml-2 text-xs font-normal text-muted-foreground">{pctTotal}</span>}
+          </span>
+        </div>
       </div>
     </div>
   );

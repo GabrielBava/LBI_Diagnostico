@@ -1,23 +1,21 @@
 // 6 · Renda — bruta e líquida do cliente (e do cônjuge, se casado/união estável),
-// outras rendas (extra ou de outra pessoa) e cartões de crédito.
+// declaração do IR, outras rendas (extra ou de outra pessoa) e cartões de crédito.
 // Se só uma das rendas (bruta ou líquida) for informada, a outra é estimada em renda(c).
-import { AlertTriangle, Calculator } from "lucide-react";
+import { Calculator } from "lucide-react";
 import {
   CAMPOS_CARTAO,
   CAMPOS_OUTRA_RENDA,
   CAMPOS_RENDA_CARTAO,
   CAMPOS_RENDA_CLIENTE,
   CAMPOS_RENDA_CONJUGE,
+  CAMPOS_RENDA_IR,
 } from "@/config/campos";
 import { Formulario } from "@/components/campos";
 import { ListaItens } from "@/components/ListaEditor";
 import { Kpi, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { brutaLiquida, cartoes, mensal, n, renda, s, temConjuge } from "@/lib/calculos";
-import { fmtBRL, fmtPct } from "@/lib/format";
-
-/** Acima deste uso do limite o cartão fica em alerta. */
-const USO_LIMITE_ALERTA = 0.8;
+import { fmtBRL } from "@/lib/format";
 
 /** Linha "≈ Líquida/Bruta estimada" abaixo do formulário de uma pessoa. */
 function Estimativa({ detalhe }: { detalhe: ReturnType<typeof brutaLiquida> }) {
@@ -47,27 +45,9 @@ export default function Renda() {
   const casado = temConjuge(cliente);
   const nomeConjuge = s(cliente.cadastro.conjuge).trim();
   const temCartao = s(cliente.renda.temCartao) === "Sim";
-  const usoAlto = k.usoLimite > USO_LIMITE_ALERTA;
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Kpi
-          tom="ouro"
-          rotulo="Renda familiar líquida"
-          valor={fmtBRL(r.total)}
-          sufixo="/mês"
-          detalhe={casado ? "Cliente + cônjuge + outras rendas" : "Cliente + outras rendas"}
-        />
-        <Kpi
-          rotulo="Renda bruta"
-          valor={fmtBRL(r.brutaTotal)}
-          sufixo="/mês"
-          detalhe={casado ? "Cliente + cônjuge" : "Do cliente"}
-        />
-        <Kpi rotulo="Renda passiva" valor={fmtBRL(r.passiva)} sufixo="/mês" detalhe="Aluguéis, dividendos, pensões" />
-      </div>
-
       <SubBloco titulo="Renda do cliente">
         <Formulario
           campos={CAMPOS_RENDA_CLIENTE}
@@ -91,6 +71,10 @@ export default function Renda() {
           <Estimativa detalhe={r.conjugeDetalhe} />
         </SubBloco>
       )}
+
+      <SubBloco titulo="Imposto de renda">
+        <Formulario campos={CAMPOS_RENDA_IR} dados={cliente.renda} cliente={cliente} colunas={4} onChange={(key, v) => setCampo("renda", key, v)} />
+      </SubBloco>
 
       <SubBloco titulo="Outras rendas · extra ou de outra pessoa" total={r.outras > 0 ? `${fmtBRL(r.outras)}/mês` : undefined}>
         <ListaItens
@@ -129,44 +113,32 @@ export default function Renda() {
               onChange={(i) => setLista("cartoes", i)}
               textoAdicionar="Adicionar cartão"
               tituloItem={(x, i) => s(x.cartao) || `Cartão ${i + 1}`}
-              rodapeItem={(x) => {
-                const limite = n(x.limite);
-                if (limite <= 0) return "Informe o limite para ver o uso.";
-                const uso = n(x.gastoMensal) / limite;
-                const alto = uso > USO_LIMITE_ALERTA;
-                return (
-                  <span className={`inline-flex items-center gap-1.5 ${alto ? "font-medium text-warning" : ""}`}>
-                    {alto && <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" />}
-                    Uso do limite:{" "}
-                    <strong className={`tabular-nums ${alto ? "" : "text-foreground"}`}>{fmtPct(uso)}</strong>
-                    {alto && " · acima de 80%"}
-                  </span>
-                );
-              }}
+              // Só aparece quando há anuidade informada (ela entra nas despesas).
+              rodapeItem={(x) =>
+                x.pagaAnuidade === true && n(x.valorAnuidade) > 0 ? (
+                  <>
+                    Anuidade de <strong className="text-foreground tabular-nums">{fmtBRL(n(x.valorAnuidade))}/ano</strong> ≈{" "}
+                    <strong className="text-foreground tabular-nums">{fmtBRL(n(x.valorAnuidade) / 12)}/mês</strong> em Despesas · Outras despesas
+                    fixas
+                  </>
+                ) : null
+              }
             />
             {k.quantidade > 0 && (
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <Kpi
                   rotulo="Gasto total no cartão"
                   valor={fmtBRL(k.gasto)}
                   sufixo="/mês"
                   detalhe={`${k.comMilhas} de ${k.quantidade} ${k.quantidade === 1 ? "acumula" : "acumulam"} milhas`}
                 />
-                <Kpi rotulo="Limite total" valor={fmtBRL(k.limite)} />
                 <Kpi
-                  rotulo="% do limite usado"
-                  valor={k.limite > 0 ? fmtPct(k.usoLimite) : "—"}
-                  tom={usoAlto ? "alerta" : "neutro"}
+                  rotulo="Limite total"
+                  valor={fmtBRL(k.limite)}
                   detalhe={
-                    usoAlto ? (
-                      <span className="inline-flex items-center gap-1 font-medium text-warning">
-                        <AlertTriangle className="h-3 w-3 shrink-0" aria-hidden="true" /> Acima de 80% do limite
-                      </span>
-                    ) : k.limite > 0 ? (
-                      "Até 80% é saudável"
-                    ) : (
-                      "Informe os limites"
-                    )
+                    k.comAnuidade.length > 0
+                      ? `${k.comAnuidade.length} de ${k.quantidade} ${k.quantidade === 1 ? "paga" : "pagam"} anuidade`
+                      : "Nenhum paga anuidade"
                   }
                 />
               </div>

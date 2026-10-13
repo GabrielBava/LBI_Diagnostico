@@ -7,7 +7,7 @@
 //  src/lib/calculos.ts pela mesma `key`.
 //
 //  Tipos:
-//    texto | textarea | email | telefone | cep | data | numero | moeda |
+//    texto | textarea | email | telefone | data | numero | moeda |
 //    percentual | select | chips | multichips | icones | simnao | switch |
 //    slider | escala | contador
 //
@@ -30,7 +30,6 @@ export type TipoCampo =
   | "textarea"
   | "email"
   | "telefone"
-  | "cep"
   | "data"
   | "numero"
   | "moeda"
@@ -127,10 +126,26 @@ export const OPCOES = {
     "Planejamento sucessório",
     "Nenhum",
   ],
+  declaracaoIR: ["Simplificada", "Completa", "Não declara"],
+  situacaoBem: ["Quitado", "Financiado"],
   categoriaImovel: ["Moradia", "Veraneio", "Renda (aluguel)", "Investimento", "Comercial"],
   tipoImovel: ["Casa", "Apartamento", "Terreno", "Sala comercial", "Galpão", "Rural"],
   tipoMovel: ["Carro", "Moto", "Lancha", "Jetski"],
+  segmentoAquisicao: ["Imóvel", "Veículo"],
+  condicaoVeiculo: ["Novo", "Seminovo"],
+  estrategiaAquisicao: ["À vista", "Financiamento", "Consórcio"],
   tipoFinanciamento: ["Imobiliário", "Veículo", "Outro"],
+  categoriaDivida: [
+    "Cartão de crédito",
+    "Cheque especial",
+    "Carnê / crediário",
+    "Renegociação",
+    "Empréstimo pessoal",
+    "Consignado",
+    "Financiamento estudantil",
+    "Outra",
+  ],
+  tipoPrevidencia: ["PGBL", "VGBL", "PGBL e VGBL", "Não sabe"],
   tipoConsorcio: ["Imóvel", "Veículo", "Serviços", "Outro"],
   tipoProjeto: ["Reforma", "Negócio / Empreendimento", "Investimento", "Pessoal", "Outro"],
   statusProjeto: ["Ideia", "Planejado", "Em andamento"],
@@ -174,8 +189,6 @@ export const CAMPOS_CADASTRO: CampoDef[] = [
     ajuda: "Abre os filhos automaticamente em Sucessão.",
     mostrarSe: (d) => sim(d.temFilhos),
   },
-  { key: "cep", label: "CEP", tipo: "cep" },
-  { key: "numero", label: "Número", tipo: "texto", placeholder: "Nº / complemento" },
 ];
 
 /** Parâmetros financeiros (aparecem dentro do Cadastro, só na versão consultor). */
@@ -266,6 +279,7 @@ const estuda = (d: Secao) => escolar(d) && !!d.nivelEscola && d.nivelEscola !== 
 export const CAMPOS_DEPENDENTE: CampoDef[] = [
   { key: "categoria", label: "Categoria", tipo: "chips", opcoes: OPCOES.categoriaDependente, largura: 4 },
   { key: "nome", label: "Nome (opcional)", tipo: "texto" },
+  { key: "idade", label: "Idade", tipo: "numero", sufixo: "anos", min: 0, mostrarSe: escolar },
   { key: "nivelEscola", label: "Escolaridade", tipo: "select", opcoes: OPCOES.nivelEscola, mostrarSe: escolar },
   { key: "escola", label: "Escola atual", tipo: "select", opcoes: OPCOES.escola, mostrarSe: estuda },
   { key: "mensalidade", label: "Mensalidade", tipo: "moeda", mostrarSe: estuda },
@@ -324,6 +338,11 @@ export const CAMPOS_OUTRA_RENDA: CampoDef[] = [
   { key: "frequencia", label: "Frequência", tipo: "chips", opcoes: OPCOES.frequencia, padrao: "Mensal", largura: 2 },
 ];
 
+/** Modelo da declaração de imposto de renda (um campo só). */
+export const CAMPOS_RENDA_IR: CampoDef[] = [
+  { key: "declaracaoIR", label: "Como declara o imposto de renda?", tipo: "chips", opcoes: OPCOES.declaracaoIR, largura: 4 },
+];
+
 /** Pergunta que abre a lista de cartões (fica na seção Renda). */
 export const CAMPOS_RENDA_CARTAO: CampoDef[] = [{ key: "temCartao", label: "Tem cartão de crédito?", tipo: "simnao", largura: 2 }];
 
@@ -333,26 +352,38 @@ export const CAMPOS_CARTAO: CampoDef[] = [
   { key: "gastoMensal", label: "Quanto gasta por mês", tipo: "moeda" },
   { key: "milhas", label: "Acumula milhas / pontos", tipo: "switch", largura: 2 },
   { key: "programa", label: "Programa", tipo: "texto", placeholder: "Ex.: Smiles, Livelo", largura: 2, mostrarSe: (d) => d.milhas === true },
+  { key: "pagaAnuidade", label: "Paga anuidade", tipo: "switch", largura: 2 },
+  {
+    key: "valorAnuidade",
+    label: "Valor da anuidade (por ano)",
+    tipo: "moeda",
+    largura: 2,
+    ajuda: "Entra em Despesas · Outras despesas fixas (÷ 12).",
+    mostrarSe: (d) => d.pagaAnuidade === true,
+  },
 ];
 
 // ---------------------------------------------------------------------
 //  7 · Patrimônio
 // ---------------------------------------------------------------------
 
-/** Campos que aparecem quando o bem NÃO está quitado. */
-const naoQuitado = (d: Secao) => d.quitado !== true;
+/** Bem financiado? (dados antigos usavam o campo `quitado`, sim/não). */
+export const bemFinanciado = (d: Secao) => (d.situacao ? d.situacao === "Financiado" : d.quitado !== true);
+const SITUACAO_BEM: CampoDef = { key: "situacao", label: "Situação", tipo: "chips", opcoes: OPCOES.situacaoBem, padrao: "Quitado", largura: 2 };
+
+/** Campos que aparecem quando o bem está financiado. */
 const CAMPOS_FINANCIAMENTO_DO_BEM: CampoDef[] = [
-  { key: "instituicao", label: "Instituição", tipo: "texto", placeholder: "Banco / financeira", mostrarSe: naoQuitado },
-  { key: "parcela", label: "Parcela", tipo: "moeda", mostrarSe: naoQuitado },
-  { key: "prazo", label: "Prazo restante (meses)", tipo: "numero", mostrarSe: naoQuitado },
-  { key: "saldo", label: "Saldo devedor (se souber)", tipo: "moeda", mostrarSe: naoQuitado },
+  { key: "instituicao", label: "Instituição", tipo: "texto", placeholder: "Banco / financeira", mostrarSe: bemFinanciado },
+  { key: "parcela", label: "Parcela", tipo: "moeda", mostrarSe: bemFinanciado },
+  { key: "prazo", label: "Prazo restante (meses)", tipo: "numero", mostrarSe: bemFinanciado },
+  { key: "saldo", label: "Saldo devedor (se souber)", tipo: "moeda", mostrarSe: bemFinanciado },
 ];
 
 export const CAMPOS_IMOVEL: CampoDef[] = [
   { key: "categoria", label: "Categoria", tipo: "select", opcoes: OPCOES.categoriaImovel, padrao: "Moradia" },
   { key: "tipo", label: "Tipo", tipo: "select", opcoes: OPCOES.tipoImovel, padrao: "Apartamento" },
   { key: "valor", label: "Valor de mercado", tipo: "moeda", largura: 2 },
-  { key: "quitado", label: "Quitado", tipo: "switch", padrao: true, largura: 2 },
+  SITUACAO_BEM,
   { key: "temSeguro", label: "Tem seguro", tipo: "switch", largura: 2 },
   ...CAMPOS_FINANCIAMENTO_DO_BEM,
 ];
@@ -361,10 +392,46 @@ export const CAMPOS_MOVEL: CampoDef[] = [
   { key: "tipo", label: "Tipo", tipo: "chips", opcoes: OPCOES.tipoMovel, padrao: "Carro", largura: 2 },
   { key: "nome", label: "Modelo", tipo: "texto", placeholder: "Ex.: Compass 2023" },
   { key: "valor", label: "Valor de mercado", tipo: "moeda" },
-  { key: "quitado", label: "Quitado", tipo: "switch", padrao: true },
-  { key: "temSeguro", label: "Tem seguro", tipo: "switch" },
+  SITUACAO_BEM,
+  { key: "temSeguro", label: "Tem seguro", tipo: "switch", largura: 2 },
+  { key: "manutencaoAnual", label: "Manutenção (por ano)", tipo: "moeda", ajuda: "Revisões, pneus, reparos" },
+  { key: "ipvaAnual", label: "IPVA e licenciamento (por ano)", tipo: "moeda", ajuda: "Entram em Despesas · Transporte (÷ 12)." },
   { key: "pensaAmpliacao", label: "Pensa em ampliação / troca", tipo: "switch", largura: 2 },
+  {
+    key: "modeloDesejado",
+    label: "Modelo / carro de desejo",
+    tipo: "texto",
+    placeholder: "Ex.: SUV híbrido",
+    largura: 2,
+    mostrarSe: (d) => d.pensaAmpliacao === true,
+  },
   ...CAMPOS_FINANCIAMENTO_DO_BEM,
+];
+
+/** Pergunta que abre as futuras aquisições (fica em 7 · Patrimônio). */
+export const CAMPOS_PATRIMONIO_GERAL: CampoDef[] = [
+  { key: "pretendeAdquirir", label: "Pretende fazer futuras aquisições?", tipo: "simnao", largura: 2 },
+];
+
+const ehImovel = (d: Secao) => d.segmento !== "Veículo";
+export const CAMPOS_AQUISICAO: CampoDef[] = [
+  { key: "segmento", label: "Segmento", tipo: "chips", opcoes: OPCOES.segmentoAquisicao, padrao: "Imóvel", largura: 2 },
+  {
+    key: "categoria",
+    label: "Categoria",
+    tipo: "select",
+    opcoes: OPCOES.categoriaImovel,
+    opcoesSe: (d) => (ehImovel(d) ? OPCOES.categoriaImovel : OPCOES.tipoMovel),
+  },
+  {
+    key: "tipo",
+    label: "Tipo",
+    tipo: "select",
+    opcoes: OPCOES.tipoImovel,
+    opcoesSe: (d) => (ehImovel(d) ? OPCOES.tipoImovel : OPCOES.condicaoVeiculo),
+  },
+  { key: "valorDesejado", label: "Valor desejado", tipo: "moeda", largura: 2 },
+  { key: "estrategia", label: "Estratégia", tipo: "chips", opcoes: OPCOES.estrategiaAquisicao, largura: 2 },
 ];
 
 // ---------------------------------------------------------------------
@@ -380,11 +447,13 @@ export const CAMPOS_FINANCIAMENTO: CampoDef[] = [
 export const CAMPOS_CONSORCIO: CampoDef[] = [
   { key: "tipo", label: "Tipo", tipo: "select", opcoes: OPCOES.tipoConsorcio, padrao: "Imóvel" },
   { key: "parcela", label: "Parcela", tipo: "moeda" },
+  { key: "prazo", label: "Prazo restante (meses)", tipo: "numero" },
   { key: "credito", label: "Crédito (carta)", tipo: "moeda" },
   { key: "contemplado", label: "Contemplado", tipo: "switch" },
 ];
 
 export const CAMPOS_EMPRESTIMO: CampoDef[] = [
+  { key: "categoria", label: "Categoria da dívida", tipo: "select", opcoes: OPCOES.categoriaDivida },
   { key: "instituicao", label: "Instituição", tipo: "texto", placeholder: "Banco / financeira" },
   { key: "parcela", label: "Parcela", tipo: "moeda" },
   { key: "prazo", label: "Prazo restante (meses)", tipo: "numero" },
@@ -437,6 +506,7 @@ export const CAMPOS_PROTECAO: CampoDef[] = [
   { key: "temInvalidez", label: "Cobertura de invalidez / DIT", tipo: "simnao" },
   { key: "temSaude", label: "Plano de saúde", tipo: "simnao" },
   { key: "temPrevidencia", label: "Previdência privada", tipo: "simnao" },
+  { key: "tipoPrevidencia", label: "Tipo de plano", tipo: "chips", opcoes: OPCOES.tipoPrevidencia, largura: 2, mostrarSe: (d) => sim(d.temPrevidencia) },
   { key: "valorPrevidencia", label: "Saldo da previdência", tipo: "moeda", mostrarSe: (d) => sim(d.temPrevidencia) },
 ];
 
@@ -493,9 +563,9 @@ export const ESTILOS_VIDA: { id: string; fator: number; descricao: string }[] = 
   { id: "Sofisticado", fator: 1.6, descricao: "Padrão bem acima do atual" },
 ];
 
+/** O estilo de vida é escolhido nos cartões da seção 12 (campo "estiloVida"). */
 export const CAMPOS_FUTURO: CampoDef[] = [
-  { key: "idadeAposentadoria", label: "Idade de aposentadoria", tipo: "numero", padrao: 60, sufixo: "anos" },
-  { key: "estiloVida", label: "Estilo de vida na aposentadoria", tipo: "chips", opcoes: ESTILOS_VIDA.map((e) => e.id), largura: 3 },
+  { key: "idadeAposentadoria", label: "Idade de aposentadoria", tipo: "numero", padrao: 60, sufixo: "anos", largura: 4 },
   { key: "rendaDesejada", label: "Renda desejada /mês", tipo: "moeda", largura: 2, ajuda: "Em valores de hoje. Em branco = sugestão pelo estilo de vida." },
   { key: "outrasRendas", label: "Outras fontes de renda /mês", tipo: "moeda", largura: 2, ajuda: "INSS, aluguéis, previdência. Em branco = aluguéis e aposentadorias atuais (juros e dividendos já vêm dos investimentos)." },
 ];
@@ -533,7 +603,7 @@ export const CAMPOS_REUNIAO: CampoDef[] = [
 
 export const JORNADA_PADRAO = [
   { titulo: "Reunião 1 · Conexão e cadastro", descricao: "Cadastro, institucional, objetivos e sucessão" },
-  { titulo: "Reunião 2 · Raio-X financeiro", descricao: "Despesas, renda, patrimônio, dívidas, proteção e investimentos" },
+  { titulo: "Reunião 2 · Raio-X financeiro", descricao: "Despesas, renda, patrimônio, financiamento e crédito, proteção e investimentos" },
   { titulo: "Reunião 3 · Diagnóstico completo", descricao: "Panorama, pontos fortes e de atuação, futuro" },
   { titulo: "Reunião 4 · Fechamento do planejamento", descricao: "Plano de ação e cronograma de implementação" },
   { titulo: "Acompanhamento trimestral", descricao: "Revisão dos indicadores e ajustes no plano" },

@@ -421,3 +421,177 @@ export function RendaVsDespesas({ renda, fixas, variaveis }: { renda: number; fi
     </figure>
   );
 }
+
+// ---------------------------------------------------------------------
+//  Renda × despesas atuais × modelo 50-30-20 (HTML/CSS): três colunas na
+//  mesma escala. Necessidades (azul) e desejos (laranja) empilhados; a
+//  poupança/sobra é tracejada. Paleta validada para daltonismo
+//  (--serie-1/2/3 em index.css, claro e escuro).
+// ---------------------------------------------------------------------
+const ALTURA_503020 = 240;
+/** Tinta escura para rótulos dentro das barras (contraste ≥ 4:1 nas três cores, claro e escuro). */
+const TINTA_BARRA = "rgb(14 16 22)";
+
+interface Segmento {
+  id: string;
+  nome: string;
+  valor: number;
+  estilo: React.CSSProperties;
+  classe?: string;
+  /** Rótulo dentro da barra (ex.: "62%"); some se o segmento for baixo. */
+  rotulo?: string;
+}
+
+function Coluna({
+  segmentos,
+  topo,
+  total,
+  titulo,
+  subtitulo,
+  deficitAcimaDe,
+  mostrarTotal = false,
+}: {
+  segmentos: Segmento[];
+  topo: number;
+  total: number;
+  titulo: string;
+  subtitulo: string;
+  /** Renda: o que passa dela fica listrado (déficit) por cima dos segmentos. */
+  deficitAcimaDe?: number;
+  /** Valor no topo da coluna (só na renda; as outras repetem a mesma altura). */
+  mostrarTotal?: boolean;
+}) {
+  const px = (v: number) => (v / topo) * ALTURA_503020;
+  let base = 0;
+  return (
+    <div className="flex min-w-0 flex-col items-center">
+      <div className="relative w-full max-w-[140px]" style={{ height: ALTURA_503020 }}>
+        {segmentos
+          .filter((sg) => sg.valor > 0)
+          .map((sg, i, lista) => {
+            const altura = Math.max(2, px(sg.valor) - (i > 0 ? 2 : 0));
+            const bottom = base + (i > 0 ? 2 : 0);
+            base += px(sg.valor);
+            const ultimo = i === lista.length - 1;
+            return (
+              <div
+                key={sg.id}
+                className={`absolute inset-x-0 flex items-center justify-center ${ultimo ? "rounded-t" : ""} ${sg.classe ?? ""}`}
+                style={{ bottom, height: altura, ...sg.estilo }}
+                title={`${sg.nome}: ${fmtBRL(sg.valor)}`}
+              >
+                {sg.rotulo && altura >= 22 && (
+                  <span className="text-xs font-bold tabular-nums" style={{ color: sg.classe ? undefined : TINTA_BARRA }}>
+                    {sg.rotulo}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        {deficitAcimaDe !== undefined && total > deficitAcimaDe && (
+          <div
+            className="absolute -inset-x-1 rounded-t border-2 border-destructive"
+            style={{ bottom: px(deficitAcimaDe), height: px(total) - px(deficitAcimaDe), background: TEXTURA_DEFICIT }}
+            title={`Déficit: ${fmtBRL(total - deficitAcimaDe)}`}
+          />
+        )}
+        {mostrarTotal && (
+          <span
+            className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap text-xs font-semibold tabular-nums"
+            style={{ bottom: px(total) + 4 }}
+          >
+            {fmtBRL(total)}
+          </span>
+        )}
+      </div>
+      <div className="mt-1.5 w-full border-t border-border pt-1.5 text-center text-xs leading-tight">
+        <span className="block font-semibold">{titulo}</span>
+        <span className="block truncate text-muted-foreground">{subtitulo}</span>
+      </div>
+    </div>
+  );
+}
+
+export function Grafico503020({
+  renda,
+  necessidades,
+  desejos,
+}: {
+  renda: number;
+  necessidades: number;
+  desejos: number;
+}) {
+  const r = Math.max(0, renda);
+  const nec = Math.max(0, necessidades);
+  const des = Math.max(0, desejos);
+  const desp = nec + des;
+  if (r <= 0 && desp <= 0) return <p className="py-6 text-center text-xs text-muted-foreground">Sem valores para exibir.</p>;
+
+  const sobra = Math.max(0, r - desp);
+  const deficit = Math.max(0, desp - r);
+  const topo = Math.max(r, desp, 1);
+  const pct = (v: number) => (r > 0 ? fmtPct(v / r) : undefined);
+  const azul: React.CSSProperties = { background: "var(--serie-2)" };
+  const laranja: React.CSSProperties = { background: "var(--serie-3)" };
+  const tracejado = "border-2 border-dashed border-success/70 bg-success/10 text-foreground";
+
+  const atual: Segmento[] = [
+    { id: "nec", nome: "Necessidades (hoje)", valor: nec, estilo: azul, rotulo: pct(nec) },
+    { id: "des", nome: "Desejos (hoje)", valor: des, estilo: laranja, rotulo: pct(des) },
+    ...(sobra > 0 ? [{ id: "sobra", nome: "Sobra (poupança hoje)", valor: sobra, estilo: {}, classe: tracejado, rotulo: pct(sobra) }] : []),
+  ];
+
+  const modelo: Segmento[] = [
+    { id: "nec", nome: "Necessidades (50%)", valor: r * 0.5, estilo: azul, rotulo: "50%" },
+    { id: "des", nome: "Desejos (30%)", valor: r * 0.3, estilo: laranja, rotulo: "30%" },
+    { id: "pou", nome: "Poupança (20%)", valor: r * 0.2, estilo: {}, classe: tracejado, rotulo: "20%" },
+  ];
+
+  const legenda = [
+    { nome: "Renda líquida", valor: r, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-gold" /> },
+    { nome: "Necessidades", valor: nec, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={azul} /> },
+    { nome: "Desejos", valor: des, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={laranja} /> },
+    ...(deficit > 0
+      ? [{ nome: "Déficit", valor: deficit, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-destructive" style={{ background: TEXTURA_DEFICIT }} /> }]
+      : [{ nome: "Sobra / poupança", valor: sobra, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-dashed border-success bg-success/15" /> }]),
+  ];
+
+  return (
+    <figure className="m-0">
+      <div
+        role="img"
+        aria-label={`Renda líquida de ${fmtBRL(r)}. Hoje: necessidades ${fmtBRL(nec)}, desejos ${fmtBRL(des)}, ${
+          deficit > 0 ? `déficit de ${fmtBRL(deficit)}` : `sobra de ${fmtBRL(sobra)}`
+        }. Modelo 50-30-20: necessidades ${fmtBRL(r * 0.5)}, desejos ${fmtBRL(r * 0.3)}, poupança ${fmtBRL(r * 0.2)}.`}
+        className="grid grid-cols-3 gap-3 pt-6 sm:gap-6"
+      >
+        <Coluna
+          titulo="Renda"
+          subtitulo="líquida"
+          topo={topo}
+          total={r}
+          mostrarTotal
+          segmentos={[{ id: "renda", nome: "Renda líquida", valor: r, estilo: { background: "var(--gradient-gold)" } }]}
+        />
+        <Coluna
+          titulo="Despesas atuais"
+          subtitulo={fmtBRL(desp)}
+          topo={topo}
+          total={Math.max(r, desp)}
+          segmentos={atual}
+          deficitAcimaDe={deficit > 0 ? r : undefined}
+        />
+        <Coluna titulo="Modelo 50-30-20" subtitulo={`ideal sobre ${fmtBRL(r)}`} topo={topo} total={r} segmentos={modelo} />
+      </div>
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
+        {legenda.map((l) => (
+          <li key={l.nome} className="flex items-center gap-1.5 text-xs">
+            {l.amostra}
+            <span className="text-muted-foreground">{l.nome}</span>
+            <span className="font-semibold tabular-nums">{fmtBRL(l.valor)}</span>
+          </li>
+        ))}
+      </ul>
+    </figure>
+  );
+}

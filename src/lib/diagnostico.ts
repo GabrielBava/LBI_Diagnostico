@@ -7,10 +7,12 @@
 import type { Cliente } from "@/types";
 import { fmtBRL, fmtPct } from "./format";
 import {
+  bemQuitado,
   cartoes,
   dividas,
   fluxo,
   futuro,
+  modelo503020,
   n,
   objetivos,
   parametros,
@@ -175,12 +177,26 @@ export function pontos(c: Cliente): { fortes: Ponto[]; negativos: Ponto[] } {
         texto: `Taxa de poupança de ${fmtPct(f.taxaPoupanca)}, abaixo dos 20% recomendados.`,
       });
   }
-  if (f.renda > 0 && f.variaveis / f.renda > 0.25)
-    negativos.push({
-      id: "variaveis",
-      area: "Fluxo de caixa",
-      texto: `Despesas variáveis consomem ${fmtPct(f.variaveis / f.renda)} da renda.`,
-    });
+  // Modelo 50-30-20 (o mesmo do pré-diagnóstico).
+  const orc = modelo503020(c);
+  if (orc.renda > 0) {
+    const parte = (id: string) => orc.partes.find((p) => p.id === id)!;
+    const nec = parte("Necessidades");
+    const des = parte("Desejos");
+    if (orc.dentroDoModelo) fortes.push({ id: "503020", area: "Fluxo de caixa", texto: "Orçamento dentro do modelo 50-30-20." });
+    if (nec.foraDoModelo)
+      negativos.push({
+        id: "necessidades",
+        area: "Fluxo de caixa",
+        texto: `Necessidades consomem ${fmtPct(nec.pct)} da renda (modelo 50-30-20: até 50%).`,
+      });
+    if (des.foraDoModelo)
+      negativos.push({
+        id: "desejos",
+        area: "Fluxo de caixa",
+        texto: `Desejos consomem ${fmtPct(des.pct)} da renda (modelo 50-30-20: até 30%).`,
+      });
+  }
 
   if (r.meta > 0) {
     if (r.falta <= 0) fortes.push({ id: "reserva", area: "Investimentos", texto: `Reserva de emergência completa (${r.mesesMeta} meses).` });
@@ -199,14 +215,18 @@ export function pontos(c: Cliente): { fortes: Ponto[]; negativos: Ponto[] } {
       area: "Dívidas",
       texto: `${fmtPct(f.comprometimento)} da renda comprometida com parcelas (limite ${fmtPct(limite)}).`,
     });
-  if (c.emprestimos.length > 0)
+  if (c.emprestimos.length > 0) {
+    const categorias = [...new Set(c.emprestimos.map((e) => s(e.categoria)).filter(Boolean))];
     negativos.push({
       id: "emprestimos",
       area: "Dívidas",
-      texto: `${c.emprestimos.length} empréstimo(s) ativo(s) somando ${fmtBRL(dv.parcelasEmp)}/mês: crédito caro.`,
+      texto: `${c.emprestimos.length} dívida(s) ativa(s)${categorias.length ? ` (${categorias.join(", ")})` : ""} somando ${fmtBRL(
+        dv.parcelasEmp,
+      )}/mês: crédito caro.`,
     });
+  }
 
-  const quitados = c.imoveis.filter((i) => i.quitado === true).length;
+  const quitados = c.imoveis.filter(bemQuitado).length;
   if (quitados > 0) fortes.push({ id: "imoveis-quitados", area: "Patrimonial", texto: `${quitados} imóvel(is) quitado(s).` });
   if (p.liquido > 0 && p.ativos > 0 && p.passivos / p.ativos < 0.2)
     fortes.push({ id: "alavancagem-baixa", area: "Patrimonial", texto: `Patrimônio líquido de ${fmtBRL(p.liquido)} com baixo endividamento.` });
@@ -230,6 +250,22 @@ export function pontos(c: Cliente): { fortes: Ponto[]; negativos: Ponto[] } {
   if (ct.quantidade > 0 && ct.usoLimite > 0.8)
     negativos.push({ id: "limite", area: "Fluxo de caixa", texto: `Usa ${fmtPct(ct.usoLimite)} do limite dos cartões todo mês.` });
   if (ct.comMilhas > 0) fortes.push({ id: "milhas", area: "Fluxo de caixa", texto: "Acumula milhas/pontos com os gastos do cartão." });
+  if (ct.anuidadeAnual > 0)
+    negativos.push({
+      id: "anuidade",
+      area: "Fluxo de caixa",
+      texto: `Paga ${fmtBRL(ct.anuidadeAnual)}/ano de anuidade em ${ct.comAnuidade.length} cartão(ões): dá para negociar isenção.`,
+    });
+
+  // Previdência × modelo da declaração do IR.
+  const ir = s(c.renda.declaracaoIR);
+  const tipoPrev = s(c.protecao.tipoPrevidencia);
+  if (sim(c.protecao.temPrevidencia) && ir === "Simplificada" && tipoPrev.includes("PGBL"))
+    negativos.push({
+      id: "pgbl-simplificada",
+      area: "Futuro",
+      texto: "Tem PGBL, mas declara no modelo simplificado: o benefício fiscal do PGBL não é aproveitado.",
+    });
 
   if (sim(c.investimentos.temInvestimento)) {
     fortes.push({ id: "investe", area: "Investimentos", texto: `Já investe ${fmtBRL(p.investimentos)}.` });
@@ -345,10 +381,41 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       id: "op-troca",
       quadrante: "Patrimonial",
       titulo: "Troca / ampliação de bens",
-      detalhe: `Cliente pensa em ampliar: ${ampliar.map((m) => s(m.nome) || s(m.tipo)).join(", ")}.`,
+      detalhe: `Cliente pensa em trocar: ${ampliar
+        .map((m) => `${s(m.nome) || s(m.tipo)}${s(m.modeloDesejado) ? ` → ${s(m.modeloDesejado)}` : ""}`)
+        .join(", ")}.`,
       prioridade: "Baixa",
       prazo: "Médio",
     });
+  // Futuras aquisições (7 · Patrimônio): consórcio no lugar do financiamento; à vista pede investimento dedicado.
+  if (sim(c.patrimonioGeral.pretendeAdquirir))
+    c.aquisicoes
+      .filter((a) => n(a.valorDesejado) > 0)
+      .forEach((a) => {
+        const nome = [s(a.categoria), s(a.tipo)].filter(Boolean).join(" ").toLowerCase() || s(a.segmento).toLowerCase() || "aquisição";
+        const valor = fmtBRL(n(a.valorDesejado));
+        if (s(a.estrategia) === "Financiamento" || s(a.estrategia) === "Consórcio")
+          out.push({
+            id: `op-aq-${a.id}`,
+            quadrante: "Patrimonial",
+            titulo: `Consórcio para ${s(a.segmento).toLowerCase() || "aquisição"} (${nome})`,
+            detalhe:
+              s(a.estrategia) === "Financiamento"
+                ? `Carta de ${valor} em vez de financiamento: sem juros, só taxa de administração.`
+                : `Carta de ${valor}, como o cliente pretende.`,
+            prioridade: "Média",
+            prazo: "Médio",
+          });
+        else if (s(a.estrategia) === "À vista")
+          out.push({
+            id: `op-aq-${a.id}`,
+            quadrante: "Investimentos",
+            titulo: `Investimento para compra à vista (${nome})`,
+            detalhe: `Juntar ${valor} em aplicação compatível com o prazo da compra.`,
+            prioridade: "Baixa",
+            prazo: "Médio",
+          });
+      });
   if (dv.saldoFin > 0)
     out.push({
       id: "op-portabilidade",
@@ -405,8 +472,30 @@ export function oportunidades(c: Cliente): Oportunidade[] {
     });
 
   // Futuro
+  const ir = s(c.renda.declaracaoIR);
   if (s(c.protecao.temPrevidencia) === "Não")
-    out.push({ id: "op-previdencia", quadrante: "Futuro", titulo: "Previdência privada (PGBL/VGBL)", detalhe: "Eficiência fiscal e sucessória.", prioridade: "Média", prazo: "Médio" });
+    out.push({
+      id: "op-previdencia",
+      quadrante: "Futuro",
+      titulo: ir === "Completa" ? "Previdência privada (PGBL)" : ir === "Simplificada" ? "Previdência privada (VGBL)" : "Previdência privada (PGBL/VGBL)",
+      detalhe:
+        ir === "Completa"
+          ? "Declara no modelo completo: o PGBL deduz até 12% da renda bruta tributável no IR."
+          : ir === "Simplificada"
+            ? "Declara no modelo simplificado: VGBL, com eficiência sucessória."
+            : "Eficiência fiscal e sucessória.",
+      prioridade: "Média",
+      prazo: "Médio",
+    });
+  else if (sim(c.protecao.temPrevidencia) && ir === "Completa" && !s(c.protecao.tipoPrevidencia).includes("PGBL"))
+    out.push({
+      id: "op-pgbl",
+      quadrante: "Futuro",
+      titulo: "Avaliar PGBL",
+      detalhe: "Declara no modelo completo: aportes em PGBL deduzem até 12% da renda bruta tributável.",
+      prioridade: "Média",
+      prazo: "Curto",
+    });
   if (fu.alvo > 0 && fu.aporte > fu.aporteAtual)
     out.push({
       id: "op-independencia",
@@ -452,7 +541,7 @@ export function sugestoes(c: Cliente): Sugestao[] {
   else if (f.renda > 0 && f.taxaPoupanca < 0.1)
     out.push({ id: "sg-poupanca", acao: "Elevar a taxa de poupança para ao menos 10% da renda", area: "Fluxo de caixa", prioridade: "Média", prazo: "Curto" });
   if (c.emprestimos.length > 0)
-    out.push({ id: "sg-emprestimos", acao: "Quitar ou renegociar empréstimos pessoais", area: "Dívidas", prioridade: "Alta", prazo: "Curto" });
+    out.push({ id: "sg-emprestimos", acao: "Quitar ou renegociar as dívidas mais caras (cartão, cheque especial, empréstimos)", area: "Dívidas", prioridade: "Alta", prazo: "Curto" });
   if (f.comprometimento > limite)
     out.push({ id: "sg-comprometimento", acao: `Reduzir parcelas para menos de ${fmtPct(limite)} da renda`, area: "Dívidas", prioridade: "Alta", prazo: "Médio" });
   if (r.falta > 0)

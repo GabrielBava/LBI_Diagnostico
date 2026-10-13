@@ -5,8 +5,9 @@ Diagnóstico financeiro do Grupo Life Brasil, organizado como um processo com o 
 - **Rolagem contínua:** todas as etapas em uma página. Ao rolar, você passa de categoria em categoria e o menu lateral acompanha.
 - **7 etapas:** Conexão → Raio-X financeiro → Proteção e futuro → Investimentos → Pré-diagnóstico → Diagnóstico completo → Jornada.
 - **Versão consultor × versão apresentação:** roteiro, anotações, parâmetros e seções internas (como a Matriz de oportunidades) ficam ocultos para o cliente. Cada seção tem um botão para mostrar/ocultar na apresentação.
-- **Campos dinâmicos:** cônjuge (e a renda dele) só para casados, quantidade de filhos cria os cartões em Sucessão, CEP busca o endereço, bens não quitados viram financiamentos, parcelas e dependentes entram sozinhos nas despesas, renda bruta ↔ líquida estimada.
+- **Campos dinâmicos:** cônjuge (e a renda dele) só para casados, quantidade de filhos cria os cartões em Sucessão, bens financiados viram financiamentos, parcelas, dependentes, manutenção/IPVA dos veículos e anuidade dos cartões entram sozinhos nas despesas, renda bruta ↔ líquida estimada, futuras aquisições com estratégia (à vista, financiamento, consórcio).
 - **Despesas em blocos** (Casa, Mercado, Transporte…) com subcategorias (Aluguel, Condomínio, Luz, Água, Internet…).
+- **Finalizar coleta:** o pré-diagnóstico (fluxo atual × modelo 50-30-20) e o diagnóstico completo só aparecem depois do botão.
 - **Padrões de campo:** opções em botões (chips), escala 0–10 com um botão por nota, categorias por ícones, múltipla escolha, Sim/Não, interruptores para flags, contador.
 - **Roteiro da conversa** por seção: frase de abertura, perguntas (checklist), pontos de atenção e anotações.
 - **Diagnóstico:** nota LIFE, pilares, renda × despesas, balanço, proteção "o que contratar" (educacional, padrão de vida 1/5/15 anos, sucessão), pontos fortes e de atuação, independência financeira, matriz de oportunidades (cross-sell), plano de ação e cronograma.

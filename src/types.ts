@@ -19,6 +19,8 @@ export interface Cliente {
   atualizadoEm: string;
   /** Versão da estrutura dos dados (conversões que só podem rodar uma vez usam este marcador). */
   versaoDados?: number;
+  /** Data em que o consultor clicou em "Finalizar coleta" (libera o pré-diagnóstico e o diagnóstico). */
+  coletaFinalizada?: string;
 
   // Etapa 1 · Conexão
   cadastro: Secao;
@@ -36,6 +38,10 @@ export interface Cliente {
   cartoes: Item[];
   imoveis: Item[];
   moveis: Item[];
+  /** Respostas gerais de 7 · Patrimônio (ex.: "pretende fazer futuras aquisições?"). */
+  patrimonioGeral: Secao;
+  /** Futuras aquisições de imóveis e veículos. */
+  aquisicoes: Item[];
   financiamentos: Item[];
   consorcios: Item[];
   emprestimos: Item[];
@@ -74,6 +80,7 @@ export type ListaId =
   | "cartoes"
   | "imoveis"
   | "moveis"
+  | "aquisicoes"
   | "financiamentos"
   | "consorcios"
   | "emprestimos"
@@ -87,6 +94,7 @@ export type SecaoId =
   | "cadastro"
   | "parametros"
   | "renda"
+  | "patrimonioGeral"
   | "corporativo"
   | "protecao"
   | "investimentos"

@@ -1,6 +1,7 @@
-// 8 · Financiamentos e dívidas — os bens não quitados do Patrimônio aparecem aqui
+// 8 · Financiamento e crédito — os bens financiados do Patrimônio aparecem aqui
 // somente leitura (edição em 7 · Patrimônio); abaixo, financiamentos avulsos,
-// consórcios e empréstimos. Totais saem de dividas(c).
+// consórcios e dívidas (com categoria). Totais saem de dividas(c).
+// As parcelas daqui entram no total de despesas (não são lançadas em 5 · Despesas).
 import { Car, Home, Lock, Pencil } from "lucide-react";
 import { CAMPOS_CONSORCIO, CAMPOS_EMPRESTIMO, CAMPOS_FINANCIAMENTO } from "@/config/campos";
 import { Rotulo } from "@/components/campos";
@@ -29,7 +30,7 @@ export default function Dividas() {
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <Kpi tom="ouro" rotulo="Parcelas mensais" valor={fmtBRL(dv.parcelas)} detalhe="Entram em Despesas · Financiamento/Dívidas" />
+        <Kpi tom="ouro" rotulo="Parcelas mensais" valor={fmtBRL(dv.parcelas)} detalhe="Entram no total de despesas" />
         <Kpi rotulo="Saldo devedor" valor={fmtBRL(dv.passivos)} detalhe="Financiamentos + empréstimos" />
         <Kpi
           rotulo="Comprometimento da renda"
@@ -97,7 +98,7 @@ export default function Dividas() {
           onChange={(i) => setLista("emprestimos", i)}
           textoAdicionar="Adicionar dívida ou empréstimo"
           colunas={3}
-          tituloItem={(x, i) => s(x.instituicao) || `Dívida ${i + 1}`}
+          tituloItem={(x, i) => [s(x.categoria), s(x.instituicao)].filter(Boolean).join(" · ") || `Dívida ${i + 1}`}
         />
       </SubBloco>
     </div>

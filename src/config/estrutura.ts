@@ -172,7 +172,8 @@ export const SECOES: SecaoDef[] = [
     id: "dividas",
     etapa: "raio-x",
     numero: "8",
-    titulo: "Financiamentos e dívidas",
+    titulo: "Financiamento e crédito",
+    subtitulo: "Financiamentos, consórcios e dívidas",
     icone: ReceiptText,
     coleta: true,
     opcional: true,
@@ -234,7 +235,7 @@ export const SECOES: SecaoDef[] = [
   },
 
   // Etapa 5 · Pré-diagnóstico
-  { id: "plano-atual", etapa: "pre", numero: "5.1", titulo: "Plano atual", subtitulo: "Visão breve", icone: Gauge },
+  { id: "plano-atual", etapa: "pre", numero: "5.1", titulo: "Plano atual", subtitulo: "Fluxo atual e modelo 50-30-20", icone: Gauge },
 
   // Etapa 6 · Diagnóstico completo
   { id: "panorama", etapa: "completo", numero: "6.1", titulo: "Panorama financeiro", icone: ChartPie },
@@ -273,6 +274,14 @@ export const SECOES: SecaoDef[] = [
 ];
 
 export const secaoPorId = (id: string) => SECOES.find((x) => x.id === id);
+
+/** Etapas liberadas só depois do botão "Finalizar coleta". */
+export const ETAPAS_APOS_COLETA = ["pre", "completo"];
+/** Etapas de coleta (o botão "Finalizar coleta" fica depois da última delas). */
+export const ETAPAS_COLETA = ["conexao", "raio-x", "protecao", "investimentos"];
+export const coletaFinalizada = (c: Cliente) => !!c.coletaFinalizada;
+/** A seção aparece agora? (pré-diagnóstico e diagnóstico esperam a coleta ser finalizada) */
+export const secaoLiberada = (c: Cliente, x: SecaoDef) => coletaFinalizada(c) || !ETAPAS_APOS_COLETA.includes(x.etapa);
 export const etapaPorId = (id: string) => ETAPAS.find((e) => e.id === id)!;
 
 export const secaoConcluida = (c: Cliente, x: SecaoDef) => !!c.naoAplica[x.id] || !!x.concluida?.(c);
@@ -282,10 +291,12 @@ export function progresso(c: Cliente) {
   const coleta = SECOES.filter((x) => x.coleta);
   const feitas = coleta.filter((x) => secaoConcluida(c, x)).length;
   const pct = Math.round((feitas / coleta.length) * 100);
-  const proxima = coleta.find((x) => !secaoConcluida(c, x));
+  const pendentes = coleta.filter((x) => !secaoConcluida(c, x));
+  const proxima = pendentes[0];
   let mensagem = "Comece pelo cadastro do cliente.";
-  if (pct >= 100) mensagem = "Coleta completa. Pré-diagnóstico pronto.";
-  else if (pct >= 60) mensagem = "Quase lá. Feche o raio-x para liberar o diagnóstico.";
+  if (coletaFinalizada(c)) mensagem = "Coleta finalizada. Pré-diagnóstico liberado.";
+  else if (pct >= 100) mensagem = "Coleta completa. Clique em Finalizar coleta.";
+  else if (pct >= 60) mensagem = "Quase lá. Feche o raio-x e finalize a coleta.";
   else if (pct > 0) mensagem = "Conexão iniciada. Siga rolando para o raio-x.";
-  return { pct, feitas, total: coleta.length, proxima, mensagem };
+  return { pct, feitas, total: coleta.length, proxima, pendentes, mensagem };
 }

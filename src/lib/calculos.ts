@@ -7,8 +7,8 @@
 // =====================================================================
 
 import type { Cliente, Item, Secao, Valor } from "@/types";
-import { DEPENDENTES_ESCOLARES, ESTILOS_VIDA, HORIZONTES_PADRAO_VIDA, OPCOES } from "@/config/campos";
-import { GRUPOS_DESPESA, chaveDespesa } from "@/config/despesas";
+import { DEPENDENTES_ESCOLARES, ESTILOS_VIDA, HORIZONTES_PADRAO_VIDA, OPCOES, bemFinanciado } from "@/config/campos";
+import { GRUPOS_DESPESA, MODELO_50_30_20, chaveDespesa, type ParteModelo } from "@/config/despesas";
 import { brutaDeLiquida, liquidaDeBruta } from "@/config/tributos";
 
 // ---------------------------------------------------------------------
@@ -141,9 +141,12 @@ export const TAXAS_REFERENCIA = { imovel: 0.1, veiculo: 0.18, outro: 0.2, empres
 const saldoEstimado = (f: Item, taxaAnual: number) =>
   nOpt(f.saldo) ?? valorPresente(n(f.parcela), taxaMensal(taxaAnual), n(f.prazo));
 
-/** Bens (imóveis e móveis) não quitados viram financiamentos automaticamente. */
+/** Bem quitado (situação "Quitado"; dados antigos: quitado = sim). */
+export const bemQuitado = (b: Item) => !bemFinanciado(b);
+
+/** Bens (imóveis e móveis) financiados viram financiamentos automaticamente. */
 export function financiamentosDoPatrimonio(c: Cliente) {
-  const naoQuitado = (b: Item) => b.quitado !== true && (n(b.parcela) > 0 || n(b.saldo) > 0);
+  const naoQuitado = (b: Item) => bemFinanciado(b) && (n(b.parcela) > 0 || n(b.saldo) > 0);
   return [
     ...c.imoveis.filter(naoQuitado).map((b) => ({
       id: b.id,
@@ -247,6 +250,7 @@ export function cartoes(c: Cliente) {
   const gasto = soma(lista, (k) => n(k.gastoMensal));
   // Uso do limite considera só cartões com limite informado.
   const gastoComLimite = soma(lista.filter((k) => n(k.limite) > 0), (k) => n(k.gastoMensal));
+  const comAnuidade = lista.filter((k) => k.pagaAnuidade === true);
   return {
     quantidade: lista.length,
     limite,
@@ -254,6 +258,34 @@ export function cartoes(c: Cliente) {
     usoLimite: limite > 0 ? gastoComLimite / limite : 0,
     comMilhas: lista.filter((k) => k.milhas === true).length,
     semMilhas: lista.filter((k) => k.milhas !== true),
+    comAnuidade,
+    /** Anuidades informadas (R$ por ano). */
+    anuidadeAnual: soma(comAnuidade, (k) => n(k.valorAnuidade)),
+  };
+}
+
+/** Manutenção e IPVA dos veículos (informados por ano em 7 · Patrimônio). */
+export function custoVeiculos(c: Cliente) {
+  const anual = soma(c.moveis, (m) => n(m.manutencaoAnual) + n(m.ipvaAnual));
+  return { anual, mensal: anual / 12 };
+}
+
+/** Linha de despesa que vem de outra seção (não se digita em Despesas). */
+export interface LinhaAutomatica {
+  id: string;
+  label: string;
+  valor: number;
+  /** Seção onde o valor é informado. */
+  secao: string;
+}
+
+/** Linhas automáticas dentro dos blocos de despesa (somam no bloco). */
+export function linhasAutomaticas(c: Cliente): Record<string, LinhaAutomatica[]> {
+  const veiculos = custoVeiculos(c).mensal;
+  const anuidades = cartoes(c).anuidadeAnual / 12;
+  return {
+    transporte: veiculos > 0 ? [{ id: "veiculos", label: "Manutenção e IPVA dos veículos", valor: veiculos, secao: "patrimonio" }] : [],
+    outrasFixas: anuidades > 0 ? [{ id: "anuidades", label: "Anuidade dos cartões", valor: anuidades, secao: "renda" }] : [],
   };
 }
 
@@ -261,6 +293,8 @@ export interface LinhaDespesa {
   id: string;
   label: string;
   bloco: "Fixa" | "Variável";
+  /** Parte do modelo 50-30-20. */
+  modelo: ParteModelo;
   valor: number;
   automatico?: boolean;
 }
@@ -268,12 +302,16 @@ export interface LinhaDespesa {
 export function despesas(c: Cliente) {
   const dv = dividas(c);
   const dep = sucessao(c);
+  const auto = linhasAutomaticas(c);
   const grupos = GRUPOS_DESPESA.map((g) => {
     const extras = c.despesasExtras.filter((e) => s(e.grupo) === g.id);
-    let valor = g.itens.reduce((t, it) => t + n(c.despesas[chaveDespesa(g.id, it.id)]), 0) + soma(extras, (e) => n(e.valor));
+    let valor =
+      g.itens.reduce((t, it) => t + n(c.despesas[chaveDespesa(g.id, it.id)]), 0) +
+      soma(extras, (e) => n(e.valor)) +
+      (auto[g.id] ?? []).reduce((t, x) => t + x.valor, 0);
     let automatico = false;
-    // Parcelas e dependentes vêm de outras seções (substituem o valor digitado).
-    if (g.automatico === "dividas" && dv.parcelas > 0) {
+    // Parcelas (8 · Financiamento e crédito) e dependentes (4 · Sucessão) vêm de outras seções.
+    if (g.automatico === "dividas") {
       valor = dv.parcelas;
       automatico = true;
     }
@@ -281,14 +319,15 @@ export function despesas(c: Cliente) {
       valor = dep.custoMensal;
       automatico = true;
     }
-    return { id: g.id, label: g.label, bloco: g.bloco, valor, automatico, extras: extras.length };
+    return { id: g.id, label: g.label, bloco: g.bloco, modelo: g.modelo, valor, automatico, extras: extras.length };
   });
-  const porCategoria: LinhaDespesa[] = grupos.map(({ id, label, bloco, valor, automatico }) => ({ id, label, bloco, valor, automatico }));
+  const porCategoria: LinhaDespesa[] = grupos.map(({ id, label, bloco, modelo, valor, automatico }) => ({ id, label, bloco, modelo, valor, automatico }));
   const fixas = grupos.filter((x) => x.bloco === "Fixa").reduce((t, x) => t + x.valor, 0);
   const variaveis = grupos.filter((x) => x.bloco === "Variável").reduce((t, x) => t + x.valor, 0);
   const parcelas = grupos.find((x) => x.id === "financiamentos")?.valor ?? 0;
   return {
     porCategoria,
+    linhasAutomaticas: auto,
     fixas,
     variaveis,
     total: fixas + variaveis,
@@ -312,8 +351,43 @@ export function fluxo(c: Cliente) {
     parcelas: d.parcelas,
     sobra,
     taxaPoupanca: r.total > 0 ? sobra / r.total : 0,
-    // Mesmas parcelas das despesas: as da seção 8 ou, sem elas, as digitadas em Despesas.
+    // Parcelas de 8 · Financiamento e crédito (incluem os bens financiados do Patrimônio).
     comprometimento: r.total > 0 ? d.parcelas / r.total : 0,
+  };
+}
+
+// ---------------------------------------------------------------------
+//  Modelo 50-30-20 (pré-diagnóstico)
+//   Necessidades até 50% da renda líquida, desejos até 30% e ao menos 20%
+//   para poupança e investimentos (a sobra). A parte de cada bloco de
+//   despesa está em src/config/despesas.ts (campo `modelo`).
+// ---------------------------------------------------------------------
+export function modelo503020(c: Cliente) {
+  const f = fluxo(c);
+  const d = despesas(c);
+  const renda = Math.max(0, f.renda);
+  const somaParte = (parte: ParteModelo) => d.porCategoria.filter((x) => x.modelo === parte).reduce((t, x) => t + x.valor, 0);
+  const atual: Record<string, number> = {
+    Necessidades: somaParte("Necessidades"),
+    Desejos: somaParte("Desejos"),
+    Poupança: Math.max(0, f.sobra),
+  };
+  const partes = MODELO_50_30_20.map((m) => {
+    const ideal = renda * m.meta;
+    const valor = atual[m.id];
+    // Necessidades e desejos: acima do ideal é ruim. Poupança: abaixo do ideal é ruim.
+    const excesso = m.id === "Poupança" ? ideal - valor : valor - ideal;
+    return { ...m, atual: valor, pct: renda > 0 ? valor / renda : 0, ideal, diferenca: valor - ideal, foraDoModelo: excesso > 0.5 };
+  });
+  return {
+    renda,
+    despesas: f.despesas,
+    sobra: f.sobra,
+    /** Déficit (despesas acima da renda), quando houver. */
+    deficit: Math.max(0, -f.sobra),
+    partes,
+    categorias: d.porCategoria.filter((x) => x.valor > 0).sort((a, b) => b.valor - a.valor),
+    dentroDoModelo: renda > 0 && partes.every((p) => !p.foraDoModelo),
   };
 }
 
@@ -461,8 +535,8 @@ export function protecao(c: Cliente) {
   const custoMensal = Math.max(0, d.custoVida - ed.mensalidadesCobertas);
   const padraoVida = Object.fromEntries(HORIZONTES_PADRAO_VIDA.map((a) => [a, custoMensal * 12 * a])) as Record<number, number>;
   const quitados =
-    soma(c.imoveis.filter((b) => b.quitado === true), (b) => n(b.valor)) +
-    soma(c.moveis.filter((b) => b.quitado === true), (b) => n(b.valor)) +
+    soma(c.imoveis.filter(bemQuitado), (b) => n(b.valor)) +
+    soma(c.moveis.filter(bemQuitado), (b) => n(b.valor)) +
     p.investimentos +
     p.reserva +
     p.empresa;

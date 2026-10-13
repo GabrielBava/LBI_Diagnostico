@@ -8,7 +8,7 @@ import { APP } from "@/config/defaults";
 import { secaoOculta, secaoPorId } from "@/config/estrutura";
 import { Logo } from "@/components/Header";
 import { BotaoOuro, Selo, corStatus, textoStatus } from "@/components/ui";
-import { despesas, fluxo, futuro, n, objetivos, patrimonio, protecao, renda, s, temConjuge } from "@/lib/calculos";
+import { despesas, fluxo, futuro, modelo503020, n, objetivos, patrimonio, protecao, renda, s, temConjuge } from "@/lib/calculos";
 import { notaGeral, pilares, pontos, temNota } from "@/lib/diagnostico";
 import { fmtBRL, fmtData, fmtPct } from "@/lib/format";
 import { lerConfig, useClientes } from "@/lib/storage";
@@ -70,6 +70,16 @@ export default function Relatorio() {
     if (!cliente) navigate("/clientes", { replace: true });
   }, [cliente, navigate]);
   if (!cliente) return null;
+  // O diagnóstico só existe depois de "Finalizar coleta".
+  if (!cliente.coletaFinalizada)
+    return (
+      <div className="mx-auto max-w-lg px-6 py-16 text-center">
+        <p className="text-sm text-muted-foreground">Finalize a coleta para gerar o diagnóstico em PDF.</p>
+        <Link to={`/clientes/${cliente.id}?secao=finalizar-coleta`} className="mt-4 inline-flex items-center gap-1 text-xs text-primary hover:underline">
+          <ArrowLeft className="h-3 w-3" /> Voltar ao diagnóstico
+        </Link>
+      </div>
+    );
 
   const mostra = (secaoId: string) => {
     const def = secaoPorId(secaoId);
@@ -86,6 +96,7 @@ export default function Relatorio() {
   const pr = protecao(cliente);
   const rd = renda(cliente);
   const fu = futuro(cliente);
+  const orc = modelo503020(cliente);
   const nome = s(cliente.cadastro.nome) || "Cliente";
   const rotuloBruto = temConjuge(cliente) ? "Salário bruto (cliente + cônjuge)" : "Salário bruto";
   const fortes = [...pt.fortes.map((x) => x.texto), ...cliente.pontosFortes.map((x) => s(x.texto)).filter(Boolean)];
@@ -148,6 +159,25 @@ export default function Relatorio() {
                 </div>
               ))}
             </div>
+          </Bloco>
+        )}
+
+        {mostra("plano-atual") && orc.renda > 0 && (
+          <Bloco titulo="Pré-diagnóstico · modelo 50-30-20">
+            <Tabela
+              cab={["Parte da renda", "Hoje", "% da renda", "Ideal", "Situação"]}
+              linhas={orc.partes.map((p) => [
+                p.label,
+                fmtBRL(p.atual),
+                fmtPct(p.pct),
+                `${fmtBRL(p.ideal)} (${p.id === "Poupança" ? "mín." : "máx."} ${fmtPct(p.meta)})`,
+                p.foraDoModelo
+                  ? p.id === "Poupança"
+                    ? `${fmtBRL(-p.diferenca)} abaixo`
+                    : `${fmtBRL(p.diferenca)} acima`
+                  : "Dentro do ideal",
+              ])}
+            />
           </Bloco>
         )}
 

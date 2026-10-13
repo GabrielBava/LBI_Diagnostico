@@ -1,4 +1,4 @@
-# Metodologia do Diagnóstico LIFE (versão 5)
+# Metodologia do Diagnóstico LIFE (versão 6)
 
 Este documento descreve **o processo com o cliente** e **as fórmulas** de cada seção.
 Tudo corresponde a arquivos editáveis:
@@ -7,7 +7,7 @@ Tudo corresponde a arquivos editáveis:
 |---|---|
 | Etapas, seções, ordem e regra de "seção concluída" | `src/config/estrutura.ts` |
 | Campos de cada seção (incluir / remover / renomear) | `src/config/campos.ts` |
-| Blocos e subcategorias de despesas | `src/config/despesas.ts` |
+| Blocos e subcategorias de despesas (e a parte de cada bloco no 50-30-20) | `src/config/despesas.ts` |
 | Tabelas de INSS/IR para estimar bruta ↔ líquida | `src/config/tributos.ts` |
 | Roteiro da conversa e frases de abertura das etapas | `src/config/roteiro.ts` |
 | Textos do V1 · Institucional (Grupo Life Brasil) | `src/config/institucional.ts` |
@@ -25,16 +25,17 @@ Tudo corresponde a arquivos editáveis:
   - O PDF segue a versão apresentação: seção oculta não entra.
 - **Roteiro:** o botão "Roteiro" de cada seção abre a gaveta com o objetivo, a frase de abertura, as perguntas (checklist), os pontos de atenção e as anotações da conversa.
 - **Divisor de etapa:** antes de cada etapa aparece a frase de abertura da conversa e, quando houver, os documentos a pedir.
+- **Finalizar coleta:** depois da seção 13 (Investimentos) fica o botão **Finalizar coleta** (também há um atalho no menu). As etapas 5 (pré-diagnóstico) e 6 (diagnóstico completo) e o PDF só aparecem depois do clique; ao clicar, a página rola até o 5.1. Se faltar alguma seção, o sistema avisa e pede confirmação. Na versão consultor, "Reabrir coleta" volta a ocultar as etapas 5 e 6.
 
 ## 2. Estrutura
 
 | Etapa | Seções |
 |---|---|
 | **1 · Conexão** | 1 Cadastro · 2 V1 Institucional · 3 Objetivos · 4 Sucessão |
-| **2 · Raio-X financeiro** | 5 Despesas · 6 Renda · 7 Patrimônio · 8 Financiamentos e dívidas · 9 Projetos · 10 Corporativo |
+| **2 · Raio-X financeiro** | 5 Despesas · 6 Renda · 7 Patrimônio · 8 Financiamento e crédito · 9 Projetos · 10 Corporativo |
 | **3 · Proteção e futuro** | 11 Proteção · 12 Futuro (aposentadoria) |
 | **4 · Investimentos** | 13 Investimentos |
-| **5 · Pré-diagnóstico** | 5.1 Plano atual (visão breve) |
+| **5 · Pré-diagnóstico** | 5.1 Plano atual: fluxo atual e modelo 50-30-20 (liberado por "Finalizar coleta") |
 | **6 · Diagnóstico completo** | 6.1 Panorama · 6.2 Plano atual · 6.3 Pontos fortes · 6.4 Pontos de atuação · 6.5 Futuro · 6.6 Matriz de oportunidades · 6.7 Plano de ação |
 | **7 · Jornada** | 7.1 Jornada do cliente · 7.2 Cronograma de implementação |
 
@@ -44,17 +45,16 @@ O progresso de **coleta** (menu lateral) considera as seções 1 e 3 a 13. Seç�
 
 - **Estado civil:** "Nome do cônjuge" e "Renda do cônjuge" só aparecem para Casado(a) ou União estável.
 - **Tem filhos?** Com "Sim", aparece o contador de filhos. A quantidade **cria os cartões automaticamente em Sucessão**. Diminuir remove só cartões ainda vazios. Com "Não", nada aparece.
-- **CEP:** ao completar os 8 dígitos, o endereço é buscado automaticamente (ViaCEP, precisa de internet) e exibido abaixo do campo.
 - **Satisfação financeira e impacto dos objetivos:** escala de 0 a 10 com um botão por nota.
 - **Objetivos:** categoria escolhida por ícones. Na coleta não aparecem totais, aportes nem "cabe na sobra"; o aporte de cada objetivo aparece só na versão consultor.
-- **Sucessão:** nada aparece sem filhos ou dependentes. Para adicionar, escolhe-se primeiro a categoria. Pai/Mãe e "Outro dependente" não têm escolaridade; mostram auxílio e outros custos. Mensalidades, auxílios e custos entram sozinhos nas despesas fixas (bloco Dependentes).
-- **Despesas:** blocos (Casa, Mercado, Transporte…) com subcategorias (Aluguel, Condomínio, Luz…). Cada bloco aceita itens extras.
-- **Renda:** bruta e líquida do cliente; do cônjuge só para casado(a) ou união estável. Se só uma for informada, a outra é estimada. Rendas extras ou de outra pessoa ficam em lista própria. Cartões: qual, limite, gasto mensal e se acumula milhas.
-- **Patrimônio:** imóveis e móveis com flag de seguro. Bem não quitado abre instituição, parcela, prazo e saldo (opcional) e vira financiamento automaticamente na seção 8.
-- **Financiamentos e dívidas:** a soma das parcelas (financiamentos, inclusive os do patrimônio, consórcios e empréstimos) preenche sozinha o bloco "Financiamento / Dívidas" das despesas. Sem parcelas lançadas, vale o valor digitado.
-- **Proteção:** reserva de emergência (valor e meses na visão do cliente), seguros, saúde e previdência.
-- **Futuro (12):** idade de aposentadoria, estilo de vida, renda desejada e outras rendas.
-- **Investimentos:** temas já estudados (múltipla escolha); valor (sem a reserva), assessor e instituição só aparecem com "Tem investimentos? Sim".
+- **Sucessão:** nada aparece sem filhos ou dependentes. Para adicionar, escolhe-se primeiro a categoria. Filhos, enteados e netos têm idade e escolaridade; Pai/Mãe e "Outro dependente" mostram auxílio e outros custos. Mensalidades, auxílios e custos entram sozinhos nas despesas fixas (bloco Dependentes). Sem totalizadores no topo.
+- **Despesas:** blocos (Casa, Mercado, Transporte…) com subcategorias (Aluguel, Condomínio, Luz…). Cada bloco aceita itens extras. Transporte: combustível, estacionamento/garagem, aplicativos (Uber e 99) e transporte público; manutenção e IPVA vêm dos veículos (Patrimônio). A anuidade dos cartões (Renda) entra em "Outras despesas fixas". As parcelas não são digitadas aqui: vêm da seção 8 e aparecem só no total.
+- **Renda:** bruta e líquida do cliente; do cônjuge só para casado(a) ou união estável. Se só uma for informada, a outra é estimada. Modelo da declaração do IR (simplificada, completa ou não declara). Rendas extras ou de outra pessoa ficam em lista própria. Cartões: qual, limite, gasto mensal, milhas e anuidade (valor por ano).
+- **Patrimônio:** imóveis e móveis com situação **Quitado / Financiado** e flag de seguro. Bem financiado abre instituição, parcela, prazo e saldo (opcional) e vira financiamento automaticamente na seção 8. Veículos: manutenção e IPVA por ano; "pensa em ampliação/troca" abre o modelo de desejo. **Futuras aquisições:** com "Sim", lista de segmento (imóvel/veículo), categoria, tipo, valor desejado e estratégia (à vista, financiamento, consórcio).
+- **Financiamento e crédito (8):** financiamentos (inclusive os do patrimônio), consórcios (parcela, prazo, carta) e dívidas com categoria (cartão, cheque especial, carnê, renegociação, empréstimo pessoal, consignado…). A soma das parcelas entra no total de despesas.
+- **Proteção:** reserva de emergência (valor e meses na visão do cliente), seguros, saúde e previdência (PGBL, VGBL ou os dois).
+- **Futuro (12):** idade de aposentadoria, renda desejada, outras fontes e estilo de vida (cartões).
+- **Investimentos:** conhecimento, perfil, temas já estudados (múltipla escolha); valor (sem a reserva), assessor e instituição só aparecem com "Tem investimentos? Sim".
 
 ---
 
@@ -70,10 +70,17 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 - Renda marcada como do cônjuge só entra no total quando o estado civil é casado(a) ou união estável.
 ### Despesas
 - Cada subcategoria guarda um valor mensal; o bloco soma subcategorias e itens extras.
-- `Despesas = fixas + variáveis`. As fixas incluem o bloco Dependentes (de Sucessão) e o bloco Financiamento / Dívidas (parcelas).
+- `Despesas = fixas + variáveis`. As fixas incluem Dependentes (de Sucessão), as parcelas da seção 8, manutenção e IPVA dos veículos (÷ 12) e a anuidade dos cartões (÷ 12).
 - O gasto informado nos cartões **não** é somado de novo: ele já está distribuído nas despesas.
 - `Sobra = Renda − Despesas` · `Taxa de poupança = Sobra ÷ Renda`.
-- `Comprometimento = Parcelas ÷ Renda` (alerta acima do limite dos parâmetros, padrão 30%). As parcelas são as da seção 8 (com os bens não quitados do Patrimônio) ou, se não houver nenhuma cadastrada, o valor digitado em Despesas > Financiamento / Dívidas.
+- `Comprometimento = Parcelas ÷ Renda` (alerta acima do limite dos parâmetros, padrão 30%). As parcelas são as da seção 8 (com os bens financiados do Patrimônio).
+
+### Modelo 50-30-20 (5.1 · pré-diagnóstico)
+- **Necessidades** (meta: até 50% da renda líquida): casa, alimentação, mercado, transporte, saúde, seguros, educação, dependentes, outras fixas e parcelas.
+- **Desejos** (meta: até 30%): cuidados pessoais, profissionais (diarista, personal…), restaurantes, lazer, roupas, assinaturas, esportes, viagens e outros.
+- **Poupança e investimentos** (meta: pelo menos 20%): a sobra (renda − despesas).
+- A parte de cada bloco fica no campo `modelo` de `src/config/despesas.ts`.
+- O 5.1 mostra em cima as colunas **Renda · Despesas atuais · Modelo 50-30-20**; embaixo, à esquerda, a análise de cada parte (hoje × ideal) e, à direita, o fluxo atual por categoria (entradas, necessidades, desejos e sobra).
 
 ### Balanço patrimonial
 - **Ativos** = imóveis + móveis + reserva + investimentos + previdência + participação em empresa.
@@ -140,14 +147,14 @@ Nota de 0 a 100 por pilar. Status: Saudável ≥ 75 · Atenção ≥ 45 · Crít
 - Idade de aposentadoria já atingida: não há aporte mensal; o diagnóstico mostra quanto falta hoje para a meta.
 
 ### Pontos fortes (6.3) e pontos de atuação (6.4)
-Gerados automaticamente a partir das regras em `pontos()`, como poupança ≥ 20%, reserva completa, imóveis quitados, empréstimos ativos e veículos sem seguro. O consultor pode acrescentar pontos manuais. A seção 6.4 mostra a probabilidade de cada objetivo, atual × com plano.
+Gerados automaticamente a partir das regras em `pontos()`, como poupança ≥ 20%, orçamento dentro ou fora do 50-30-20, reserva completa, imóveis quitados, dívidas ativas (com a categoria), anuidade de cartão, PGBL com declaração simplificada e veículos sem seguro. O consultor pode acrescentar pontos manuais. A seção 6.4 mostra a probabilidade de cada objetivo, atual × com plano.
 
 ### Matriz de oportunidades (6.6) — ecossistema
 Quatro quadrantes, detectados a partir dos dados:
 - **Seguros:** vida (gap), invalidez/DIT, saúde, auto/náutico sem seguro, residencial, empresarial, seguro de sócio.
-- **Patrimonial:** consórcio para objetivos de Casa e Veículo, troca/ampliação de bens, portabilidade de financiamento, planejamento sucessório/holding (2+ imóveis ou patrimônio ≥ R$ 2 mi).
-- **Investimentos:** começar a investir, completar a reserva, assessoria, suitability, aumentar o patrimônio financeiro.
-- **Futuro:** previdência privada, plano de independência, fundo de educação dos filhos.
+- **Patrimonial:** consórcio para objetivos de Casa e Veículo e para futuras aquisições por financiamento ou consórcio, troca/ampliação de bens (com o modelo de desejo), portabilidade de financiamento, planejamento sucessório/holding (2+ imóveis ou patrimônio ≥ R$ 2 mi).
+- **Investimentos:** começar a investir, completar a reserva, assessoria, suitability, aumentar o patrimônio financeiro, investimento para compra à vista.
+- **Futuro:** previdência privada (PGBL para quem declara no completo; VGBL no simplificado), avaliar PGBL, plano de independência, fundo de educação dos filhos.
 
 Cada oportunidade vai ao plano de ação com um clique (botão "Levar ao plano").
 
