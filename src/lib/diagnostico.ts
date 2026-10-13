@@ -13,6 +13,7 @@ import {
   fluxo,
   futuro,
   modelo503020,
+  mudancasVida,
   n,
   objetivos,
   parametros,
@@ -297,6 +298,25 @@ export function pontos(c: Cliente): { fortes: Ponto[]; negativos: Ponto[] } {
       });
   }
 
+  // Mudanças de vida programadas (12 · Futuro): o que aperta ou alivia o orçamento.
+  mudancasVida(c).forEach((m) => {
+    const quando = m.temData ? `em ${m.quando}` : "sem data definida";
+    if (m.impacto === "Gasto único" && m.valor > 0)
+      negativos.push({ id: `mudanca-${m.item.id}`, area: "Objetivos", texto: `${m.descricao} ${quando}: gasto único de ${fmtBRL(m.valor)} a planejar.` });
+    else if (m.efeitoMensal < 0)
+      negativos.push({
+        id: `mudanca-${m.item.id}`,
+        area: "Fluxo de caixa",
+        texto: `${m.descricao} ${quando}: ${m.impacto.toLowerCase()} em ${fmtBRL(m.valor)}/mês.`,
+      });
+    else if (m.efeitoMensal > 0)
+      fortes.push({
+        id: `mudanca-${m.item.id}`,
+        area: "Fluxo de caixa",
+        texto: `${m.descricao} ${quando}: ${m.impacto.toLowerCase()} em ${fmtBRL(m.valor)}/mês.`,
+      });
+  });
+
   const baixas = c.objetivos.filter((o) => s(o.probAtual) !== "" && n(o.probAtual) < 50);
   if (baixas.length)
     negativos.push({
@@ -571,6 +591,19 @@ export function sugestoes(c: Cliente): Sugestao[] {
     out.push({ id: "sg-objetivos", acao: "Repriorizar objetivos: o aporte necessário supera a sobra mensal", area: "Objetivos", prioridade: "Média", prazo: "Curto" });
 
   // Oportunidades também viram sugestões (mesma área do quadrante).
+  // Gasto único programado (12 · Futuro) vira reserva com prazo.
+  mudancasVida(c)
+    .filter((m) => m.impacto === "Gasto único" && m.valor > 0)
+    .forEach((m) =>
+      out.push({
+        id: `sg-mudanca-${m.item.id}`,
+        acao: `Reservar ${fmtBRL(m.valor)} para “${m.descricao}”${m.temData ? ` até ${m.quando}` : ""}`,
+        area: "Objetivos",
+        prioridade: "Média",
+        prazo: !m.temData ? "Médio" : m.meses > 12 ? "Longo" : m.meses > 3 ? "Médio" : "Curto",
+      }),
+    );
+
   // "op-reserva" repete "sg-reserva", que já define a prioridade pelos meses cobertos.
   oportunidades(c)
     .filter((o) => o.id !== "op-reserva")

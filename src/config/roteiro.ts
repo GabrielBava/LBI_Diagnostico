@@ -1,10 +1,7 @@
 // =====================================================================
 //  ROTEIRO DA CONVERSA (storytelling da coleta de dados)
 //  ---------------------------------------------------------------------
-//  ABERTURA_ETAPA: frase que o consultor usa ao entrar em cada etapa
-//  (aparece no divisor entre as etapas, na versão consultor).
-//
-//  ROTEIRO: para cada seção
+//  ROTEIRO: para cada seção (gaveta "Roteiro", versão consultor)
 //    objetivo  -> por que a seção existe
 //    abertura  -> frase para abrir o assunto com o cliente
 //    perguntas -> perguntas-chave (checklist marcável)
@@ -19,18 +16,6 @@ export interface Roteiro {
   perguntas: string[];
   atencao: string[];
 }
-
-export const ABERTURA_ETAPA: Record<string, string> = {
-  conexao:
-    "Antes de falar de números, quero entender a sua história: quem é você, quem depende de você e onde você quer chegar.",
-  "raio-x":
-    "Agora que sabemos onde você quer chegar, vamos olhar com honestidade para onde você está hoje. Sem julgamento: é um raio-x.",
-  protecao: "Tudo o que planejamos depende da sua capacidade de gerar renda. Vamos ver o que protege a sua família hoje.",
-  investimentos: "Vamos entender como você investe hoje e como se sente em relação a risco.",
-  pre: "Com o que você me contou, já consigo mostrar uma primeira leitura. É uma visão breve; o diagnóstico completo vem na próxima conversa.",
-  completo: "Lembra do que você me disse no início? Agora vamos ver o que os números dizem e o que vamos fazer a respeito.",
-  jornada: "Para o plano sair do papel, vamos combinar os próximos passos, com datas e responsáveis.",
-};
 
 export const ROTEIRO: Record<string, Roteiro> = {
   cadastro: {

@@ -67,7 +67,7 @@ export function clienteExemplo(): Cliente {
       "viagens.internacionais": 500,
       "outros.pets": 300,
     },
-    renda: { brutaCliente: 30000, liquidaConjuge: 9000, declaracaoIR: "Completa", temCartao: "Sim" },
+    renda: { brutaCliente: 30000, liquidaConjuge: 9000, rendaExtra: 1500, declaracaoIR: "Completa", temCartao: "Sim" },
     outrasRendas: [{ id: i(), pessoa: "Cliente", descricao: "PLR", tipo: "Bônus / PLR", valor: 24000, frequencia: "Anual" }],
     cartoes: [
       { id: i(), cartao: "Banco X Black", limite: 40000, gastoMensal: 9000, milhas: true, programa: "Smiles", pagaAnuidade: true, valorAnuidade: 1200 },
@@ -86,7 +86,7 @@ export function clienteExemplo(): Cliente {
       { id: i(), segmento: "Veículo", categoria: "Carro", tipo: "Novo", valorDesejado: 180000, estrategia: "Financiamento" },
     ],
     financiamentos: [],
-    consorcios: [{ id: i(), tipo: "Serviços", parcela: 450, prazo: 30, credito: 12000, contemplado: false }],
+    consorcios: [{ id: i(), tipo: "Serviços", administradora: "Porto", parcela: 450, prazo: 30, credito: 12000, contemplado: false }],
     emprestimos: [{ id: i(), categoria: "Empréstimo pessoal", instituicao: "Banco X", parcela: 1100, prazo: 18 }],
     corporativo: { possuiEmpresa: "Não" },
     protecao: {
@@ -113,6 +113,10 @@ export function clienteExemplo(): Cliente {
       temAssessor: "Não",
       instituicao: "Banco",
     },
-    futuro: { idadeAposentadoria: 60, estiloVida: "Mais confortável" },
+    futuro: { idadeAposentadoria: 60, investimentoMensal: 3000, estiloVida: "Mais confortável", temMudanca: "Sim" },
+    mudancas: [
+      { id: i(), descricao: "Reforma da casa", impacto: "Gasto único", meses: 18, valor: 60000 },
+      { id: i(), descricao: "Lucas entra na faculdade", impacto: "Aumenta despesas", meses: 120, valor: 3500 },
+    ],
   });
 }

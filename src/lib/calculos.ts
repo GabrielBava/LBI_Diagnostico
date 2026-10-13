@@ -89,8 +89,13 @@ export const temConjuge = (c: Cliente) => OPCOES.comConjuge.includes(s(c.cadastr
 export const parametros = (p: Secao) => {
   const inflacao = pct(p.inflacaoGeral);
   const retornoReal = pct(p.retornoReal);
+  // Em branco, a inflação educacional acompanha a geral.
+  const inflacaoEducacional = nOpt(p.inflacaoEducacional) !== undefined ? pct(p.inflacaoEducacional) : inflacao;
   return {
     inflacao,
+    inflacaoEducacional,
+    /** Quanto a educação sobe acima da inflação geral, por ano. */
+    premioEducacional: (1 + inflacaoEducacional) / (1 + inflacao) - 1,
     retornoReal,
     /** Retorno nominal = (1 + inflação) × (1 + retorno real) − 1 */
     nominal: (1 + inflacao) * (1 + retornoReal) - 1,
@@ -230,16 +235,19 @@ export function renda(c: Cliente) {
     validas.filter((r) => RENDA_FUTURA.includes(s(r.tipo))),
     mensal,
   );
+  // Renda extra do cliente (campo único em 6 · Renda), líquida e mensal.
+  const extra = Math.max(0, n(c.renda.rendaExtra));
   return {
     cliente,
     conjugeDetalhe: conjuge,
     principal: cliente.liquida,
     conjuge: conjuge.liquida,
+    extra,
     outras,
     passiva,
     futura,
     /** Renda familiar líquida mensal. */
-    total: cliente.liquida + conjuge.liquida + outras,
+    total: cliente.liquida + extra + conjuge.liquida + outras,
     brutaTotal: cliente.bruta + conjuge.bruta,
   };
 }
@@ -284,8 +292,8 @@ export function linhasAutomaticas(c: Cliente): Record<string, LinhaAutomatica[]>
   const veiculos = custoVeiculos(c).mensal;
   const anuidades = cartoes(c).anuidadeAnual / 12;
   return {
-    transporte: veiculos > 0 ? [{ id: "veiculos", label: "Manutenção e IPVA dos veículos", valor: veiculos, secao: "patrimonio" }] : [],
-    outrasFixas: anuidades > 0 ? [{ id: "anuidades", label: "Anuidade dos cartões", valor: anuidades, secao: "renda" }] : [],
+    transporte: veiculos > 0 ? [{ id: "veiculos", label: "Manutenção e IPVA dos Veículos", valor: veiculos, secao: "patrimonio" }] : [],
+    outrasFixas: anuidades > 0 ? [{ id: "anuidades", label: "Anuidade dos Cartões", valor: anuidades, secao: "renda" }] : [],
   };
 }
 
@@ -507,17 +515,29 @@ export const ANOS_ESCOLA_RESTANTES: Record<string, number> = {
 };
 const ANTES_DA_FACULDADE = ["Educação infantil", "Fundamental I", "Fundamental II", "Ensino médio"];
 
+/**
+ * Soma do custo anual por `anos` anos a partir do ano `inicio`, com o custo subindo
+ * `g` ao ano acima da inflação (valores de hoje). Com g = 0: anual × anos.
+ */
+const custoCrescente = (anual: number, inicio: number, anos: number, g: number) => {
+  let total = 0;
+  for (let t = inicio; t < inicio + anos; t++) total += anual * Math.pow(1 + g, t);
+  return total;
+};
+
 export function educacional(c: Cliente) {
   const pr = c.protecao;
   const mensalidadeFac = nOpt(pr.mensalidadeFaculdade) ?? 3000;
   const duracao = nOpt(pr.duracaoFaculdade) ?? 5;
+  // Escola e faculdade sobem pela inflação educacional (acima da geral).
+  const g = parametros(c.parametros).premioEducacional;
   const lista = c.dependentes.filter(ehEscolar).map((d) => {
     const nivel = s(d.nivelEscola);
     const anosEscola = ANOS_ESCOLA_RESTANTES[nivel] ?? 0;
-    const escola = mensalidadeDependente(d) * 12 * anosEscola;
+    const escola = custoCrescente(mensalidadeDependente(d) * 12, 0, anosEscola, g);
     let faculdade = 0;
-    if (ANTES_DA_FACULDADE.includes(nivel)) faculdade = mensalidadeFac * 12 * duracao;
-    else if (nivel === "Graduação") faculdade = mensalidadeDependente(d) * 12 * Math.ceil(duracao / 2);
+    if (ANTES_DA_FACULDADE.includes(nivel)) faculdade = custoCrescente(mensalidadeFac * 12, anosEscola, duracao, g);
+    else if (nivel === "Graduação") faculdade = custoCrescente(mensalidadeDependente(d) * 12, 0, Math.ceil(duracao / 2), g);
     // Mensalidade atual que este componente substitui (sai do padrão de vida).
     const mensalidadeCoberta = ANTES_DA_FACULDADE.includes(nivel) || nivel === "Graduação" ? mensalidadeDependente(d) : 0;
     return { item: d, anosEscola, escola, faculdade, total: escola + faculdade, mensalidadeCoberta };
@@ -570,6 +590,37 @@ export function protecao(c: Cliente) {
 }
 
 // ---------------------------------------------------------------------
+//  Mudanças de vida programadas (12 · Futuro)
+// ---------------------------------------------------------------------
+/** Mês/ano daqui a `meses` meses (ex.: "mar. de 2027"). */
+export const mesFuturo = (meses: number, hoje = new Date()) =>
+  new Date(hoje.getFullYear(), hoje.getMonth() + Math.max(0, Math.round(meses)), 1).toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
+
+/** Mudanças informadas (só com "Tem alguma mudança de vida programada?" = Sim), em ordem de data. */
+export function mudancasVida(c: Cliente) {
+  if (!sim(c.futuro.temMudanca)) return [];
+  return c.mudancas
+    .filter((m) => !!s(m.descricao) || n(m.valor) > 0)
+    .map((m) => {
+      const impacto = s(m.impacto);
+      const valor = n(m.valor);
+      const meses = Math.max(0, n(m.meses));
+      return {
+        item: m,
+        descricao: s(m.descricao) || "Mudança",
+        impacto,
+        valor,
+        meses,
+        temData: nOpt(m.meses) !== undefined,
+        quando: mesFuturo(meses),
+        /** Efeito mensal na sobra (negativo = aperta o orçamento); gasto único não entra aqui. */
+        efeitoMensal: impacto === "Aumenta despesas" || impacto === "Reduz renda" ? -valor : impacto === "Reduz despesas" || impacto === "Aumenta renda" ? valor : 0,
+      };
+    })
+    .sort((a, b) => a.meses - b.meses);
+}
+
+// ---------------------------------------------------------------------
 //  Futuro — independência financeira (valores reais, R$ de hoje)
 // ---------------------------------------------------------------------
 export const TAXA_RETIRADA = 0.04; // regra dos 4% → patrimônio = 25× a renda anual
@@ -592,7 +643,9 @@ export function futuro(c: Cliente) {
   const alvo = (Math.max(0, rendaDesejada - outras) * 12) / TAXA_RETIRADA;
   // A reserva de emergência não entra: ela existe para imprevistos.
   const atual = p.investimentos + p.previdencia;
-  const aporteAtual = Math.max(0, f.sobra);
+  // Investimento mensal informado (12 · Futuro); em branco, a sobra do mês.
+  const investimentoInformado = nOpt(fu.investimentoMensal);
+  const aporteAtual = investimentoInformado !== undefined ? Math.max(0, investimentoInformado) : Math.max(0, f.sobra);
   const i = taxaMensal(retornoReal);
   const meses = anos * 12;
   const projetado = valorFuturo(atual, aporteAtual, i, meses);
@@ -613,6 +666,8 @@ export function futuro(c: Cliente) {
     alvo,
     atual,
     aporteAtual,
+    /** O aporte atual veio do campo "Investimento mensal" (e não da sobra). */
+    aporteInformado: investimentoInformado !== undefined,
     projetado,
     aporte,
     idadeAtingida,

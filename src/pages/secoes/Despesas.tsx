@@ -1,15 +1,16 @@
 // 5 · Despesas — blocos (Casa, Mercado, Transporte...) com subcategorias.
 // Cada bloco é um cartão recolhível; os grupos e itens vêm de src/config/despesas.ts.
 // Subtotais e totais saem de despesas(c) para bater com os cálculos do diagnóstico.
-// As parcelas (8 · Financiamento e crédito) não são lançadas aqui: aparecem só no total.
+// As parcelas (8 · Financiamento e crédito) não são lançadas aqui; entram no total do diagnóstico.
+// Sem totais na tela de coleta: os valores aparecem no pré-diagnóstico.
 import { useState, type ReactNode } from "react";
 import { ChevronDown, Lock, Plus, Trash2 } from "lucide-react";
 import { GRUPOS_DESPESA, chaveDespesa, type GrupoDespesa } from "@/config/despesas";
 import { CampoMoeda } from "@/components/campos";
 import { Botao, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { custoDependente, despesas, fluxo, n, rotuloDependente, s, type LinhaAutomatica } from "@/lib/calculos";
-import { fmtBRL, fmtPct, uid } from "@/lib/format";
+import { custoDependente, despesas, n, rotuloDependente, s, type LinhaAutomatica } from "@/lib/calculos";
+import { moedaCampo, uid } from "@/lib/format";
 import type { Item } from "@/types";
 
 type Bloco = "Fixa" | "Variável";
@@ -32,7 +33,7 @@ function Linha({ rotulo, dica, children }: { rotulo: ReactNode; dica?: ReactNode
 function ValorTravado({ valor }: { valor: number }) {
   return (
     <div className="inp-wrap justify-end text-sm font-medium tabular-nums" data-readonly="true">
-      <Lock className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" /> {fmtBRL(valor)}
+      <Lock className="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" /> R$ {moedaCampo(valor)}
     </div>
   );
 }
@@ -56,7 +57,6 @@ function LinkSecao({ id, children }: { id: string; children: ReactNode }) {
 export default function Despesas() {
   const { cliente, atualizar, setLista } = useCliente();
   const d = despesas(cliente);
-  const f = fluxo(cliente);
 
   const valorGrupo = (id: string) => d.porCategoria.find((x) => x.id === id)?.valor ?? 0;
   const extrasDo = (id: string) => cliente.despesasExtras.filter((e) => s(e.grupo) === id);
@@ -94,7 +94,6 @@ export default function Despesas() {
     setNovoId(id);
   };
 
-  const pctRenda = (v: number) => (f.renda > 0 ? `${fmtPct(v / f.renda)} da renda` : null);
 
   // ------------------------------------------------------------------
   //  Conteúdo de cada grupo
@@ -195,7 +194,7 @@ export default function Despesas() {
 
   /** Texto do cabeçalho: "3 de 8 preenchidos" ou "automático". */
   const resumoGrupo = (g: GrupoDespesa) => {
-    if (ehAutomatico(g)) return "automático";
+    if (ehAutomatico(g)) return "Automático";
     const extras = g.automatico ? [] : extrasDo(g.id);
     const auto = autoDo(g.id);
     const total = g.itens.length + extras.length + auto.length;
@@ -212,7 +211,6 @@ export default function Despesas() {
   // ------------------------------------------------------------------
   const cartaoGrupo = (g: GrupoDespesa) => {
     const aberto = abertos.has(g.id);
-    const valor = valorGrupo(g.id);
     const Icone = g.icone;
     const idConteudo = `despesa-grupo-${g.id}`;
     return (
@@ -234,9 +232,6 @@ export default function Despesas() {
               {resumoGrupo(g)}
             </span>
           </span>
-          <span className={`shrink-0 text-sm tabular-nums ${valor > 0 ? "font-semibold" : "text-muted-foreground"}`}>
-            {fmtBRL(valor)}
-          </span>
           <ChevronDown
             className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${aberto ? "rotate-180" : ""}`}
             aria-hidden="true"
@@ -251,31 +246,16 @@ export default function Despesas() {
     );
   };
 
-  const parte = (bloco: Bloco) => {
-    // As parcelas entram só no total geral (são lançadas na seção 8).
-    const total = bloco === "Fixa" ? d.fixas - d.parcelas : d.variaveis;
-    const pct = pctRenda(total);
-    return (
-      <SubBloco
-        titulo={bloco === "Fixa" ? (d.parcelas > 0 ? "Despesas fixas (sem parcelas)" : "Despesas fixas") : "Despesas variáveis"}
-        total={
-          <span>
-            {fmtBRL(total)}
-            {pct && <span className="ml-1 text-xs font-normal text-muted-foreground">({pct})</span>}
-          </span>
-        }
-      >
-        <div className="grid items-start gap-3 lg:grid-cols-2">{GRUPOS_NA_TELA.filter((g) => g.bloco === bloco).map(cartaoGrupo)}</div>
-      </SubBloco>
-    );
-  };
-
-  const pctTotal = pctRenda(d.total);
+  const parte = (bloco: Bloco) => (
+    <SubBloco titulo={bloco === "Fixa" ? "Despesas fixas" : "Despesas variáveis"}>
+      <div className="grid items-start gap-3 lg:grid-cols-2">{GRUPOS_NA_TELA.filter((g) => g.bloco === bloco).map(cartaoGrupo)}</div>
+    </SubBloco>
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">Valores mensais. Gastos anuais: divida por 12.</p>
+        <p className="text-xs text-muted-foreground">Valores mensais.</p>
         <Botao variante="fantasma" pequeno onClick={alternarTodos} className="no-print">
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${todosAbertos ? "rotate-180" : ""}`} aria-hidden="true" />
           {todosAbertos ? "Fechar todos" : "Abrir todos"}
@@ -283,29 +263,6 @@ export default function Despesas() {
       </div>
       {parte("Fixa")}
       {parte("Variável")}
-      <div className="rounded-xl border border-border bg-secondary/30 px-4 py-3">
-        {d.parcelas > 0 && (
-          <div className="mb-2 space-y-1 border-b border-border/60 pb-2 text-sm">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-              <span className="text-muted-foreground">Despesas fixas e variáveis</span>
-              <span className="tabular-nums">{fmtBRL(d.total - d.parcelas)}</span>
-            </div>
-            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-              <span className="text-muted-foreground">
-                + Parcelas · <LinkSecao id="dividas">8 · Financiamento e crédito</LinkSecao>
-              </span>
-              <span className="tabular-nums">{fmtBRL(d.parcelas)}</span>
-            </div>
-          </div>
-        )}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="text-sm text-muted-foreground">Total de despesas mensais</span>
-          <span className="text-lg font-semibold tabular-nums">
-            {fmtBRL(d.total)}
-            {pctTotal && <span className="ml-2 text-xs font-normal text-muted-foreground">{pctTotal}</span>}
-          </span>
-        </div>
-      </div>
     </div>
   );
 }

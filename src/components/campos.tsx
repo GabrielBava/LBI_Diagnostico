@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { Check, Minus, Plus, type LucideIcon } from "lucide-react";
 import type { CampoDef } from "@/config/campos";
 import type { Cliente, Secao, Valor } from "@/types";
-import { moedaParaTexto, textoParaNumero } from "@/lib/format";
+import { mascaraMoeda, moedaCampo, textoParaNumero } from "@/lib/format";
 import { usePreferencias } from "@/lib/preferencias";
 
 export function Rotulo({ children }: { children: React.ReactNode }) {
@@ -31,10 +31,10 @@ export function CampoMoeda({
   disabled?: boolean;
 }) {
   const numero = typeof valor === "number" ? valor : textoParaNumero(String(valor ?? ""));
-  const [texto, setTexto] = useState(moedaParaTexto(numero));
+  const [texto, setTexto] = useState(moedaCampo(numero));
   const [editando, setEditando] = useState(false);
   useEffect(() => {
-    if (!editando) setTexto(moedaParaTexto(numero));
+    if (!editando) setTexto(moedaCampo(numero));
   }, [numero, editando]);
 
   return (
@@ -44,17 +44,20 @@ export function CampoMoeda({
         inputMode="decimal"
         aria-label={ariaLabel}
         disabled={disabled}
-        placeholder={automatico !== undefined ? `${moedaParaTexto(Math.round(automatico))} (auto)` : placeholder}
+        placeholder={automatico !== undefined ? `${moedaCampo(Math.round(automatico))} (auto)` : placeholder}
         className="placeholder:text-muted-foreground/50"
         value={texto}
         onFocus={() => setEditando(true)}
         onChange={(e) => {
-          setTexto(e.target.value);
-          onChange(textoParaNumero(e.target.value));
+          // Digitando no fim do campo, o milhar já aparece formatado (30000 → 30.000).
+          const noFim = e.target.selectionStart === e.target.value.length;
+          const novo = noFim ? mascaraMoeda(e.target.value) : e.target.value;
+          setTexto(novo);
+          onChange(textoParaNumero(novo));
         }}
         onBlur={() => {
           setEditando(false);
-          setTexto(moedaParaTexto(textoParaNumero(texto)));
+          setTexto(moedaCampo(textoParaNumero(texto)));
         }}
       />
     </div>
@@ -531,7 +534,8 @@ export function Formulario({
     <div className={`grid grid-cols-1 gap-x-4 gap-y-4 ${grid}`}>
       {visiveis.map((original) => {
         const c = original.opcoesSe ? { ...original, opcoes: original.opcoesSe(dados, cliente) } : original;
-        const span = `${SPAN[Math.min(c.largura ?? 1, colunas)]} ${c.novaLinha ? "sm:col-start-1" : ""}`;
+        const inicio = c.novaLinha ? "sm:col-start-1" : c.meioLinha ? (colunas === 4 ? "sm:col-start-1 lg:col-start-3" : "sm:col-start-1") : "";
+        const span = `${SPAN[Math.min(c.largura ?? 1, colunas)]} ${inicio}`;
         if (c.tipo === "switch")
           return (
             <div key={c.key} className={`aparecer ${span}`}>

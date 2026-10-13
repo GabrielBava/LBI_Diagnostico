@@ -54,6 +54,7 @@ export default function PlanoAtual() {
   const reduzir = [nec, des].filter((p) => p.diferenca > 0.5);
   const entradas = [
     { nome: "Renda líquida do cliente", valor: r.cliente.liquida },
+    { nome: "Renda extra", valor: r.extra },
     { nome: "Renda líquida do cônjuge", valor: r.conjuge },
     { nome: "Outras rendas", valor: r.outras },
   ].filter((x) => x.valor > 0);

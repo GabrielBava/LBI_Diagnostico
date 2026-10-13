@@ -42,32 +42,12 @@ export interface Etapa {
   numero: number;
   nome: string;
   subtitulo: string;
-  /** Documentos a pedir ao cliente antes desta etapa. */
-  documentos?: string[];
 }
 
 export const ETAPAS: Etapa[] = [
   { id: "conexao", numero: 1, nome: "Conexão", subtitulo: "Quem é o cliente e onde ele quer chegar" },
-  {
-    id: "raio-x",
-    numero: 2,
-    nome: "Raio-X financeiro",
-    subtitulo: "Onde o cliente está hoje",
-    documentos: [
-      "Contracheques ou pró-labore dos últimos 3 meses",
-      "Faturas de cartão de crédito dos últimos 3 meses",
-      "Extratos bancários e de investimentos",
-      "Contratos de financiamentos, consórcios e empréstimos",
-      "Última declaração de Imposto de Renda",
-    ],
-  },
-  {
-    id: "protecao",
-    numero: 3,
-    nome: "Proteção e futuro",
-    subtitulo: "O que protege a família e o padrão de vida",
-    documentos: ["Apólices de seguro de vida (individual e empresa)", "Extrato da previdência privada"],
-  },
+  { id: "raio-x", numero: 2, nome: "Raio-X financeiro", subtitulo: "Onde o cliente está hoje" },
+  { id: "protecao", numero: 3, nome: "Proteção e futuro", subtitulo: "O que protege a família e o padrão de vida" },
   { id: "investimentos", numero: 4, nome: "Investimentos", subtitulo: "Como o cliente investe hoje" },
   { id: "pre", numero: 5, nome: "Pré-diagnóstico", subtitulo: "Visão breve, gerada com o que foi preenchido" },
   { id: "completo", numero: 6, nome: "Diagnóstico completo", subtitulo: "A leitura completa e o plano de ação" },

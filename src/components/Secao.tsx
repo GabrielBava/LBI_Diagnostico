@@ -1,9 +1,9 @@
 // Moldura de cada seção da página contínua: número, título, roteiro da
 // conversa (gaveta), visibilidade na apresentação e "não se aplica".
 import { useState, type ReactNode } from "react";
-import { BookOpenText, Check, Eye, EyeOff, FileText, MessageSquareQuote, NotebookPen } from "lucide-react";
+import { BookOpenText, Check, Eye, EyeOff, MessageSquareQuote, NotebookPen } from "lucide-react";
 import { ETAPAS, etapaPorId, secaoConcluida, secaoOculta, type SecaoDef } from "@/config/estrutura";
-import { ABERTURA_ETAPA, ROTEIRO } from "@/config/roteiro";
+import { ROTEIRO } from "@/config/roteiro";
 import { useCliente } from "@/lib/cliente-context";
 import { usePreferencias } from "@/lib/preferencias";
 
@@ -153,11 +153,9 @@ function GavetaRoteiro({ secaoId }: { secaoId: string }) {
   );
 }
 
-/** Divisor entre etapas: nome da etapa e, na versão consultor, a frase de abertura e documentos. */
+/** Divisor entre etapas: número, nome e subtítulo da etapa. */
 export function DivisorEtapa({ etapaId }: { etapaId: string }) {
-  const { apresentacao } = usePreferencias();
   const e = etapaPorId(etapaId);
-  const frase = ABERTURA_ETAPA[etapaId];
   return (
     <div id={`etapa-${etapaId}`} className="secao-ancora pt-4">
       <div className="flex items-end gap-4">
@@ -168,28 +166,6 @@ export function DivisorEtapa({ etapaId }: { etapaId: string }) {
           <p className="text-xs text-muted-foreground">{e.subtitulo}</p>
         </div>
       </div>
-      {!apresentacao && (frase || e.documentos) && (
-        <div className="no-print mt-3 grid gap-3 lg:grid-cols-2">
-          {frase && (
-            <div className="flex gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3">
-              <MessageSquareQuote className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              <p className="text-sm italic">“{frase}”</p>
-            </div>
-          )}
-          {e.documentos && (
-            <div className="rounded-xl border border-border bg-card p-3">
-              <div className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-primary">
-                <FileText className="h-3.5 w-3.5" /> Documentos desta etapa
-              </div>
-              <ul className="list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
-                {e.documentos.map((d) => (
-                  <li key={d}>{d}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

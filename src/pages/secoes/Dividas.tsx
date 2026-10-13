@@ -1,15 +1,15 @@
 // 8 · Financiamento e crédito — os bens financiados do Patrimônio aparecem aqui
 // somente leitura (edição em 7 · Patrimônio); abaixo, financiamentos avulsos,
-// consórcios e dívidas (com categoria). Totais saem de dividas(c).
+// consórcios (com administradora) e dívidas (com categoria). Sem totais no topo.
 // As parcelas daqui entram no total de despesas (não são lançadas em 5 · Despesas).
 import { Car, Home, Lock, Pencil } from "lucide-react";
 import { CAMPOS_CONSORCIO, CAMPOS_EMPRESTIMO, CAMPOS_FINANCIAMENTO } from "@/config/campos";
 import { Rotulo } from "@/components/campos";
 import { ListaItens } from "@/components/ListaEditor";
-import { Botao, Kpi, SubBloco } from "@/components/ui";
+import { Botao, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { dividas, fluxo, parametros, s } from "@/lib/calculos";
-import { fmtBRL, fmtPct } from "@/lib/format";
+import { dividas, s } from "@/lib/calculos";
+import { fmtBRL } from "@/lib/format";
 
 /** Par "rótulo / valor" dos cartões somente leitura. */
 function Dado({ rotulo, valor }: { rotulo: string; valor: string }) {
@@ -24,22 +24,10 @@ function Dado({ rotulo, valor }: { rotulo: string; valor: string }) {
 export default function Dividas() {
   const { cliente, setLista, irPara } = useCliente();
   const dv = dividas(cliente);
-  const f = fluxo(cliente);
-  const { limite } = parametros(cliente.parametros);
   const temDoPatrimonio = dv.doPatrimonio.length > 0;
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Kpi tom="ouro" rotulo="Parcelas mensais" valor={fmtBRL(dv.parcelas)} detalhe="Entram no total de despesas" />
-        <Kpi rotulo="Saldo devedor" valor={fmtBRL(dv.passivos)} detalhe="Financiamentos + empréstimos" />
-        <Kpi
-          rotulo="Comprometimento da renda"
-          valor={f.renda > 0 ? fmtPct(f.comprometimento) : "—"}
-          tom={f.renda > 0 && f.comprometimento > limite ? "perigo" : "neutro"}
-          detalhe={`Limite saudável: ${fmtPct(limite)}`}
-        />
-      </div>
-      <SubBloco titulo="Financiamentos" total={dv.parcelasFin ? `${fmtBRL(dv.parcelasFin)}/mês` : undefined}>
+      <SubBloco titulo="Financiamentos">
         {temDoPatrimonio && (
           <div className="mb-4 space-y-3">
             <p className="flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -82,16 +70,16 @@ export default function Dividas() {
           tituloItem={(x, i) => `Financiamento ${s(x.tipo).toLowerCase() || i + 1}`}
         />
       </SubBloco>
-      <SubBloco titulo="Consórcios" total={dv.parcelasCons ? `${fmtBRL(dv.parcelasCons)}/mês` : undefined}>
+      <SubBloco titulo="Consórcios">
         <ListaItens
           campos={CAMPOS_CONSORCIO}
           itens={cliente.consorcios}
           onChange={(i) => setLista("consorcios", i)}
           textoAdicionar="Adicionar consórcio"
-          tituloItem={(x, i) => `Consórcio ${s(x.tipo).toLowerCase() || i + 1}`}
+          tituloItem={(x, i) => `Consórcio ${s(x.tipo).toLowerCase() || i + 1}${s(x.administradora) ? ` · ${s(x.administradora)}` : ""}`}
         />
       </SubBloco>
-      <SubBloco titulo="Dívidas e empréstimos" total={dv.parcelasEmp ? `${fmtBRL(dv.parcelasEmp)}/mês` : undefined}>
+      <SubBloco titulo="Dívidas e empréstimos">
         <ListaItens
           campos={CAMPOS_EMPRESTIMO}
           itens={cliente.emprestimos}

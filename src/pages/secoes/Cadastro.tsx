@@ -1,10 +1,9 @@
-import { CAMPOS_CADASTRO, CAMPOS_PARAMETROS } from "@/config/campos";
+import { CAMPOS_CADASTRO } from "@/config/campos";
 import { Formulario } from "@/components/campos";
 import { SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { idadePorNascimento, nOpt, s } from "@/lib/calculos";
 import { uid } from "@/lib/format";
-import { usePreferencias } from "@/lib/preferencias";
 import type { Cliente, Item, Valor } from "@/types";
 
 const vazio = (d: Item) => !s(d.nome) && !s(d.nivelEscola) && !d.mensalidade && !d.auxilio && nOpt(d.idade) === undefined;
@@ -25,8 +24,7 @@ function sincronizarFilhos(dependentes: Item[], qtd: number, inclusivePreenchido
 }
 
 export default function Cadastro() {
-  const { cliente, atualizar, setCampo } = useCliente();
-  const { apresentacao } = usePreferencias();
+  const { cliente, atualizar } = useCliente();
   const idade = idadePorNascimento(s(cliente.cadastro.nascimento));
 
   const alterar = (key: string, v: Valor) => {
@@ -62,11 +60,6 @@ export default function Cadastro() {
       <SubBloco titulo="Dados do cliente" total={idade !== undefined ? <span className="text-xs text-muted-foreground">{idade} anos</span> : undefined}>
         <Formulario campos={CAMPOS_CADASTRO} dados={cliente.cadastro} cliente={cliente} onChange={alterar} />
       </SubBloco>
-      {!apresentacao && (
-        <SubBloco titulo="Parâmetros financeiros · versão consultor" className="no-print">
-          <Formulario campos={CAMPOS_PARAMETROS} dados={cliente.parametros} cliente={cliente} onChange={(k, v) => setCampo("parametros", k, v)} />
-        </SubBloco>
-      )}
     </div>
   );
 }

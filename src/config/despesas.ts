@@ -2,7 +2,7 @@
 //  DESPESAS — blocos (grupos) e subcategorias
 //  ---------------------------------------------------------------------
 //  Cada grupo vira um bloco na tela (ex.: "Casa") e cada item vira uma
-//  linha com valor mensal (ex.: "Aluguel"). O valor fica salvo na chave
+//  linha com valor mensal (ex.: "Aluguel"). Rótulos com iniciais maiúsculas. O valor fica salvo na chave
 //  "grupo.item" (ex.: "casa.aluguel").
 //
 //  Para incluir uma subcategoria, acrescente-a em `itens` do grupo.
@@ -73,12 +73,12 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     itens: [
       { id: "aluguel", label: "Aluguel" },
       { id: "condominio", label: "Condomínio" },
-      { id: "luz", label: "Energia elétrica (luz)" },
+      { id: "luz", label: "Energia Elétrica (Luz)" },
       { id: "agua", label: "Água" },
-      { id: "internet", label: "Internet e telefone" },
+      { id: "internet", label: "Internet e Telefone" },
       { id: "gas", label: "Gás" },
-      { id: "iptu", label: "IPTU", dica: "Valor anual ÷ 12" },
-      { id: "manutencao", label: "Manutenção e reparos" },
+      { id: "iptu", label: "IPTU" },
+      { id: "manutencao", label: "Manutenção e Reparos" },
     ],
   },
   {
@@ -88,8 +88,8 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     modelo: "Necessidades",
     icone: Coffee,
     itens: [
-      { id: "refeicoes", label: "Refeições do dia a dia" },
-      { id: "lanches", label: "Lanches e cafés" },
+      { id: "refeicoes", label: "Refeições do Dia a Dia" },
+      { id: "lanches", label: "Lanches e Cafés" },
     ],
   },
   {
@@ -100,7 +100,7 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     icone: ShoppingCart,
     itens: [
       { id: "supermercado", label: "Supermercado" },
-      { id: "hortifruti", label: "Hortifrúti, açougue e padaria" },
+      { id: "hortifruti", label: "Hortifrúti, Açougue e Padaria" },
     ],
   },
   {
@@ -112,9 +112,9 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     // Manutenção e IPVA vêm de cada veículo em 7 · Patrimônio (linha automática).
     itens: [
       { id: "combustivel", label: "Combustível" },
-      { id: "estacionamento", label: "Estacionamento / garagem" },
+      { id: "estacionamento", label: "Estacionamento / Garagem" },
       { id: "app", label: "Aplicativos (Uber e 99)" },
-      { id: "publico", label: "Transporte público" },
+      { id: "publico", label: "Transporte Público" },
     ],
   },
   {
@@ -124,21 +124,21 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     modelo: "Necessidades",
     icone: HeartPulse,
     itens: [
-      { id: "plano", label: "Plano de saúde" },
-      { id: "odonto", label: "Plano odontológico" },
+      { id: "plano", label: "Plano de Saúde" },
+      { id: "odonto", label: "Plano Odontológico" },
       { id: "remedios", label: "Medicamentos" },
-      { id: "consultas", label: "Consultas, exames e terapias" },
+      { id: "consultas", label: "Consultas, Exames e Terapias" },
     ],
   },
   {
     id: "cuidados",
-    label: "Cuidados pessoais",
+    label: "Cuidados Pessoais",
     bloco: "Fixa",
     modelo: "Desejos",
     icone: Sparkles,
     itens: [
-      { id: "salao", label: "Salão / barbearia" },
-      { id: "estetica", label: "Estética e cosméticos" },
+      { id: "salao", label: "Salão / Barbearia" },
+      { id: "estetica", label: "Estética e Cosméticos" },
     ],
   },
   {
@@ -149,10 +149,10 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     modelo: "Desejos",
     icone: UserRound,
     itens: [
-      { id: "diarista", label: "Diarista / empregada" },
-      { id: "baba", label: "Babá / cuidador(a)" },
-      { id: "professores", label: "Personal / professores particulares" },
-      { id: "contador", label: "Contador / advogado" },
+      { id: "diarista", label: "Diarista / Empregada" },
+      { id: "baba", label: "Babá / Cuidador(a)" },
+      { id: "professores", label: "Personal / Professores Particulares" },
+      { id: "contador", label: "Contador / Advogado" },
     ],
   },
   {
@@ -162,15 +162,15 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     modelo: "Necessidades",
     icone: ShieldCheck,
     itens: [
-      { id: "vida", label: "Seguro de vida" },
-      { id: "auto", label: "Seguro auto" },
-      { id: "residencial", label: "Seguro residencial" },
-      { id: "outros", label: "Outros seguros" },
+      { id: "vida", label: "Seguro de Vida" },
+      { id: "auto", label: "Seguro Auto" },
+      { id: "residencial", label: "Seguro Residencial" },
+      { id: "outros", label: "Outros Seguros" },
     ],
   },
   {
     id: "financiamentos",
-    label: "Parcelas (financiamento e crédito)",
+    label: "Parcelas (Financiamento e Crédito)",
     bloco: "Fixa",
     modelo: "Necessidades",
     icone: ReceiptText,
@@ -186,8 +186,8 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     modelo: "Necessidades",
     icone: GraduationCap,
     itens: [
-      { id: "cursos", label: "Cursos, pós e idiomas (do cliente)" },
-      { id: "material", label: "Livros e material" },
+      { id: "cursos", label: "Cursos, Pós e Idiomas (do Cliente)" },
+      { id: "material", label: "Livros e Material" },
     ],
   },
   {
@@ -200,7 +200,7 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     itens: [],
   },
   // Anuidades dos cartões (informadas em 6 · Renda) entram aqui como linha automática.
-  { id: "outrasFixas", label: "Outras despesas fixas", bloco: "Fixa", modelo: "Necessidades", icone: Package, itens: [] },
+  { id: "outrasFixas", label: "Outras Despesas Fixas", bloco: "Fixa", modelo: "Necessidades", icone: Package, itens: [] },
 
   // ----------------------------- Variáveis -----------------------------
   {
@@ -212,7 +212,7 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     itens: [
       { id: "restaurantes", label: "Restaurantes" },
       { id: "delivery", label: "Delivery" },
-      { id: "bares", label: "Bares e cafés" },
+      { id: "bares", label: "Bares e Cafés" },
     ],
   },
   {
@@ -222,9 +222,9 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     modelo: "Desejos",
     icone: Ticket,
     itens: [
-      { id: "passeios", label: "Passeios, cinema e shows" },
+      { id: "passeios", label: "Passeios, Cinema e Shows" },
       { id: "hobbies", label: "Hobbies" },
-      { id: "festas", label: "Festas e eventos" },
+      { id: "festas", label: "Festas e Eventos" },
     ],
   },
   {
@@ -235,7 +235,7 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     icone: Shirt,
     itens: [
       { id: "roupas", label: "Roupas" },
-      { id: "calcados", label: "Calçados e acessórios" },
+      { id: "calcados", label: "Calçados e Acessórios" },
     ],
   },
   {
@@ -245,9 +245,9 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     modelo: "Desejos",
     icone: Tv,
     itens: [
-      { id: "streaming", label: "Streaming" },
-      { id: "apps", label: "Apps e softwares" },
-      { id: "clubes", label: "Clubes e associações" },
+      { id: "streaming", label: "Assinaturas" },
+      { id: "apps", label: "Apps e Softwares" },
+      { id: "clubes", label: "Clubes e Associações" },
     ],
   },
   {
@@ -258,7 +258,7 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     icone: Dumbbell,
     itens: [
       { id: "academia", label: "Academia" },
-      { id: "atividades", label: "Esportes e atividades" },
+      { id: "atividades", label: "Esportes e Atividades" },
       { id: "equipamentos", label: "Equipamentos" },
     ],
   },
@@ -269,8 +269,8 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     modelo: "Desejos",
     icone: Plane,
     itens: [
-      { id: "nacionais", label: "Viagens nacionais", dica: "Gasto anual ÷ 12" },
-      { id: "internacionais", label: "Viagens internacionais", dica: "Gasto anual ÷ 12" },
+      { id: "nacionais", label: "Viagens Nacionais" },
+      { id: "internacionais", label: "Viagens Internacionais" },
     ],
   },
   {
@@ -281,7 +281,7 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     icone: Ellipsis,
     itens: [
       { id: "pets", label: "Pets" },
-      { id: "doacoes", label: "Doações e dízimo" },
+      { id: "doacoes", label: "Doações e Dízimo" },
       { id: "outros", label: "Outros" },
     ],
   },

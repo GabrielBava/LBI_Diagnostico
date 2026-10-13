@@ -5,8 +5,7 @@ import { CAMPOS_DEPENDENTE, OPCOES } from "@/config/campos";
 import { ListaItens } from "@/components/ListaEditor";
 import { Botao } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { custoDependente, ehEscolar, n, nOpt, rotuloDependente, s } from "@/lib/calculos";
-import { fmtBRL } from "@/lib/format";
+import { ehEscolar, n, nOpt, rotuloDependente, s } from "@/lib/calculos";
 
 export default function Sucessao() {
   const { cliente, atualizar, irPara } = useCliente();
@@ -66,14 +65,6 @@ export default function Sucessao() {
             )}
           </span>
         )}
-        // Só com custo: cartões ainda vazios não mostram "R$ 0".
-        rodapeItem={(d) =>
-          custoDependente(d) > 0 ? (
-            <>
-              Custo mensal: <strong className="text-foreground">{fmtBRL(custoDependente(d))}</strong>
-            </>
-          ) : null
-        }
       />
     </div>
   );

@@ -8,6 +8,7 @@ Diagnóstico financeiro do Grupo Life Brasil, organizado como um processo com o 
 - **Campos dinâmicos:** cônjuge (e a renda dele) só para casados, quantidade de filhos cria os cartões em Sucessão, bens financiados viram financiamentos, parcelas, dependentes, manutenção/IPVA dos veículos e anuidade dos cartões entram sozinhos nas despesas, renda bruta ↔ líquida estimada, futuras aquisições com estratégia (à vista, financiamento, consórcio).
 - **Despesas em blocos** (Casa, Mercado, Transporte…) com subcategorias (Aluguel, Condomínio, Luz, Água, Internet…).
 - **Finalizar coleta:** o pré-diagnóstico (fluxo atual × modelo 50-30-20) e o diagnóstico completo só aparecem depois do botão.
+- **Parâmetros financeiros** (inflação geral e educacional, meta de reserva, limite de parcela, retorno real) no botão de engrenagem do topo do cliente.
 - **Padrões de campo:** opções em botões (chips), escala 0–10 com um botão por nota, categorias por ícones, múltipla escolha, Sim/Não, interruptores para flags, contador.
 - **Roteiro da conversa** por seção: frase de abertura, perguntas (checklist), pontos de atenção e anotações.
 - **Diagnóstico:** nota LIFE, pilares, renda × despesas, balanço, proteção "o que contratar" (educacional, padrão de vida 1/5/15 anos, sucessão), pontos fortes e de atuação, independência financeira, matriz de oportunidades (cross-sell), plano de ação e cronograma.

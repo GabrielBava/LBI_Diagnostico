@@ -1,15 +1,38 @@
-// 12 · Futuro (Etapa 3): idade de aposentadoria, estilo de vida, renda desejada e outras fontes.
+// 12 · Futuro (Etapa 3): idade de aposentadoria, investimento mensal, renda desejada, outras fontes,
+// estilo de vida e mudanças de vida programadas (impacto, quando e quanto).
 // A projeção de independência financeira fica em 6.5 · Futuro. Com a renda desejada
 // em branco, o cálculo usa o custo de vida × fator do estilo (ESTILOS_VIDA), sem exibir aqui.
 import { Check } from "lucide-react";
-import { CAMPOS_FUTURO, ESTILOS_VIDA } from "@/config/campos";
+import { CAMPOS_FUTURO, CAMPOS_FUTURO_MUDANCA, CAMPOS_MUDANCA, ESTILOS_VIDA, padroes } from "@/config/campos";
 import { Formulario } from "@/components/campos";
+import { ListaItens } from "@/components/ListaEditor";
 import { SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { futuro, s } from "@/lib/calculos";
+import { futuro, mesFuturo, n, nOpt, s, sim } from "@/lib/calculos";
+import { fmtBRL, uid } from "@/lib/format";
+import type { Item } from "@/types";
+
+/** Rodapé da mudança: quando e o efeito no orçamento. */
+function resumoMudanca(m: Item) {
+  const partes: string[] = [];
+  if (nOpt(m.meses) !== undefined) partes.push(`em ${mesFuturo(n(m.meses))}`);
+  const valor = n(m.valor);
+  if (valor > 0) {
+    const impacto = s(m.impacto);
+    partes.push(
+      impacto === "Gasto único"
+        ? `gasto único de ${fmtBRL(valor)}`
+        : impacto
+          ? `${impacto.toLowerCase()} em ${fmtBRL(valor)}/mês`
+          : `${fmtBRL(valor)}`,
+    );
+  }
+  return partes.length ? partes.join(" · ") : null;
+}
 
 export default function Aposentadoria() {
-  const { cliente, setCampo } = useCliente();
+  const { cliente, setCampo, atualizar, setLista } = useCliente();
+  const temMudanca = sim(cliente.futuro.temMudanca);
   const fu = futuro(cliente);
   const selecionado = s(cliente.futuro.estiloVida);
 
@@ -52,6 +75,35 @@ export default function Aposentadoria() {
             );
           })}
         </div>
+      </SubBloco>
+
+      <SubBloco titulo="Mudanças de vida programadas">
+        <Formulario
+          campos={CAMPOS_FUTURO_MUDANCA}
+          dados={cliente.futuro}
+          cliente={cliente}
+          // "Sim" com a lista vazia já abre a primeira mudança.
+          onChange={(k, v) =>
+            atualizar((c) => ({
+              ...c,
+              futuro: { ...c.futuro, [k]: v },
+              mudancas: k === "temMudanca" && v === "Sim" && c.mudancas.length === 0 ? [{ id: uid(), ...padroes(CAMPOS_MUDANCA) }] : c.mudancas,
+            }))
+          }
+        />
+        {temMudanca && (
+          <div className="mt-4">
+            <ListaItens
+              campos={CAMPOS_MUDANCA}
+              itens={cliente.mudancas}
+              onChange={(i) => setLista("mudancas", i)}
+              textoAdicionar="Adicionar mudança"
+              vazio="Casamento, filho, faculdade, mudança de cidade, aposentadoria do cônjuge…"
+              tituloItem={(x, i) => s(x.descricao) || `Mudança ${i + 1}`}
+              rodapeItem={resumoMudanca}
+            />
+          </div>
+        )}
       </SubBloco>
     </div>
   );

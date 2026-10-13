@@ -312,7 +312,8 @@ export default function Relatorio() {
                   <Indicador rotulo="Renda projetada" valor={`${fmtBRL(fu.rendaProjetada)}/mês`} />
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Meta: renda de {fmtBRL(fu.rendaDesejada)}/mês aos {fu.idadeAposentadoria} anos, investindo a sobra atual de{" "}
+                  Meta: renda de {fmtBRL(fu.rendaDesejada)}/mês aos {fu.idadeAposentadoria} anos, investindo{" "}
+                  {fu.aporteInformado ? "" : "a sobra atual de "}
                   {fmtBRL(fu.aporteAtual)}/mês (valores de hoje).
                 </p>
               </>

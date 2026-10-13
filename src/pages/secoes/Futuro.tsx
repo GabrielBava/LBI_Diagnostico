@@ -4,7 +4,7 @@ import { GraficoFuturo } from "@/components/graficos";
 import { BarraProgresso, Botao, Kpi } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { usePreferencias } from "@/lib/preferencias";
-import { futuro, nOpt, s, TAXA_RETIRADA } from "@/lib/calculos";
+import { futuro, mudancasVida, nOpt, s, TAXA_RETIRADA } from "@/lib/calculos";
 import { fmtBRL, fmtPct } from "@/lib/format";
 
 export default function Futuro() {
@@ -14,6 +14,7 @@ export default function Futuro() {
   const semIdade = !s(cliente.cadastro.nascimento);
   const rendaAuto = nOpt(cliente.futuro.rendaDesejada) === undefined;
   const outrasAuto = nOpt(cliente.futuro.outrasRendas) === undefined;
+  const mudancas = mudancasVida(cliente);
 
   return (
     <div className="space-y-4">
@@ -78,7 +79,8 @@ export default function Futuro() {
             </div>
             <BarraProgresso valor={fu.independencia * 100} className="mt-3 h-2" />
             <p className="mt-3 text-sm">
-              Investindo a sobra atual de <strong>{fmtBRL(fu.aporteAtual)}/mês</strong>, o patrimônio chega a{" "}
+              {fu.aporteInformado ? "Investindo" : "Investindo a sobra atual de"} <strong>{fmtBRL(fu.aporteAtual)}/mês</strong>
+              {fu.aporteInformado && " (investimento mensal informado)"}, o patrimônio chega a{" "}
               <strong>{fmtBRL(fu.projetado)}</strong> e gera cerca de <strong>{fmtBRL(fu.rendaProjetada)}/mês</strong>, para uma
               renda desejada de {fmtBRL(fu.rendaDesejada)}/mês.
             </p>
@@ -92,6 +94,30 @@ export default function Futuro() {
           {fu.anos > 0 && <GraficoFuturo serie={fu.serie} />}
           <p className="text-[11px] text-muted-foreground">Valores reais (R$ de hoje), retorno real definido nos parâmetros e retirada de 4% ao ano.</p>
         </>
+      )}
+
+      {mudancas.length > 0 && (
+        <div className="rounded-xl border border-border p-4">
+          <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Mudanças de vida programadas</div>
+          <ul className="divide-y divide-border/60">
+            {mudancas.map((m) => (
+              <li key={m.item.id} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-1.5 text-sm">
+                <span className="min-w-0">
+                  {m.descricao}
+                  {m.impacto && <span className="text-xs text-muted-foreground"> · {m.impacto.toLowerCase()}</span>}
+                </span>
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {m.temData ? `em ${m.quando}` : "sem data"}
+                  {m.valor > 0 && (
+                    <strong className="ml-2 text-foreground">
+                      {m.impacto === "Gasto único" ? fmtBRL(m.valor) : `${m.efeitoMensal < 0 ? "−" : m.efeitoMensal > 0 ? "+" : ""}${fmtBRL(m.valor)}/mês`}
+                    </strong>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

@@ -59,6 +59,16 @@ export default function Objetivos() {
               novo={() => ({ tipo: t.id })}
               textoAdicionar={`Adicionar objetivo ${t.titulo.toLowerCase()}`}
               tituloItem={(o) => <TituloObjetivo o={o} />}
+              // Botão à direita do cartão oculta os campos e deixa só este resumo.
+              resumoItem={(o) =>
+                [
+                  n(o.valorFuturo) > 0 ? fmtBRL(n(o.valorFuturo)) : null,
+                  n(o.prazoMeses) > 0 ? `${n(o.prazoMeses)} meses` : null,
+                  s(o.prioridade) ? `prioridade ${s(o.prioridade).toLowerCase()}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "Sem valores preenchidos"
+              }
               sugestoes={(o) => ({ probAtual: f.renda > 0 ? ob.sugestao[o.id] : undefined })}
               rodapeItem={
                 apresentacao

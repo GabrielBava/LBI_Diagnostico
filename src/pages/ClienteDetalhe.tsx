@@ -5,6 +5,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ArrowLeft, Download, Eye, EyeOff, Save } from "lucide-react";
 import { ETAPAS_COLETA, SECOES, secaoLiberada, secaoOculta } from "@/config/estrutura";
 import { FinalizarColeta } from "@/components/FinalizarColeta";
+import { ParametrosCliente } from "@/components/ParametrosCliente";
 import { Navegacao, useSecaoAtiva } from "@/components/Navegacao";
 import { DivisorEtapa, Secao } from "@/components/Secao";
 import { Botao } from "@/components/ui";
@@ -54,6 +55,7 @@ export default function ClienteDetalhe() {
             <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">Diagnóstico financeiro</div>
             <div className="truncate text-xl font-semibold">{s(cliente.cadastro.nome) || "Novo cliente"}</div>
           </div>
+          <ParametrosCliente />
           <Botao variante={apresentacao ? "primario" : "secundario"} onClick={alternarApresentacao} title="Alterna entre a versão consultor e a versão apresentação">
             {apresentacao ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             {apresentacao ? "Versão apresentação" : "Versão consultor"}

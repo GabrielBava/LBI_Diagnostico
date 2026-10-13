@@ -50,8 +50,10 @@ export interface Cliente {
 
   // Etapa 3 · Proteção e futuro  /  Etapa 4 · Investimentos
   protecao: Secao;
-  /** Aposentadoria: idade, renda desejada, outras rendas e estilo de vida. */
+  /** Aposentadoria: idade, renda desejada, outras rendas, investimento mensal e estilo de vida. */
   futuro: Secao;
+  /** Mudanças de vida programadas (impacto, daqui a quantos meses e valor). */
+  mudancas: Item[];
   investimentos: Secao;
 
   // Etapa 6 · Diagnóstico completo
@@ -81,6 +83,7 @@ export type ListaId =
   | "imoveis"
   | "moveis"
   | "aquisicoes"
+  | "mudancas"
   | "financiamentos"
   | "consorcios"
   | "emprestimos"

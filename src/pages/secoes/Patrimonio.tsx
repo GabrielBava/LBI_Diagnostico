@@ -8,13 +8,12 @@ import { Formulario } from "@/components/campos";
 import { ListaItens } from "@/components/ListaEditor";
 import { SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { bemQuitado, dividas, n, patrimonio, s, sim } from "@/lib/calculos";
+import { bemQuitado, dividas, n, s, sim } from "@/lib/calculos";
 import { fmtBRL, uid } from "@/lib/format";
 import type { Item } from "@/types";
 
 export default function Patrimonio() {
   const { cliente, atualizar, setLista, irPara } = useCliente();
-  const p = patrimonio(cliente);
   const fin = dividas(cliente).doPatrimonio;
   const pretende = sim(cliente.patrimonioGeral.pretendeAdquirir);
 
@@ -86,7 +85,7 @@ export default function Patrimonio() {
 
   return (
     <div className="space-y-4">
-      <SubBloco titulo="Imóveis" total={fmtBRL(p.imoveis)}>
+      <SubBloco titulo="Imóveis">
         <ListaItens
           campos={CAMPOS_IMOVEL}
           itens={cliente.imoveis}
@@ -96,7 +95,7 @@ export default function Patrimonio() {
           rodapeItem={algumFinanciado(cliente.imoveis) ? financiamento : undefined}
         />
       </SubBloco>
-      <SubBloco titulo="Móveis · veículos e embarcações" total={fmtBRL(p.moveis)}>
+      <SubBloco titulo="Móveis · veículos e embarcações">
         <ListaItens
           campos={CAMPOS_MOVEL}
           itens={cliente.moveis}

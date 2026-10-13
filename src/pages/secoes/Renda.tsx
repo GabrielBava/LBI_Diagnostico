@@ -8,13 +8,14 @@ import {
   CAMPOS_RENDA_CARTAO,
   CAMPOS_RENDA_CLIENTE,
   CAMPOS_RENDA_CONJUGE,
+  CAMPOS_RENDA_EXTRA,
   CAMPOS_RENDA_IR,
 } from "@/config/campos";
 import { Formulario } from "@/components/campos";
 import { ListaItens } from "@/components/ListaEditor";
-import { Kpi, SubBloco } from "@/components/ui";
+import { SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { brutaLiquida, cartoes, mensal, n, renda, s, temConjuge } from "@/lib/calculos";
+import { brutaLiquida, mensal, n, renda, s, temConjuge } from "@/lib/calculos";
 import { fmtBRL } from "@/lib/format";
 
 /** Linha "≈ Líquida/Bruta estimada" abaixo do formulário de uma pessoa. */
@@ -41,7 +42,6 @@ function Estimativa({ detalhe }: { detalhe: ReturnType<typeof brutaLiquida> }) {
 export default function Renda() {
   const { cliente, setCampo, setLista } = useCliente();
   const r = renda(cliente);
-  const k = cartoes(cliente);
   const casado = temConjuge(cliente);
   const nomeConjuge = s(cliente.cadastro.conjuge).trim();
   const temCartao = s(cliente.renda.temCartao) === "Sim";
@@ -57,6 +57,9 @@ export default function Renda() {
           onChange={(key, v) => setCampo("renda", key, v)}
         />
         <Estimativa detalhe={r.cliente} />
+        <div className="mt-4">
+          <Formulario campos={CAMPOS_RENDA_EXTRA} dados={cliente.renda} cliente={cliente} colunas={4} onChange={(key, v) => setCampo("renda", key, v)} />
+        </div>
       </SubBloco>
 
       {casado && (
@@ -76,7 +79,7 @@ export default function Renda() {
         <Formulario campos={CAMPOS_RENDA_IR} dados={cliente.renda} cliente={cliente} colunas={4} onChange={(key, v) => setCampo("renda", key, v)} />
       </SubBloco>
 
-      <SubBloco titulo="Outras rendas · extra ou de outra pessoa" total={r.outras > 0 ? `${fmtBRL(r.outras)}/mês` : undefined}>
+      <SubBloco titulo="Outras rendas · extra ou de outra pessoa">
         <ListaItens
           campos={CAMPOS_OUTRA_RENDA}
           itens={cliente.outrasRendas}
@@ -118,31 +121,11 @@ export default function Renda() {
                 x.pagaAnuidade === true && n(x.valorAnuidade) > 0 ? (
                   <>
                     Anuidade de <strong className="text-foreground tabular-nums">{fmtBRL(n(x.valorAnuidade))}/ano</strong> ≈{" "}
-                    <strong className="text-foreground tabular-nums">{fmtBRL(n(x.valorAnuidade) / 12)}/mês</strong> em Despesas · Outras despesas
-                    fixas
+                    <strong className="text-foreground tabular-nums">{fmtBRL(n(x.valorAnuidade) / 12)}/mês</strong> em Despesas · Outras Despesas Fixas
                   </>
                 ) : null
               }
             />
-            {k.quantidade > 0 && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Kpi
-                  rotulo="Gasto total no cartão"
-                  valor={fmtBRL(k.gasto)}
-                  sufixo="/mês"
-                  detalhe={`${k.comMilhas} de ${k.quantidade} ${k.quantidade === 1 ? "acumula" : "acumulam"} milhas`}
-                />
-                <Kpi
-                  rotulo="Limite total"
-                  valor={fmtBRL(k.limite)}
-                  detalhe={
-                    k.comAnuidade.length > 0
-                      ? `${k.comAnuidade.length} de ${k.quantidade} ${k.quantidade === 1 ? "paga" : "pagam"} anuidade`
-                      : "Nenhum paga anuidade"
-                  }
-                />
-              </div>
-            )}
             <p className="text-[11px] text-muted-foreground">O gasto no cartão já está dentro das despesas; não some de novo.</p>
           </div>
         )}

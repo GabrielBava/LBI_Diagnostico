@@ -27,6 +27,22 @@ export const moedaParaTexto = (v: number | undefined | null) => {
   });
 };
 
+/** Valor de campo de moeda: sempre com centavos (30.000,00). */
+export const moedaCampo = (v: number | undefined | null) =>
+  v === undefined || v === null || !Number.isFinite(v)
+    ? ""
+    : v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** Máscara enquanto digita: milhar com ponto e até 2 casas depois da vírgula ("30000,5" → "30.000,5"). */
+export const mascaraMoeda = (t: string) => {
+  const limpo = t.replace(/[^\d,]/g, "");
+  if (!limpo) return "";
+  const [inteiro, ...resto] = limpo.split(",");
+  const digitos = inteiro.replace(/^0+(?=\d)/, "");
+  const milhar = (digitos || "0").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return resto.length ? `${milhar},${resto.join("").slice(0, 2)}` : milhar;
+};
+
 /** Converte texto digitado ("4.000", "1.234,56", "1234.5") em número. */
 export const textoParaNumero = (t: string): number | undefined => {
   const s = t.replace(/[^\d,.-]/g, "").trim();

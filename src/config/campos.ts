@@ -20,6 +20,7 @@
 //    mostrarSe        -> regra para exibir o campo (ex.: cônjuge só se casado)
 //    somenteConsultor -> oculto na versão apresentação
 //    novaLinha        -> começa uma linha nova (o campo que ele revela fica ao lado)
+//    meioLinha        -> começa na 3ª coluna (desktop) — dois pares flag + campo na mesma linha
 //    obrigatorio      -> chips sem opção de desmarcar (ex.: Quitado / Financiado)
 // =====================================================================
 
@@ -69,6 +70,8 @@ export interface CampoDef {
   opcoesSe?: (dados: Secao, cliente: Cliente) => string[];
   /** Começa uma linha nova na grade (o campo condicional seguinte abre ao lado, sem mexer nos demais). */
   novaLinha?: boolean;
+  /** Começa na 3ª coluna no desktop (e numa linha nova no tablet): segundo par "flag + campo" da linha. */
+  meioLinha?: boolean;
   /** Chips: clicar na opção marcada não desmarca (sempre há uma escolha). */
   obrigatorio?: boolean;
 }
@@ -152,6 +155,7 @@ export const OPCOES = {
     "Outra",
   ],
   tipoPrevidencia: ["PGBL", "VGBL", "PGBL e VGBL", "Não sabe"],
+  impactoMudanca: ["Aumenta despesas", "Reduz despesas", "Aumenta renda", "Reduz renda", "Gasto único"],
   tipoConsorcio: ["Imóvel", "Veículo", "Serviços", "Outro"],
   tipoProjeto: ["Reforma", "Negócio / Empreendimento", "Investimento", "Pessoal", "Outro"],
   statusProjeto: ["Ideia", "Planejado", "Em andamento"],
@@ -197,10 +201,17 @@ export const CAMPOS_CADASTRO: CampoDef[] = [
   },
 ];
 
-/** Parâmetros financeiros (aparecem dentro do Cadastro, só na versão consultor). */
+/** Parâmetros financeiros (pop-up da engrenagem no topo do cliente, só na versão consultor). */
 export const CAMPOS_PARAMETROS: CampoDef[] = [
   { key: "inflacaoGeral", label: "Inflação geral (% a.a.)", tipo: "percentual", padrao: 5, somenteConsultor: true },
-  { key: "retornoReal", label: "Retorno real (% a.a.)", tipo: "percentual", padrao: 4, somenteConsultor: true },
+  {
+    key: "inflacaoEducacional",
+    label: "Inflação educacional (% a.a.)",
+    tipo: "percentual",
+    padrao: 6,
+    somenteConsultor: true,
+    ajuda: "Reajuste de escola e faculdade (custo educacional da proteção).",
+  },
   {
     key: "mesesReserva",
     label: "Meta de reserva (meses)",
@@ -211,11 +222,12 @@ export const CAMPOS_PARAMETROS: CampoDef[] = [
   },
   {
     key: "limiteComprometimento",
-    label: "Limite de parcelas (% renda)",
+    label: "Limite de parcela (% da renda)",
     tipo: "percentual",
     padrao: 30,
     somenteConsultor: true,
   },
+  { key: "retornoReal", label: "Retorno real (% a.a.)", tipo: "percentual", padrao: 4, somenteConsultor: true, ajuda: "Acima da inflação (objetivos e futuro)." },
 ];
 
 /** Ponto de partida registrado no V1 Institucional. */
@@ -288,11 +300,11 @@ export const CAMPOS_DEPENDENTE: CampoDef[] = [
   { key: "idade", label: "Idade", tipo: "numero", sufixo: "anos", min: 0, mostrarSe: escolar },
   { key: "nivelEscola", label: "Escolaridade", tipo: "select", opcoes: OPCOES.nivelEscola, mostrarSe: escolar },
   { key: "escola", label: "Escola atual", tipo: "select", opcoes: OPCOES.escola, mostrarSe: estuda },
-  { key: "mensalidade", label: "Mensalidade", tipo: "moeda", mostrarSe: estuda },
-  { key: "auxilio", label: "Auxílio mensal", tipo: "moeda", ajuda: "Mesada, pensão, ajuda de custo" },
+  { key: "mensalidade", label: "Mensalidade (R$)", tipo: "moeda", mostrarSe: estuda },
+  { key: "auxilio", label: "Auxílio mensal (R$)", tipo: "moeda", ajuda: "Mesada, pensão, ajuda de custo" },
   {
     key: "outrosCustos",
-    label: "Outros custos mensais",
+    label: "Outros custos mensais (R$)",
     tipo: "moeda",
     ajuda: "Saúde, cuidador, moradia",
     mostrarSe: (d) => !!d.categoria && !escolar(d),
@@ -318,6 +330,11 @@ export const temConjugeCadastro = casado;
 export const CAMPOS_RENDA_CLIENTE: CampoDef[] = [
   { key: "brutaCliente", label: "Renda bruta mensal", tipo: "moeda", largura: 2 },
   { key: "liquidaCliente", label: "Renda líquida mensal", tipo: "moeda", largura: 2 },
+];
+
+/** Renda extra do cliente (campo único, abaixo da estimativa bruta ↔ líquida). */
+export const CAMPOS_RENDA_EXTRA: CampoDef[] = [
+  { key: "rendaExtra", label: "Renda extra mensal", tipo: "moeda", largura: 2, ajuda: "Comissões, freelas, bicos (valor líquido)." },
 ];
 
 /** Renda do cônjuge (só para casado(a) ou união estável). */
@@ -356,11 +373,11 @@ export const CAMPOS_CARTAO: CampoDef[] = [
   { key: "cartao", label: "Qual cartão", tipo: "texto", largura: 2, placeholder: "Banco / bandeira / categoria" },
   { key: "limite", label: "Limite", tipo: "moeda" },
   { key: "gastoMensal", label: "Quanto gasta por mês", tipo: "moeda" },
-  // Cada flag começa uma linha e o campo que ela abre fica ao lado.
-  { key: "milhas", label: "Acumula milhas / pontos", tipo: "switch", largura: 2, novaLinha: true },
-  { key: "programa", label: "Programa", tipo: "texto", placeholder: "Ex.: Smiles, Livelo", largura: 2, mostrarSe: (d) => d.milhas === true },
-  { key: "pagaAnuidade", label: "Paga anuidade", tipo: "switch", largura: 2, novaLinha: true },
-  { key: "valorAnuidade", label: "Valor da anuidade (por ano)", tipo: "moeda", largura: 2, mostrarSe: (d) => d.pagaAnuidade === true },
+  // Flags compactas: cada uma com o campo que ela abre ao lado (milhas nas colunas 1-2, anuidade nas 3-4).
+  { key: "milhas", label: "Acumula milhas", tipo: "switch", novaLinha: true },
+  { key: "programa", label: "Programa", tipo: "texto", placeholder: "Ex.: Smiles, Livelo", mostrarSe: (d) => d.milhas === true },
+  { key: "pagaAnuidade", label: "Paga anuidade", tipo: "switch", meioLinha: true },
+  { key: "valorAnuidade", label: "Anuidade (por ano)", tipo: "moeda", mostrarSe: (d) => d.pagaAnuidade === true },
 ];
 
 // ---------------------------------------------------------------------
@@ -456,6 +473,7 @@ export const CAMPOS_FINANCIAMENTO: CampoDef[] = [
 
 export const CAMPOS_CONSORCIO: CampoDef[] = [
   { key: "tipo", label: "Tipo", tipo: "select", opcoes: OPCOES.tipoConsorcio, padrao: "Imóvel" },
+  { key: "administradora", label: "Administradora", tipo: "texto", placeholder: "Ex.: Porto, Embracon" },
   { key: "parcela", label: "Parcela", tipo: "moeda" },
   { key: "prazo", label: "Prazo restante (meses)", tipo: "numero" },
   { key: "credito", label: "Crédito (carta)", tipo: "moeda" },
@@ -576,9 +594,35 @@ export const ESTILOS_VIDA: { id: string; fator: number; descricao: string }[] = 
 
 /** O estilo de vida é escolhido nos cartões da seção 12 (campo "estiloVida"). */
 export const CAMPOS_FUTURO: CampoDef[] = [
-  { key: "idadeAposentadoria", label: "Idade de aposentadoria", tipo: "numero", padrao: 60, sufixo: "anos", largura: 4 },
+  { key: "idadeAposentadoria", label: "Idade de aposentadoria", tipo: "numero", padrao: 60, sufixo: "anos", largura: 2 },
+  {
+    key: "investimentoMensal",
+    label: "Investimento mensal",
+    tipo: "moeda",
+    largura: 2,
+    ajuda: "Quanto investe por mês hoje. Em branco, o diagnóstico usa a sobra do mês.",
+  },
   { key: "rendaDesejada", label: "Renda desejada /mês", tipo: "moeda", largura: 2, ajuda: "Em valores de hoje. Em branco, o diagnóstico usa o estilo de vida." },
   { key: "outrasRendas", label: "Outras fontes de renda /mês", tipo: "moeda", largura: 2, ajuda: "INSS, aluguéis, previdência. Em branco = aluguéis e aposentadorias atuais (juros e dividendos já vêm dos investimentos)." },
+];
+
+/** Pergunta que abre as mudanças de vida programadas (seção 12). */
+export const CAMPOS_FUTURO_MUDANCA: CampoDef[] = [
+  { key: "temMudanca", label: "Tem alguma mudança de vida programada?", tipo: "simnao", largura: 4 },
+];
+
+/** Mudança de vida programada: o que muda, o impacto, quando e quanto. */
+export const CAMPOS_MUDANCA: CampoDef[] = [
+  { key: "descricao", label: "Qual mudança?", tipo: "texto", largura: 2, placeholder: "Ex.: Filho na faculdade, casamento, mudança de cidade" },
+  { key: "impacto", label: "Impacto", tipo: "chips", opcoes: OPCOES.impactoMudanca, largura: 2 },
+  { key: "meses", label: "Daqui a quantos meses?", tipo: "numero", sufixo: "meses", min: 0, largura: 2 },
+  {
+    key: "valor",
+    label: "Valor",
+    tipo: "moeda",
+    largura: 2,
+    ajuda: "Por mês (aumento ou redução) ou o total, se for gasto único.",
+  },
 ];
 
 // ---------------------------------------------------------------------

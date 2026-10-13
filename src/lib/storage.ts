@@ -71,6 +71,7 @@ export function normalizar(original: Partial<Cliente> & { id: string }): Cliente
     protecao: { ...padroes(CAMPOS_PROTECAO), ...padroes(CAMPOS_PREMISSAS_PROTECAO), horizonte: 5, ...(c.protecao ?? {}) },
     investimentos: { ...(c.investimentos ?? {}) },
     futuro: { ...padroes(CAMPOS_FUTURO), ...(c.futuro ?? {}) },
+    mudancas: c.mudancas ?? [],
     pontosFortes: c.pontosFortes ?? [],
     pontosNegativos: c.pontosNegativos ?? [],
     plano: c.plano ?? [],
