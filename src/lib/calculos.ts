@@ -625,18 +625,33 @@ export function mudancasVida(c: Cliente) {
 // ---------------------------------------------------------------------
 export const TAXA_RETIRADA = 0.04; // regra dos 4% → patrimônio = 25× a renda anual
 
-export function futuro(c: Cliente) {
+/** Valores da simulação do 6.5 (sliders); em branco, valem os dados do cliente. */
+export interface SimulacaoFuturo {
+  aporte?: number;
+  /** Retorno real ao ano (0,04 = 4%). */
+  retornoReal?: number;
+  idadeAposentadoria?: number;
+  rendaDesejada?: number;
+}
+
+/** Marcos do plano de independência (patrimônio e renda passiva daqui a N anos). */
+export const MARCOS_INDEPENDENCIA = [1, 5, 10];
+
+/** Idade final da projeção de usufruto (fase em que o patrimônio paga a renda). */
+export const IDADE_FINAL_PROJECAO = 95;
+
+export function futuro(c: Cliente, simulacao?: SimulacaoFuturo) {
   const fu = c.futuro;
   const f = fluxo(c);
   const d = despesas(c);
   const p = patrimonio(c);
-  const { retornoReal } = parametros(c.parametros);
+  const retornoReal = simulacao?.retornoReal ?? parametros(c.parametros).retornoReal;
   const idadeAtual = idadePorNascimento(s(c.cadastro.nascimento)) ?? 0;
-  const idadeAposentadoria = n(fu.idadeAposentadoria) || 60;
+  const idadeAposentadoria = simulacao?.idadeAposentadoria ?? (n(fu.idadeAposentadoria) || 60);
   const anos = Math.max(0, idadeAposentadoria - idadeAtual);
   const estilo = ESTILOS_VIDA.find((e) => e.id === s(fu.estiloVida));
   const rendaDesejadaAuto = d.custoVida * (estilo?.fator ?? 1);
-  const rendaDesejada = nOpt(fu.rendaDesejada) ?? rendaDesejadaAuto;
+  const rendaDesejada = simulacao?.rendaDesejada ?? nOpt(fu.rendaDesejada) ?? rendaDesejadaAuto;
   // Juros e dividendos ficam de fora: o capital que os gera já está em "atual".
   const outrasAuto = renda(c).futura;
   const outras = nOpt(fu.outrasRendas) ?? outrasAuto;
@@ -645,7 +660,7 @@ export function futuro(c: Cliente) {
   const atual = p.investimentos + p.previdencia;
   // Investimento mensal informado (12 · Futuro); em branco, a sobra do mês.
   const investimentoInformado = nOpt(fu.investimentoMensal);
-  const aporteAtual = investimentoInformado !== undefined ? Math.max(0, investimentoInformado) : Math.max(0, f.sobra);
+  const aporteAtual = Math.max(0, simulacao?.aporte ?? investimentoInformado ?? f.sobra);
   const i = taxaMensal(retornoReal);
   const meses = anos * 12;
   const projetado = valorFuturo(atual, aporteAtual, i, meses);
@@ -654,6 +669,24 @@ export function futuro(c: Cliente) {
   // Sem prazo para aportar não existe "aporte mensal": o que falta é um valor único.
   const aporte = idadeAtingida ? 0 : aporteNecessario(alvo, atual, i, meses);
   const anoBase = new Date().getFullYear();
+  // Vida inteira: acumula até a aposentadoria e depois retira a renda que falta (desejada − outras rendas).
+  const retiradaMensal = Math.max(0, rendaDesejada - outras);
+  const idadeFinal = Math.max(IDADE_FINAL_PROJECAO, idadeAposentadoria + 5);
+  const vida: { ano: number; idade: number; patrimonio: number; aportado: number; meta: number }[] = [];
+  let saldo = atual;
+  let aportado = atual;
+  let esgotaAos: number | undefined;
+  // Vai até a idade final ou, no mínimo, 10 anos (marcos do plano de independência).
+  for (let k = 0; idadeAtual + k <= idadeFinal || k <= 10; k++) {
+    vida.push({ ano: anoBase + k, idade: idadeAtual + k, patrimonio: Math.round(Math.max(0, saldo)), aportado, meta: Math.round(alvo) });
+    for (let m = 0; m < 12; m++) {
+      const aposentado = idadeAtual + k >= idadeAposentadoria;
+      saldo = saldo * (1 + i) + (aposentado ? -retiradaMensal : aporteAtual);
+      if (!aposentado) aportado += aporteAtual;
+      if (saldo <= 0 && aposentado && esgotaAos === undefined) esgotaAos = idadeAtual + k;
+    }
+    if (saldo <= 0 && esgotaAos !== undefined) saldo = 0;
+  }
   return {
     idadeAtual,
     idadeAposentadoria,
@@ -675,6 +708,30 @@ export function futuro(c: Cliente) {
     // Se as outras rendas já cobrem a renda desejada, a independência está atingida.
     independencia: alvo > 0 ? projetado / alvo : rendaDesejada > 0 ? 1 : 0,
     rendaProjetada: (projetado * TAXA_RETIRADA) / 12 + outras,
+    /** Retorno real usado (pode vir da simulação). */
+    retornoReal,
+    /**
+     * Plano de independência em 1, 5 e 10 anos: patrimônio, % da meta e renda passiva (4%).
+     * Mesma trajetória do gráfico: depois da aposentadoria, os aportes param e a renda é retirada.
+     */
+    marcos: MARCOS_INDEPENDENCIA.map((anosAte) => {
+      const ponto = vida[anosAte];
+      const patrimonioMarco = ponto.patrimonio;
+      return {
+        anos: anosAte,
+        idade: idadeAtual > 0 ? idadeAtual + anosAte : undefined,
+        patrimonio: patrimonioMarco,
+        aportado: ponto.aportado,
+        percentualMeta: alvo > 0 ? patrimonioMarco / alvo : rendaDesejada > 0 ? 1 : 0,
+        rendaPassiva: (patrimonioMarco * TAXA_RETIRADA) / 12 + outras,
+      };
+    }),
+    /** Renda mensal que o patrimônio precisa pagar na aposentadoria (desejada − outras rendas). */
+    retiradaMensal,
+    /** Projeção ano a ano até os 95 anos: acumula até a aposentadoria e depois paga a renda. */
+    vida,
+    /** Idade em que o patrimônio acaba (undefined = dura até o fim da projeção). */
+    esgotaAos,
     serie: Array.from({ length: anos + 1 }, (_, k) => ({
       ano: anoBase + k,
       idade: idadeAtual + k,

@@ -162,7 +162,7 @@ export const OPCOES = {
   conhecimento: ["Iniciante", "Intermediário", "Avançado"],
   perfilInvestidor: ["Conservador", "Moderado", "Arrojado", "Não sabe"],
   regimeTributario: ["MEI", "Simples Nacional", "Lucro Presumido", "Lucro Real"],
-  area: ["Seguros", "Patrimonial", "Investimentos", "Futuro", "Fluxo de caixa", "Dívidas", "Objetivos"],
+  area: ["Fluxo de caixa", "Dívidas", "Proteção", "Futuro", "Patrimonial", "Investimentos", "Sucessão", "Fiscal/Tributário", "Objetivos"],
   prazoPlano: ["Curto", "Médio", "Longo"],
   responsavel: ["Cliente", "Consultor", "Ambos"],
   status: ["Pendente", "Em andamento", "Concluída"],
@@ -632,12 +632,39 @@ export const CAMPOS_MUDANCA: CampoDef[] = [
 ];
 
 // ---------------------------------------------------------------------
-//  6.3 / 6.4 · Pontos fortes e negativos (itens manuais)
+//  6.2 / 6.3 / 6.4 · Cartões dos planos (acrescentados ou personalizados
+//  pelo consultor). As três últimas chaves de cada lista são as colunas
+//  do cartão.
 // ---------------------------------------------------------------------
-export const CAMPOS_PONTO: CampoDef[] = [{ key: "texto", label: "Ponto", tipo: "texto", largura: 4 }];
+const cabecalhoCard = (selo: string): CampoDef[] => [
+  { key: "titulo", label: "Título", tipo: "texto", largura: 2 },
+  { key: "area", label: "Área", tipo: "select", opcoes: OPCOES.area },
+  { key: "selo", label: selo, tipo: "chips", opcoes: OPCOES.prioridade, padrao: "Média" },
+];
+const textoCard = (key: string, label: string, placeholder?: string): CampoDef => ({ key, label, tipo: "textarea", largura: 4, placeholder });
+
+export const CAMPOS_CARD_ATUAL: CampoDef[] = [
+  ...cabecalhoCard("Gravidade"),
+  textoCard("diagnostico", "Diagnóstico", "O que está acontecendo hoje"),
+  textoCard("motivo", "Motivo", "Por que acontece (o que os números mostram)"),
+  textoCard("risco", "Risco da inação", "O que pode acontecer se nada mudar"),
+];
+export const CAMPOS_CARD_POTENCIAL: CampoDef[] = [
+  ...cabecalhoCard("Prioridade"),
+  textoCard("oportunidade", "Oportunidade identificada"),
+  textoCard("comoAtuar", "Como podemos atuar juntos"),
+  textoCard("objetivo", "Objetivo desejado"),
+];
+export const CAMPOS_CARD_OTIMIZACAO: CampoDef[] = [
+  { key: "titulo", label: "Título", tipo: "texto", largura: 2 },
+  { key: "area", label: "Área", tipo: "select", opcoes: OPCOES.area },
+  textoCard("descricao", "Descrição", "O que o cliente já faz bem"),
+  textoCard("motivo", "Motivo da escolha", "Por que essa escolha é boa"),
+  textoCard("comoMelhorar", "Como melhorar"),
+];
 
 // ---------------------------------------------------------------------
-//  6.7 · Plano de ação
+//  6.8 · Plano de ação
 // ---------------------------------------------------------------------
 export const CAMPOS_ACAO: CampoDef[] = [
   { key: "acao", label: "Ação", tipo: "texto", largura: 4 },
@@ -665,7 +692,7 @@ export const CAMPOS_REUNIAO: CampoDef[] = [
 export const JORNADA_PADRAO = [
   { titulo: "Reunião 1 · Conexão e cadastro", descricao: "Cadastro, institucional, objetivos e sucessão" },
   { titulo: "Reunião 2 · Raio-X financeiro", descricao: "Despesas, renda, patrimônio, financiamento e crédito, proteção e investimentos" },
-  { titulo: "Reunião 3 · Diagnóstico completo", descricao: "Panorama, pontos fortes e de atuação, futuro" },
+  { titulo: "Reunião 3 · Diagnóstico completo", descricao: "Panorama, planos atual, potencial e de otimização, futuro e bússola financeira" },
   { titulo: "Reunião 4 · Fechamento do planejamento", descricao: "Plano de ação e cronograma de implementação" },
   { titulo: "Acompanhamento trimestral", descricao: "Revisão dos indicadores e ajustes no plano" },
 ];

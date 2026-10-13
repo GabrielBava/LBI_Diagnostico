@@ -82,3 +82,6 @@ export const uid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+/** "1 cartão" / "2 cartões". */
+export const plural = (q: number, singular: string, pluralTexto: string) => `${q} ${q === 1 ? singular : pluralTexto}`;

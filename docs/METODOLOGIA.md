@@ -1,4 +1,4 @@
-# Metodologia do Diagnóstico LIFE (versão 7)
+# Metodologia do Diagnóstico LIFE (versão 8)
 
 Este documento descreve **o processo com o cliente** e **as fórmulas** de cada seção.
 Tudo corresponde a arquivos editáveis:
@@ -12,7 +12,9 @@ Tudo corresponde a arquivos editáveis:
 | Roteiro da conversa e frases de abertura das etapas | `src/config/roteiro.ts` |
 | Textos do V1 · Institucional (Grupo Life Brasil) | `src/config/institucional.ts` |
 | Fórmulas de cálculo | `src/lib/calculos.ts` |
-| Pilares, pontos fortes/de atuação, matriz de oportunidades e sugestões | `src/lib/diagnostico.ts` |
+| Pilares e sugestões do plano de ação | `src/lib/diagnostico.ts` |
+| Cartões do plano atual, potencial e otimização, perfil financeiro e bússola | `src/lib/plano.ts` |
+| Matriz de oportunidades (6 áreas, potencial e peso de cada produto) | `src/lib/oportunidades.ts` |
 
 ---
 
@@ -39,7 +41,7 @@ Tudo corresponde a arquivos editáveis:
 | **3 · Proteção e futuro** | 11 Proteção · 12 Futuro (aposentadoria) |
 | **4 · Investimentos** | 13 Investimentos |
 | **5 · Pré-diagnóstico** | 5.1 Plano atual: fluxo atual e modelo 50-30-20 (liberado por "Finalizar coleta") |
-| **6 · Diagnóstico completo** | 6.1 Panorama · 6.2 Plano atual · 6.3 Pontos fortes · 6.4 Pontos de atuação · 6.5 Futuro · 6.6 Matriz de oportunidades · 6.7 Plano de ação |
+| **6 · Diagnóstico completo** | 6.1 Panorama geral · 6.2 Plano atual · 6.3 Plano potencial · 6.4 Plano otimização · 6.5 Futuro (simulação) · 6.6 Matriz de oportunidades · 6.7 Bússola financeira · 6.8 Plano de ação |
 | **7 · Jornada** | 7.1 Jornada do cliente · 7.2 Cronograma de implementação |
 
 O progresso de **coleta** (menu lateral) considera as seções 1 e 3 a 13. Seções opcionais podem ser marcadas como **"Não se aplica"**.
@@ -101,7 +103,7 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 - Objetivo sem prazo não tem aporte calculado e não soma no total (o pilar pede o prazo).
 - **Probabilidade sugerida** ("sug." ao lado da régua): a sobra mensal é distribuída entre os objetivos na ordem Essencial → Desejo → Sonho e, dentro de cada grupo, por prioridade. A sugestão é a parte do aporte que a sobra cobre, limitada a 95%. O consultor decide o valor final.
 
-### Proteção — o que contratar (6.2 · Plano atual)
+### Proteção — o que contratar (6.3 · Plano potencial)
 ```
 Educacional        = Σ filhos/enteados/netos: mensalidade × 12 por ano de escola restante, subindo pela inflação educacional acima da geral
                      + faculdade (mensalidade de referência × 12 × duração; quem já está na graduação: mensalidade atual × metade da duração)
@@ -131,6 +133,12 @@ Aporte necessário = aporte mensal que leva o patrimônio de hoje ao necessário
 ```
 Valores reais (R$ de hoje).
 
+**Simulação (6.5):** quatro réguas deslizantes — investimento mensal, rentabilidade real, idade de aposentadoria e renda desejada — refazem a conta na hora. A simulação fica salva no cliente (não altera os dados da coleta); "Voltar aos dados da coleta" desfaz. Com a simulação ativa, o gráfico mostra as duas trajetórias (simulação × dados da coleta).
+
+**Patrimônio ao longo da vida:** até os 95 anos. Antes da aposentadoria o patrimônio recebe o aporte mensal; depois, paga todo mês a renda que falta (renda desejada − outras rendas). Se o saldo zerar, o sistema mostra a idade em que o patrimônio acaba.
+
+**Plano de independência (1, 5 e 10 anos):** para cada marco, a mesma trajetória do gráfico mostra o patrimônio, o % da meta, a renda passiva (4% ao ano do patrimônio ÷ 12 + outras rendas), o total aportado (patrimônio de hoje + aportes) e os rendimentos (patrimônio − aportado).
+
 ---
 
 ## 4. Diagnóstico
@@ -150,20 +158,83 @@ Nota de 0 a 100 por pilar. Status: Saudável ≥ 75 · Atenção ≥ 45 · Crít
 **Nota LIFE** = média dos pilares com dados (sem nenhum pilar com dados, aparece “—”). O pilar Dívidas pede a renda antes de dar nota.
 - Idade de aposentadoria já atingida: não há aporte mensal; o diagnóstico mostra quanto falta hoje para a meta.
 
-### Pontos fortes (6.3) e pontos de atuação (6.4)
-Gerados automaticamente a partir das regras em `pontos()`, como poupança ≥ 20%, orçamento dentro ou fora do 50-30-20, reserva completa, imóveis quitados, dívidas ativas (com a categoria), anuidade de cartão, PGBL com declaração simplificada e veículos sem seguro. O consultor pode acrescentar pontos manuais. A seção 6.4 mostra a probabilidade de cada objetivo, atual × com plano.
+### Panorama geral (6.1)
+- **Perfil:** nome, idade, estado civil, ocupação e regime, filhos e dependentes (com idade), objetivos por tipo, declaração do IR, perfil de investidor, aposentadoria desejada e empresa.
+- **Perfil financeiro:** renda, despesas, sobra, patrimônio líquido, parcelas sobre a renda e meses de reserva, com o **momento financeiro**:
+
+| Momento | Regra (na ordem) |
+|---|---|
+| Em déficit | sobra negativa |
+| Endividado | parcelas acima do limite ou dívidas caras com parcelas ≥ 5% da renda |
+| Construtor de patrimônio | poupa ≥ 20% e já investe |
+| Poupador | poupa ≥ 20% |
+| Equilibrado | poupa ≥ 10% |
+| Consumidor | poupa menos de 10% |
+
+- Também traz a nota LIFE e os pilares, o fluxo de caixa (renda × despesas), as maiores categorias e o balanço patrimonial.
+
+### Plano atual (6.2), Plano potencial (6.3) e Plano otimização (6.4)
+Cada plano é uma lista de cartões com três colunas:
+
+| Plano | Colunas | Origem dos cartões automáticos |
+|---|---|---|
+| 6.2 Plano atual | Diagnóstico · Motivo · Risco da inação | `planoAtual()`: déficit ou poupança < 20%, necessidades > 50%, desejos > 30%, anuidade, dívidas caras, parcelas acima do limite, família descoberta, renda sem invalidez/DIT, sem plano de saúde, bens sem seguro, reserva incompleta, sem investimentos, PGBL no simplificado, independência abaixo da meta, objetivos maiores que a sobra ou com chance < 50%, mudanças de vida que apertam o orçamento e custo do inventário. Ordem: gravidade Alta → Média → Baixa. |
+| 6.3 Plano potencial | Oportunidade identificada · Como podemos atuar juntos · Objetivo desejado | As oportunidades da matriz (6.6), na ordem de potencial. Mostra 6 e "Ver mais". Abaixo, o cálculo de **Proteção · o que contratar**. |
+| 6.4 Plano otimização | Descrição · Motivo da escolha · Como melhorar | `planoOtimizacao()`: boa poupança, orçamento no 50-30-20, milhas, sem dívidas ou parcelas sob controle, imóveis quitados, patrimônio sólido, seguro de vida, invalidez, saúde, bens segurados, reserva completa, investimentos, previdência (PGBL com declaração completa), independência no caminho e mudanças que aliviam o orçamento. |
+
+Na versão consultor, cada cartão tem:
+- **Lápis:** personaliza o texto (o cartão automático vira um cartão editável com título, área, gravidade/prioridade e as três colunas; a seta circular volta ao texto automático).
+- **Olho:** oculta o cartão na apresentação e no PDF.
+- **Adicionar:** cria um cartão próprio do consultor.
+- No Plano potencial, **"Levar ao plano"** cria a ação no plano de ação.
+
+O 6.2 também mostra a probabilidade de cada objetivo, atual × com plano.
 
 ### Matriz de oportunidades (6.6) — ecossistema
-Quatro quadrantes, detectados a partir dos dados:
-- **Seguros:** vida (gap), invalidez/DIT, saúde, auto/náutico sem seguro, residencial, empresarial, seguro de sócio.
-- **Patrimonial:** consórcio para objetivos de Casa e Veículo e para futuras aquisições por financiamento ou consórcio, troca/ampliação de bens (com o modelo de desejo), portabilidade de financiamento, planejamento sucessório/holding (2+ imóveis ou patrimônio ≥ R$ 2 mi).
-- **Investimentos:** começar a investir, completar a reserva, assessoria, suitability, aumentar o patrimônio financeiro, investimento para compra à vista.
-- **Futuro:** previdência privada (PGBL para quem declara no completo; VGBL no simplificado), avaliar PGBL, plano de independência, fundo de educação dos filhos.
+Radar com **6 pontas: Proteção, Futuro, Patrimonial, Investimentos, Sucessão e Fiscal/Tributário**, e a lista das oportunidades **em ordem de potencial**, cada uma com o que oferecer, por quê e o objetivo para o cliente.
 
-Cada oportunidade vai ao plano de ação com um clique (botão "Levar ao plano").
+**Potencial (0 a 100)** = peso do produto + ajuste pela relevância para o cliente. Pesos (em `PESO_PRODUTO`, com foco em receita):
 
-### Plano de ação (6.7) e cronograma (7.2)
+| Produto | Peso |
+|---|---|
+| Seguro | 82 |
+| Consórcio | 78 |
+| Previdência | 66 |
+| Investimento | 56 |
+| Planejamento | 50 |
+| Crédito | 46 |
+
+Exemplos de ajuste: seguro de vida sobe com o tamanho do gap em anos de renda; consórcio no lugar de um financiamento planejado sobe 12; invalidez/DIT sobe para empresário e autônomo.
+
+**Nota do radar por área** = 80% da maior oportunidade da área + 4 pontos por oportunidade extra (máximo 100).
+
+Oportunidades por área:
+- **Proteção (seguros):** vida (gap), invalidez/doenças graves/DIT, vida do cônjuge, saúde, auto/náutico, residencial, empresarial, seguro de sócio, vida em grupo (empresa com funcionários), saúde PME, RC profissional (autônomo/liberal) e viagem anual.
+- **Patrimonial (consórcios):** consórcio para futuras aquisições (no lugar do financiamento), para objetivos de casa e veículo, para a troca de bens (modelo de desejo), para a próxima troca de veículo financiado, para bens da empresa, de serviços (reformas e gastos únicos ≥ R$ 15 mil) e imobiliário para construir patrimônio (sobra ≥ R$ 3 mil); portabilidade/amortização de financiamento.
+- **Sucessão:** seguro de vida para o inventário, holding/planejamento sucessório e VGBL como instrumento sucessório.
+- **Fiscal/Tributário:** PGBL para quem declara no completo, rever PGBL no simplificado, comparar simplificada × completa, revisão tributária da empresa e investimentos isentos.
+- **Investimentos:** começar a investir, reserva de emergência, assessoria, diversificação, investimento para compra à vista, suitability, patrimônio financeiro e cartão com benefícios.
+- **Futuro:** previdência privada, plano de independência e fundo de educação dos filhos.
+
+O topo da seção resume o **foco em receita**: quantidade de oportunidades de seguros e consórcios, capital de vida sugerido e valor em cartas. Tocar em uma área do radar (ou da lista) filtra as oportunidades. Cada oportunidade vai ao plano de ação com um clique.
+
+### Bússola financeira (6.7)
+Quatro direções, cada uma com nota de 0 a 100 (média ponderada dos indicadores com dados), status, indicadores e ações:
+
+| Direção | Pergunta | Indicadores (peso) |
+|---|---|---|
+| N · Organização | O dinheiro do mês está sob controle? | taxa de poupança ÷ 20% (35) · excesso sobre 50-30-20 (20) · parcelas sobre a renda (25) · dívidas caras (20) |
+| L · Patrimonial | O patrimônio e a família estão protegidos? | cobertura do seguro de vida (35) · bens com seguro (20) · plano de saúde (15) · dívidas sobre os bens (15) · inventário coberto (15) |
+| S · Liberdade financeira | O futuro está garantido? | % da meta de independência (55) · aporte atual ÷ necessário (25) · objetivos cabem na sobra (20) |
+| O · Gestão de ativos | Os investimentos estão bem cuidados? | reserva em meses (35) · investe (20) · assessoria e perfil (15) · temas conhecidos (15) · previdência × declaração do IR (15) |
+
+- **Saúde financeira** = média das direções com dados.
+- **Norte** = a direção com a menor nota: a agulha aponta para ela e o painel "Seu norte agora" traz as três primeiras ações.
+- Cada ação vai ao plano de ação com um clique (versão consultor).
+
+### Plano de ação (6.8) e cronograma (7.2)
 - Cada ação tem área, prioridade (Alta, Média, Baixa), prazo (Curto, Médio, Longo) e status.
+- Áreas: Fluxo de caixa, Dívidas, Proteção, Futuro, Patrimonial, Investimentos, Sucessão, Fiscal/Tributário e Objetivos (a antiga área "Seguros" virou "Proteção").
 - O cronograma distribui as ações em **Curto (até 3 meses), Médio (3 a 12) e Longo (acima de 12)**, a partir da data do encontro de fechamento (ou de hoje).
 
 ### Jornada (7.1)

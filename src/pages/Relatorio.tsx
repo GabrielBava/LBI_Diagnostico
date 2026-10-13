@@ -8,10 +8,23 @@ import { APP } from "@/config/defaults";
 import { secaoOculta, secaoPorId } from "@/config/estrutura";
 import { Logo } from "@/components/Header";
 import { BotaoOuro, Selo, corStatus, textoStatus } from "@/components/ui";
-import { despesas, fluxo, futuro, modelo503020, n, objetivos, patrimonio, protecao, renda, s, temConjuge } from "@/lib/calculos";
-import { notaGeral, pilares, pontos, temNota } from "@/lib/diagnostico";
+import { despesas, fluxo, futuro, modelo503020, n, nOpt, objetivos, patrimonio, protecao, renda, s, temConjuge } from "@/lib/calculos";
+import { notaGeral, pilares, temNota } from "@/lib/diagnostico";
+import { oportunidades } from "@/lib/oportunidades";
+import {
+  COLUNAS_PLANO,
+  bussola,
+  mesclarCards,
+  perfilFinanceiro,
+  planoAtual,
+  planoOtimizacao,
+  planoPotencial,
+  type CardPlano,
+  type ListaCards,
+} from "@/lib/plano";
 import { fmtBRL, fmtData, fmtPct } from "@/lib/format";
 import { lerConfig, useClientes } from "@/lib/storage";
+import type { Cliente } from "@/types";
 
 function Bloco({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
@@ -53,6 +66,41 @@ function Tabela({ cab, linhas }: { cab: string[]; linhas: ReactNode[][] }) {
 
 const anos = (a: number) => (a === 1 ? "1 ano" : `${a} anos`);
 
+/** Cartões de um plano (os ocultos na apresentação ficam de fora). */
+function CardsRelatorio({ cliente, lista, automaticos, limite }: { cliente: Cliente; lista: ListaCards; automaticos: CardPlano[]; limite?: number }) {
+  const cfg = COLUNAS_PLANO[lista];
+  const todos = mesclarCards(cliente, lista, automaticos, cfg.chaves, cfg.selo).filter((c) => !c.oculto);
+  const cards = limite ? todos.slice(0, limite) : todos;
+  if (!cards.length) return <p className="text-sm text-muted-foreground">Nenhum item.</p>;
+  return (
+    <div className="space-y-3">
+      {todos.length > cards.length && (
+        <p className="text-xs text-muted-foreground">
+          As {cards.length} oportunidades de maior potencial (de {todos.length}). Oculte cartões na seção 6.3 para escolher quais entram aqui.
+        </p>
+      )}
+      {cards.map((c) => (
+        <div key={c.id} className="print-avoid rounded-lg border border-border">
+          <div className="flex flex-wrap items-baseline gap-x-2 border-b border-border px-3 py-2">
+            <span className="text-sm font-semibold">{c.titulo}</span>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              {[c.area, c.selo && `${lista === "planoAtual" ? "gravidade" : "prioridade"} ${c.selo.toLowerCase()}`].filter(Boolean).join(" · ")}
+            </span>
+          </div>
+          <div className="grid gap-3 px-3 py-2 text-xs md:grid-cols-3">
+            {cfg.chaves.map((k, i) => (
+              <div key={k}>
+                <div className="text-[9px] font-semibold uppercase tracking-widest text-primary">{cfg.rotulos[i]}</div>
+                <p className="mt-0.5 whitespace-pre-line">{c.textos[k] || "—"}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Indicador({ rotulo, valor }: { rotulo: string; valor: string }) {
   return (
     <div className="rounded-lg border border-border p-3">
@@ -91,16 +139,23 @@ export default function Relatorio() {
   const p = patrimonio(cliente);
   const ps = pilares(cliente);
   const nota = notaGeral(ps);
-  const pt = pontos(cliente);
+  const pf = perfilFinanceiro(cliente);
+  const bu = bussola(cliente);
+  // Futuro: com a simulação do 6.5, quando houver.
+  const sm = cliente.simulacao;
+  const fu = futuro(cliente, {
+    aporte: nOpt(sm.aporte),
+    retornoReal: nOpt(sm.retornoReal) !== undefined ? n(sm.retornoReal) / 100 : undefined,
+    idadeAposentadoria: nOpt(sm.idadeAposentadoria),
+    rendaDesejada: nOpt(sm.rendaDesejada),
+  });
+  const simulado = ["aporte", "retornoReal", "idadeAposentadoria", "rendaDesejada"].some((k) => nOpt(sm[k]) !== undefined);
   const ob = objetivos(cliente);
   const pr = protecao(cliente);
   const rd = renda(cliente);
-  const fu = futuro(cliente);
   const orc = modelo503020(cliente);
   const nome = s(cliente.cadastro.nome) || "Cliente";
   const rotuloBruto = temConjuge(cliente) ? "Salário bruto (cliente + cônjuge)" : "Salário bruto";
-  const fortes = [...pt.fortes.map((x) => x.texto), ...cliente.pontosFortes.map((x) => s(x.texto)).filter(Boolean)];
-  const negativos = [...pt.negativos.map((x) => x.texto), ...cliente.pontosNegativos.map((x) => s(x.texto)).filter(Boolean)];
 
   return (
     <div className="light min-h-screen bg-background text-foreground">
@@ -140,7 +195,10 @@ export default function Relatorio() {
         </header>
 
         {mostra("panorama") && (
-          <Bloco titulo="Panorama financeiro">
+          <Bloco titulo="Panorama geral">
+            <p className="mb-3 text-sm">
+              <strong>Perfil financeiro: {pf.nome}.</strong> {pf.descricao}
+            </p>
             <div className={`grid grid-cols-2 gap-3 ${rd.brutaTotal > 0 ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
               {rd.brutaTotal > 0 && <Indicador rotulo={rotuloBruto} valor={fmtBRL(rd.brutaTotal)} />}
               <Indicador rotulo={rd.brutaTotal > 0 ? "Renda líquida familiar" : "Renda mensal"} valor={fmtBRL(f.renda)} />
@@ -159,31 +217,7 @@ export default function Relatorio() {
                 </div>
               ))}
             </div>
-          </Bloco>
-        )}
-
-        {mostra("plano-atual") && orc.renda > 0 && (
-          <Bloco titulo="Pré-diagnóstico · modelo 50-30-20">
-            <Tabela
-              cab={["Parte da renda", "Hoje", "% da renda", "Ideal", "Situação"]}
-              linhas={orc.partes.map((p) => [
-                p.label,
-                fmtBRL(p.atual),
-                fmtPct(p.pct),
-                `${fmtBRL(p.ideal)} (${p.id === "Poupança" ? "mín." : "máx."} ${fmtPct(p.meta)})`,
-                p.foraDoModelo
-                  ? p.id === "Poupança"
-                    ? `${fmtBRL(-p.diferenca)} abaixo`
-                    : `${fmtBRL(p.diferenca)} acima`
-                  : "Dentro do ideal",
-              ])}
-            />
-          </Bloco>
-        )}
-
-        {mostra("plano-atual-completo") && (
-          <Bloco titulo="Plano atual">
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="mt-4 grid gap-6 md:grid-cols-2">
               <Tabela
                 cab={["Fluxo mensal", "Valor"]}
                 linhas={[
@@ -219,22 +253,38 @@ export default function Relatorio() {
           </Bloco>
         )}
 
-        {mostra("pontos-fortes") && fortes.length > 0 && (
-          <Bloco titulo="Pontos fortes — manter">
-            <ul className="list-disc space-y-1 pl-5 text-sm">
-              {fortes.map((t) => (
-                <li key={t}>{t}</li>
-              ))}
-            </ul>
+        {mostra("plano-atual") && orc.renda > 0 && (
+          <Bloco titulo="Pré-diagnóstico · modelo 50-30-20">
+            <Tabela
+              cab={["Parte da renda", "Hoje", "% da renda", "Ideal", "Situação"]}
+              linhas={orc.partes.map((p) => [
+                p.label,
+                fmtBRL(p.atual),
+                fmtPct(p.pct),
+                `${fmtBRL(p.ideal)} (${p.id === "Poupança" ? "mín." : "máx."} ${fmtPct(p.meta)})`,
+                p.foraDoModelo
+                  ? p.id === "Poupança"
+                    ? `${fmtBRL(-p.diferenca)} abaixo`
+                    : `${fmtBRL(p.diferenca)} acima`
+                  : "Dentro do ideal",
+              ])}
+            />
           </Bloco>
         )}
-        {mostra("pontos-negativos") && negativos.length > 0 && (
-          <Bloco titulo="Pontos de atuação">
-            <ul className="list-disc space-y-1 pl-5 text-sm">
-              {negativos.map((t) => (
-                <li key={t}>{t}</li>
-              ))}
-            </ul>
+
+        {mostra("plano-atual-completo") && (
+          <Bloco titulo="Plano atual — diagnóstico">
+            <CardsRelatorio cliente={cliente} lista="planoAtual" automaticos={planoAtual(cliente)} />
+          </Bloco>
+        )}
+        {mostra("plano-potencial") && (
+          <Bloco titulo="Plano potencial — como podemos atuar juntos">
+            <CardsRelatorio cliente={cliente} lista="planoPotencial" automaticos={planoPotencial(cliente)} limite={8} />
+          </Bloco>
+        )}
+        {mostra("plano-otimizacao") && (
+          <Bloco titulo="Plano otimização — o que você já faz bem">
+            <CardsRelatorio cliente={cliente} lista="planoOtimizacao" automaticos={planoOtimizacao(cliente)} />
           </Bloco>
         )}
 
@@ -259,7 +309,7 @@ export default function Relatorio() {
           </Bloco>
         )}
 
-        {(mostra("protecao") || mostra("plano-atual-completo")) && pr.necessidade > 0 && (
+        {(mostra("protecao") || mostra("plano-potencial")) && pr.necessidade > 0 && (
           <Bloco titulo="Proteção da família">
             <Tabela
               cab={["Componente", "Valor"]}
@@ -312,12 +362,78 @@ export default function Relatorio() {
                   <Indicador rotulo="Renda projetada" valor={`${fmtBRL(fu.rendaProjetada)}/mês`} />
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Meta: renda de {fmtBRL(fu.rendaDesejada)}/mês aos {fu.idadeAposentadoria} anos, investindo{" "}
-                  {fu.aporteInformado ? "" : "a sobra atual de "}
-                  {fmtBRL(fu.aporteAtual)}/mês (valores de hoje).
+                  {simulado ? "Simulação: " : "Meta: "}renda de {fmtBRL(fu.rendaDesejada)}/mês aos {fu.idadeAposentadoria} anos, investindo{" "}
+                  {simulado || fu.aporteInformado ? "" : "a sobra atual de "}
+                  {fmtBRL(fu.aporteAtual)}/mês com retorno real de {fmtPct(fu.retornoReal, 1)} a.a. (valores de hoje).
+                  {fu.retiradaMensal > 0 &&
+                    ` Retirando a renda, o patrimônio dura ${fu.esgotaAos !== undefined ? `até os ${fu.esgotaAos} anos` : "além dos 95 anos"}.`}
                 </p>
+                <div className="mt-4">
+                  <div className="mb-1 text-xs font-semibold">Plano de independência</div>
+                  <Tabela
+                    cab={["Marco", "Patrimônio", "% da meta", "Renda passiva", "Total aportado"]}
+                    linhas={fu.marcos.map((m) => [
+                      `${anos(m.anos)}${m.idade !== undefined ? ` (${m.idade} anos)` : ""}`,
+                      fmtBRL(m.patrimonio),
+                      fmtPct(Math.min(m.percentualMeta, 9.99)),
+                      `${fmtBRL(m.rendaPassiva)}/mês`,
+                      fmtBRL(m.aportado),
+                    ])}
+                  />
+                </div>
               </>
             )}
+          </Bloco>
+        )}
+
+        {mostra("oportunidades") && oportunidades(cliente).length > 0 && (
+          <Bloco titulo="Matriz de oportunidades">
+            <Tabela
+              cab={["Oportunidade", "Área", "Produto", "Potencial"]}
+              linhas={oportunidades(cliente).map((o) => [
+                <span key="t">
+                  <span className="font-medium">{o.titulo}</span>
+                  <span className="block text-xs text-muted-foreground">{o.oferta}</span>
+                </span>,
+                o.area,
+                o.produto,
+                String(o.potencial),
+              ])}
+            />
+          </Bloco>
+        )}
+
+        {mostra("bussola") && bu.temDados && (
+          <Bloco titulo="Bússola financeira">
+            <p className="mb-3 text-sm">
+              Saúde financeira: <strong>{bu.nota}/100</strong>
+              {bu.norte && (
+                <>
+                  {" "}
+                  · Norte agora: <strong>{bu.norte.nome}</strong> — {bu.norte.pergunta.toLowerCase()}
+                </>
+              )}
+            </p>
+            <div className="space-y-2">
+              {bu.dimensoes.map((x) => (
+                <div key={x.id} className="print-avoid rounded-lg border border-border px-3 py-2">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                    <span className="text-sm font-semibold">{x.nome}</span>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {x.status === "sem-dados" ? "—" : `${x.nota}/100`} · {textoStatus[x.status]}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{x.resumo}</p>
+                  {x.acoes.length > 0 && (
+                    <ul className="mt-1 list-disc pl-5 text-xs">
+                      {x.acoes.map((a) => (
+                        <li key={a.id}>{a.texto}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
           </Bloco>
         )}
 

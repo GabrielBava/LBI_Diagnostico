@@ -11,7 +11,7 @@ Diagnóstico financeiro do Grupo Life Brasil, organizado como um processo com o 
 - **Parâmetros financeiros** (inflação geral e educacional, meta de reserva, limite de parcela, retorno real) no botão de engrenagem do topo do cliente.
 - **Padrões de campo:** opções em botões (chips), escala 0–10 com um botão por nota, categorias por ícones, múltipla escolha, Sim/Não, interruptores para flags, contador.
 - **Roteiro da conversa** por seção: frase de abertura, perguntas (checklist), pontos de atenção e anotações.
-- **Diagnóstico:** nota LIFE, pilares, renda × despesas, balanço, proteção "o que contratar" (educacional, padrão de vida 1/5/15 anos, sucessão), pontos fortes e de atuação, independência financeira, matriz de oportunidades (cross-sell), plano de ação e cronograma.
+- **Diagnóstico completo:** panorama geral (perfil e perfil financeiro, nota LIFE, pilares, renda × despesas, balanço), plano atual (diagnóstico · motivo · risco da inação), plano potencial (oportunidade · como atuar juntos · objetivo desejado, com a proteção "o que contratar"), plano otimização (descrição · motivo da escolha · como melhorar), futuro com simulador (réguas de aporte, rentabilidade, idade e renda) e plano de independência de 1, 5 e 10 anos, matriz de oportunidades em radar de 6 pontas (foco em seguros e consórcios), bússola financeira (organização, patrimonial, liberdade financeira e gestão de ativos), plano de ação e cronograma.
 - **PDF** do diagnóstico (segue a versão apresentação), backup e importação.
 
 A metodologia completa (processo + fórmulas) está em **[docs/METODOLOGIA.md](docs/METODOLOGIA.md)**.
@@ -62,7 +62,9 @@ src/
     defaults.ts      ← nome do app, versão, consultor padrão
   lib/
     calculos.ts      ← FÓRMULAS (fluxo, balanço, objetivos, proteção, futuro)
-    diagnostico.ts   ← pilares, pontos fortes/de atuação, oportunidades, sugestões
+    diagnostico.ts   ← pilares e sugestões do plano de ação
+    plano.ts         ← cartões dos planos atual/potencial/otimização, perfil financeiro e bússola
+    oportunidades.ts ← matriz de oportunidades (6 áreas, potencial, peso de cada produto)
     storage.ts       ← onde os dados são salvos (hoje: navegador)
     migracao.ts      ← conversão de clientes da versão anterior
   components/        ← campos, listas, seção, menu, gráficos

@@ -2,11 +2,11 @@
 import { CalendarCheck2 } from "lucide-react";
 import { CAMPOS_REUNIAO, PRAZOS_PLANO } from "@/config/campos";
 import { ListaItens } from "@/components/ListaEditor";
-import { Selo } from "@/components/ui";
+import { Selo, corPrioridade } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { s } from "@/lib/calculos";
 import { fmtData } from "@/lib/format";
-import { corPrioridade } from "./Oportunidades";
+
 
 const corReuniao: Record<string, string> = {
   Realizada: "bg-success text-white",

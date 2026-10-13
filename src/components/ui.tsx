@@ -78,6 +78,13 @@ export const corStatus: Record<Status, string> = {
   critico: "text-destructive bg-destructive/10 border-destructive/30",
   "sem-dados": "text-muted-foreground bg-muted/40 border-border",
 };
+/** Cores de prioridade / gravidade (Alta, Média, Baixa). */
+export const corPrioridade: Record<string, string> = {
+  Alta: "text-destructive border-destructive/30 bg-destructive/10",
+  Média: "text-warning border-warning/30 bg-warning/10",
+  Baixa: "text-muted-foreground border-border bg-muted/40",
+};
+
 export const textoStatus: Record<Status, string> = {
   ok: "Saudável",
   atencao: "Atenção",

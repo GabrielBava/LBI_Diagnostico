@@ -57,8 +57,16 @@ export interface Cliente {
   investimentos: Secao;
 
   // Etapa 6 · Diagnóstico completo
-  pontosFortes: Item[];
-  pontosNegativos: Item[];
+  /** Cartões do consultor no Plano atual (diagnóstico, motivo, risco da inação). */
+  planoAtual: Item[];
+  /** Cartões do consultor no Plano potencial (oportunidade, como atuar, objetivo). */
+  planoPotencial: Item[];
+  /** Cartões do consultor no Plano otimização (descrição, motivo da escolha, como melhorar). */
+  planoOtimizacao: Item[];
+  /** Cartões automáticos ocultos pelo consultor (id do cartão → true). */
+  cardsOcultos: Record<string, boolean>;
+  /** Simulação do 6.5 · Futuro (aporte, retorno real, idade e renda); em branco valem os dados da coleta. */
+  simulacao: Secao;
   plano: Item[];
 
   // Etapa 7 · Jornada
@@ -88,8 +96,9 @@ export type ListaId =
   | "consorcios"
   | "emprestimos"
   | "projetos"
-  | "pontosFortes"
-  | "pontosNegativos"
+  | "planoAtual"
+  | "planoPotencial"
+  | "planoOtimizacao"
   | "plano"
   | "jornada";
 
@@ -101,4 +110,5 @@ export type SecaoId =
   | "corporativo"
   | "protecao"
   | "investimentos"
-  | "futuro";
+  | "futuro"
+  | "simulacao";

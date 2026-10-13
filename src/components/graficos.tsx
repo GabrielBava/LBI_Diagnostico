@@ -1,6 +1,24 @@
 // Gráficos reutilizáveis (Recharts). Cores vêm de --serie-1/--serie-2 em index.css.
-import type { ReactNode } from "react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  LabelList,
+  Legend,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { fmtBRL, fmtCompacto, fmtPct } from "@/lib/format";
 
@@ -618,5 +636,181 @@ export function Grafico503020({
         ))}
       </ul>
     </figure>
+  );
+}
+
+// ---------------------------------------------------------------------
+//  6.5 · Simulação do futuro: patrimônio ao longo da vida (acumulação e
+//  usufruto), comparando a simulação com o cenário da coleta.
+// ---------------------------------------------------------------------
+export function GraficoSimulacao({
+  serie,
+  base,
+  idadeAposentadoria,
+  meta,
+}: {
+  serie: { idade: number; ano: number; patrimonio: number }[];
+  /** Cenário com os dados da coleta (só aparece quando a simulação é diferente). */
+  base?: { idade: number; patrimonio: number }[];
+  idadeAposentadoria: number;
+  meta: number;
+}) {
+  const porIdade = new Map(base?.map((b) => [b.idade, b.patrimonio]));
+  const dados = serie.map((x) => ({ ...x, base: base ? porIdade.get(x.idade) ?? null : undefined }));
+  return (
+    <div className="h-72 sm:h-80">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={dados} margin={{ top: 16, right: 12, bottom: 0, left: 0 }}>
+          <defs>
+            <linearGradient id="gSim" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--serie-1)" stopOpacity={0.35} />
+              <stop offset="100%" stopColor="var(--serie-1)" stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid vertical={false} stroke={corGrade} strokeDasharray="3 3" />
+          <XAxis
+            dataKey="idade"
+            type="number"
+            domain={["dataMin", "dataMax"]}
+            tickLine={false}
+            axisLine={{ stroke: corGrade }}
+            tick={{ fill: corEixo, fontSize: 11 }}
+            tickFormatter={(v: number) => `${v}`}
+            minTickGap={20}
+          />
+          <YAxis tickFormatter={fmtCompacto} tickLine={false} axisLine={false} tick={{ fill: corEixo, fontSize: 11 }} width={52} />
+          <Tooltip
+            {...estiloTooltip}
+            cursor={{ stroke: corEixo, strokeDasharray: "3 3" }}
+            labelFormatter={(idade, p) => `${idade} anos · ${p?.[0]?.payload?.ano ?? ""}`}
+            formatter={(v: number, nome: string) => [fmtBRL(v), nome]}
+          />
+          <Legend wrapperStyle={{ fontSize: 11, color: corEixo }} />
+          {meta > 0 && (
+            <ReferenceLine
+              y={meta}
+              stroke="rgb(var(--muted-foreground))"
+              strokeDasharray="5 4"
+              ifOverflow="extendDomain"
+              label={{ value: "Meta", position: "insideTopLeft", fill: corEixo, fontSize: 11 }}
+            />
+          )}
+          <ReferenceLine
+            x={idadeAposentadoria}
+            stroke="rgb(var(--primary))"
+            strokeDasharray="2 3"
+            label={{ value: "Aposentadoria", position: "insideTopRight", fill: "rgb(var(--primary))", fontSize: 11 }}
+          />
+          {base && (
+            <Area
+              type="monotone"
+              dataKey="base"
+              name="Dados da coleta"
+              stroke="var(--serie-2)"
+              strokeWidth={2}
+              strokeDasharray="6 4"
+              fill="none"
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
+          <Area
+            type="monotone"
+            dataKey="patrimonio"
+            name={base ? "Simulação" : "Patrimônio projetado"}
+            stroke="var(--serie-1)"
+            strokeWidth={2.5}
+            fill="url(#gSim)"
+            dot={false}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------
+//  6.6 · Radar da matriz de oportunidades (6 pontas)
+// ---------------------------------------------------------------------
+/** Largura atual de um elemento (para adaptar rótulos de gráficos ao celular). */
+function useLargura<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [largura, setLargura] = useState(0);
+  useEffect(() => {
+    if (!ref.current) return;
+    const ro = new ResizeObserver(([e]) => setLargura(e.contentRect.width));
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, largura] as const;
+}
+
+/** Nomes curtos das áreas (radar em telas estreitas). */
+const AREA_CURTA: Record<string, string> = { "Fiscal/Tributário": "Fiscal", Investimentos: "Investim." };
+
+export function RadarOportunidades({
+  dados,
+  selecionada,
+  onSelecionar,
+}: {
+  dados: { area: string; potencial: number; quantidade: number }[];
+  selecionada?: string;
+  onSelecionar?: (area: string) => void;
+}) {
+  const [ref, largura] = useLargura<HTMLDivElement>();
+  const altura = largura >= 640 ? 384 : 320;
+  const curto = largura > 0 && largura < 460;
+  // Raio que deixa espaço para o rótulo mais longo nas laterais (±60° do topo).
+  const folgaRotulo = curto ? 74 : 118;
+  const raio = Math.max(56, Math.min(altura / 2 - 44, (largura / 2 - 8 - folgaRotulo) / 0.87, 150));
+  return (
+    <div ref={ref} style={{ height: altura }}>
+      {largura > 0 && (
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart data={dados} outerRadius={raio} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+            <PolarGrid stroke={corGrade} />
+            <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} tickCount={5} />
+            <PolarAngleAxis
+              dataKey="area"
+              tick={(props: { x: number; y: number; cx?: number; cy?: number; payload: { value: string }; textAnchor: string }) => {
+                const area = props.payload.value;
+                const d = dados.find((x) => x.area === area);
+                const ativa = selecionada === area;
+                const cy = props.cy ?? 0;
+                const cx = props.cx ?? 0;
+                const vertical = Math.abs(props.x - cx) < 2;
+                // Topo: as duas linhas sobem; base: descem; laterais: nome e, abaixo, a contagem.
+                const [dyNome, dyConta] = vertical ? (props.y < cy ? [-16, -2] : [12, 26]) : [0, 14];
+                const anchor = props.textAnchor as "start" | "middle" | "end";
+                return (
+                  <g
+                    className={onSelecionar ? "cursor-pointer" : ""}
+                    onClick={() => onSelecionar?.(area)}
+                    role={onSelecionar ? "button" : undefined}
+                    aria-label={onSelecionar ? `Filtrar por ${area}` : undefined}
+                  >
+                    <text x={props.x} y={props.y + dyNome} textAnchor={anchor} fill={ativa ? "rgb(var(--primary))" : "rgb(var(--foreground))"} fontSize={12} fontWeight={600}>
+                      {curto ? AREA_CURTA[area] ?? area : area}
+                    </text>
+                    <text x={props.x} y={props.y + dyConta} textAnchor={anchor} fill={corEixo} fontSize={11}>
+                      {d?.quantidade ? (curto ? `${d.potencial} pts` : `${d.potencial} pts · ${d.quantidade}`) : "—"}
+                    </text>
+                  </g>
+                );
+              }}
+            />
+            <Tooltip
+              {...estiloTooltip}
+              formatter={(v: number, _n: string, p: { payload?: { quantidade?: number } }) => [
+                `${v} de 100 · ${p.payload?.quantidade ?? 0} oportunidade(s)`,
+                "Potencial",
+              ]}
+            />
+            <Radar dataKey="potencial" name="Potencial" stroke="var(--serie-1)" strokeWidth={2} fill="var(--serie-1)" fillOpacity={0.3} isAnimationActive={false} />
+          </RadarChart>
+        </ResponsiveContainer>
+      )}
+    </div>
   );
 }

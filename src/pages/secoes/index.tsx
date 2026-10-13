@@ -16,10 +16,10 @@ import Aposentadoria from "./Aposentadoria";
 import Investimentos from "./Investimentos";
 import PlanoAtual from "./PlanoAtual";
 import Panorama from "./Panorama";
-import PlanoAtualCompleto from "./PlanoAtualCompleto";
-import { PontosFortes, PontosNegativos } from "./Pontos";
+import { PlanoAtualCards, PlanoOtimizacao, PlanoPotencial } from "./Planos";
 import Futuro from "./Futuro";
 import Oportunidades from "./Oportunidades";
+import Bussola from "./Bussola";
 import PlanoAcao from "./PlanoAcao";
 import { Cronograma, JornadaCliente } from "./Jornada";
 
@@ -39,11 +39,12 @@ export const TELAS: Record<string, ComponentType> = {
   investimentos: Investimentos,
   "plano-atual": PlanoAtual,
   panorama: Panorama,
-  "plano-atual-completo": PlanoAtualCompleto,
-  "pontos-fortes": PontosFortes,
-  "pontos-negativos": PontosNegativos,
+  "plano-atual-completo": PlanoAtualCards,
+  "plano-potencial": PlanoPotencial,
+  "plano-otimizacao": PlanoOtimizacao,
   futuro: Futuro,
   oportunidades: Oportunidades,
+  bussola: Bussola,
   "plano-acao": PlanoAcao,
   "jornada-cliente": JornadaCliente,
   cronograma: Cronograma,

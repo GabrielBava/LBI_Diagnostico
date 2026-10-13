@@ -285,3 +285,33 @@ export function atualizarV6(c: Partial<Cliente> & { id: string }): Partial<Clien
 
   return { ...c, versaoDados: 6, despesas, despesasExtras: extras, imoveis, moveis, financiamentos };
 }
+
+/** Área "Seguros" do plano de ação virou "Proteção" na versão 8 (matriz com 6 áreas). */
+const AREAS_RENOMEADAS: Record<string, string> = { Seguros: "Proteção" };
+
+/**
+ * Versão 8: pontos fortes e pontos de atuação viram cartões do Plano
+ * otimização e do Plano atual; a área "Seguros" vira "Proteção".
+ * Roda uma vez por cliente (marcador versaoDados).
+ */
+export function atualizarV8(c: Partial<Cliente> & { id: string }): Partial<Cliente> & { id: string } {
+  if ((c.versaoDados ?? 0) >= 8) return c;
+  const antigo = c as Partial<Cliente> & { pontosFortes?: Item[]; pontosNegativos?: Item[] };
+  const { pontosFortes, pontosNegativos, ...resto } = antigo;
+  const area = (a: unknown) => (typeof a === "string" ? AREAS_RENOMEADAS[a] ?? a : a);
+  const texto = (p: Item) => String(p.texto ?? "").trim();
+  return {
+    ...resto,
+    id: c.id,
+    versaoDados: 8,
+    planoAtual: [
+      ...(c.planoAtual ?? []),
+      ...(pontosNegativos ?? []).filter(texto).map((p) => ({ id: p.id || uid(), titulo: "Ponto de atuação", diagnostico: texto(p) })),
+    ],
+    planoOtimizacao: [
+      ...(c.planoOtimizacao ?? []),
+      ...(pontosFortes ?? []).filter(texto).map((p) => ({ id: p.id || uid(), titulo: "Ponto forte", descricao: texto(p) })),
+    ],
+    plano: (c.plano ?? []).map((a) => ({ ...a, area: area(a.area) as Item["area"] })),
+  };
+}

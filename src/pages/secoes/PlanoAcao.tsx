@@ -2,13 +2,13 @@
 import { Check, Plus } from "lucide-react";
 import { CAMPOS_ACAO } from "@/config/campos";
 import { ListaItens } from "@/components/ListaEditor";
-import { BarraProgresso, Selo, SubBloco } from "@/components/ui";
+import { BarraProgresso, Selo, SubBloco, corPrioridade } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { s } from "@/lib/calculos";
 import { sugestoes } from "@/lib/diagnostico";
 import { uid } from "@/lib/format";
 import { usePreferencias } from "@/lib/preferencias";
-import { corPrioridade } from "./Oportunidades";
+
 
 export default function PlanoAcao() {
   const { cliente, setLista } = useCliente();
