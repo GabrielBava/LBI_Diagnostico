@@ -69,7 +69,7 @@ export function clienteExemplo(): Cliente {
       "outros.pets": 300,
     },
     renda: { brutaCliente: 30000, liquidaConjuge: 9000, rendaExtra: 1500, decimoTerceiro: 21000, declaracaoIR: "Completa", temCartao: "Sim" },
-    outrasRendas: [{ id: i(), pessoa: "Cliente", descricao: "PLR", tipo: "Bônus / PLR", valor: 24000, frequencia: "Anual" }],
+    outrasRendas: [{ id: i(), pessoa: "Cliente", descricao: "PLR", tipo: "PLR", valor: 24000, frequencia: "Anual" }],
     cartoes: [
       { id: i(), cartao: "Banco X Black", limite: 40000, gastoMensal: 9000, milhas: true, programa: "Smiles", pagaAnuidade: true, valorAnuidade: 1200 },
       { id: i(), cartao: "Banco Y Gold", limite: 8000, gastoMensal: 1500, milhas: false },

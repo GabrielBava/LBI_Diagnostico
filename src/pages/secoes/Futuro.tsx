@@ -6,7 +6,7 @@ import { Flag, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { GraficoSimulacao } from "@/components/graficos";
 import { BarraProgresso, Botao, Kpi } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { futuro, mudancasVida, n, nOpt, s, TAXA_RETIRADA, type SimulacaoFuturo } from "@/lib/calculos";
+import { futuro, mudancasVida, n, nOpt, poupancaDeclarada, s, TAXA_RETIRADA, type SimulacaoFuturo } from "@/lib/calculos";
 import { fmtBRL, fmtPct } from "@/lib/format";
 import { usePreferencias } from "@/lib/preferencias";
 import type { Secao } from "@/types";
@@ -123,8 +123,7 @@ export default function Futuro() {
 
   // Faixas dos sliders: cobrem o valor atual, o necessário e uma folga.
   // Quanto o cliente diz que consegue poupar (12 · Futuro): atalhos na régua do investimento mensal.
-  const poupancaMin = nOpt(cliente.futuro.poupancaMinima);
-  const poupancaMax = nOpt(cliente.futuro.poupancaMaxima);
+  const { minima: poupancaMin, maxima: poupancaMax } = poupancaDeclarada(cliente);
   const maxAporte = teto(Math.max(10_000, base.aporteAtual * 2, base.aporte * 1.5, sim.aporteAtual, poupancaMax ?? 0), 1000);
   const maxRenda = teto(Math.max(20_000, base.rendaDesejada * 2, sim.rendaDesejada), 5000);
   const minIdade = Math.max(30, (base.idadeAtual || 29) + 1);

@@ -53,7 +53,7 @@ export const ROTEIRO: Record<string, Roteiro> = {
     atencao: [
       "Anote as palavras exatas do cliente no ponto de partida: elas voltam no diagnóstico completo.",
       "Valor futuro: o valor na data do objetivo (o sistema calcula o aporte com o retorno nominal).",
-      "A probabilidade sugerida considera a sobra mensal distribuída do essencial para o sonho.",
+      "A probabilidade sugerida considera a sobra livre (depois dos aportes em projetos) distribuída do essencial para o sonho.",
     ],
   },
   sucessao: {
@@ -92,7 +92,7 @@ export const ROTEIRO: Record<string, Roteiro> = {
     objetivo: "Conhecer todas as fontes de renda da família e o uso do cartão de crédito.",
     abertura: "Agora o lado de quem entra: sua renda, a do cônjuge, rendas extras e como você usa o cartão.",
     perguntas: [
-      "Qual a sua renda mensal? Sabe a bruta, a líquida ou as duas?",
+      "Qual a sua renda mensal? Sabe a bruta, a líquida ou as duas? Recebe 13º e bônus?",
       "E a do cônjuge?",
       "Tem renda extra, aluguéis, PLR ou ajuda de outra pessoa?",
       "Quais cartões usa, qual o limite e quanto gasta por mês? Acumula milhas? Paga anuidade?",
@@ -101,7 +101,7 @@ export const ROTEIRO: Record<string, Roteiro> = {
     atencao: [
       "Se o cliente souber só a bruta (ou só a líquida), a outra é estimada pelas tabelas de INSS e IR.",
       "Declaração completa abre espaço para PGBL (dedução de até 12% da renda bruta).",
-      "Bônus e PLR: use frequência Anual.",
+      "13º e bônus do cliente: campos próprios, com o valor líquido do ano. PLR e outras rendas anuais: em Outras rendas, com frequência Anual.",
       "O gasto no cartão já está dentro das despesas: serve para avaliar limite e milhas.",
     ],
   },
@@ -161,7 +161,8 @@ export const ROTEIRO: Record<string, Roteiro> = {
       "Tem seguro de vida individual? Qual o capital?",
       "Tem seguro pela empresa? (termina com o vínculo)",
       "Se ficasse impossibilitado de trabalhar, como pagaria as contas?",
-      "Tem plano de saúde e previdência privada? PGBL ou VGBL?",
+      "Tem previdência privada? PGBL ou VGBL?",
+      "É fumante? (muda a cotação do seguro de vida)",
     ],
     atencao: [
       "Compare os meses que o cliente imagina com os meses calculados pelas despesas.",

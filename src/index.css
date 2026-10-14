@@ -182,6 +182,13 @@ input[type="number"] {
   border-radius: 8px;
 }
 
+/* V1 em tela cheia: a página cabe inteira no espaço livre (largura limitada pela altura do
+   contêiner, via container query). Sem suporte a cq, cai na conta pela altura da janela. */
+.v1-pagina-cheia {
+  width: min(100%, calc((100vh - 96px) * var(--razao)));
+  width: min(100cqw, calc(100cqh * var(--razao)));
+}
+
 /* Impressão do relatório (PDF) */
 @media print {
   .no-print {

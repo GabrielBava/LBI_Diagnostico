@@ -552,10 +552,13 @@ export function Grafico503020({
   renda,
   necessidades,
   desejos,
+  aportes = 0,
 }: {
   renda: number;
   necessidades: number;
   desejos: number;
+  /** Aportes mensais em projetos: cabem na sobra (Projeto e Investimentos); se passam dela, viram saída e entram no déficit. */
+  aportes?: number;
 }) {
   const r = Math.max(0, renda);
   const nec = Math.max(0, necessidades);
@@ -563,9 +566,12 @@ export function Grafico503020({
   const desp = nec + des;
   if (r <= 0 && desp <= 0) return <p className="py-6 text-center text-xs text-muted-foreground">Sem valores para exibir.</p>;
 
-  const sobra = Math.max(0, r - desp);
-  const deficit = Math.max(0, desp - r);
-  const topo = Math.max(r, desp, 1);
+  const ap = Math.max(0, aportes);
+  const aportesAcima = ap > 0.5 && ap > r - desp + 0.5;
+  const saidas = desp + (aportesAcima ? ap : 0);
+  const sobra = aportesAcima ? 0 : Math.max(0, r - desp);
+  const deficit = Math.max(0, saidas - r);
+  const topo = Math.max(r, saidas, 1);
   const pct = (v: number) => (r > 0 ? fmtPct(v / r) : undefined);
   const azul: React.CSSProperties = { background: "var(--serie-2)" };
   const laranja: React.CSSProperties = { background: "var(--serie-3)" };
@@ -574,7 +580,10 @@ export function Grafico503020({
   const atual: Segmento[] = [
     { id: "nec", nome: "Essencial (hoje)", valor: nec, estilo: azul, rotulo: pct(nec) },
     { id: "des", nome: "Estilo e Desejos (hoje)", valor: des, estilo: laranja, rotulo: pct(des) },
-    ...(sobra > 0 ? [{ id: "sobra", nome: "Projeto e Investimentos (sobra)", valor: sobra, estilo: {}, classe: tracejado, rotulo: pct(sobra) }] : []),
+    ...(sobra > 0 ? [{ id: "sobra", nome: "Projeto e Investimentos (hoje)", valor: sobra, estilo: {}, classe: tracejado, rotulo: pct(sobra) }] : []),
+    ...(aportesAcima
+      ? [{ id: "aportes", nome: "Aportes em projetos", valor: ap, estilo: {}, classe: "border-2 border-dashed border-warning/80 bg-warning/15 text-foreground", rotulo: pct(ap) }]
+      : []),
   ];
 
   const modelo: Segmento[] = [
@@ -587,11 +596,14 @@ export function Grafico503020({
     { nome: "Renda líquida", valor: r, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-gold" /> },
     { nome: "Essencial", valor: nec, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={azul} /> },
     { nome: "Estilo e Desejos", valor: des, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={laranja} /> },
+    ...(aportesAcima
+      ? [{ nome: "Aportes em projetos", valor: ap, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-dashed border-warning bg-warning/15" /> }]
+      : []),
     ...(deficit > 0
       ? [{ nome: "Déficit (acima da linha da renda)", valor: deficit, amostra: <span className="h-0 w-3 shrink-0 border-t-2 border-dashed border-foreground" /> }]
       : [
           {
-            nome: "Projeto e Investimentos (sobra)",
+            nome: "Projeto e Investimentos (hoje)",
             valor: sobra,
             amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-dashed border-success bg-success/15" />,
           },
@@ -603,6 +615,8 @@ export function Grafico503020({
       <div
         role="img"
         aria-label={`Renda líquida de ${fmtBRL(r)}. Hoje: essencial ${fmtBRL(nec)}, estilo e desejos ${fmtBRL(des)}, ${
+          aportesAcima ? `aportes em projetos ${fmtBRL(ap)}, ` : ""
+        }${
           deficit > 0 ? `déficit de ${fmtBRL(deficit)}` : `sobra de ${fmtBRL(sobra)}`
         }. Modelo 50-30-20: essencial ${fmtBRL(r * 0.5)}, estilo e desejos ${fmtBRL(r * 0.3)}, projeto e investimentos ${fmtBRL(r * 0.2)}.`}
         className="grid grid-cols-3 gap-3 pt-6 sm:gap-6"
@@ -617,9 +631,9 @@ export function Grafico503020({
         />
         <Coluna
           titulo="Despesas atuais"
-          subtitulo={fmtBRL(desp)}
+          subtitulo={fmtBRL(saidas)}
           topo={topo}
-          total={Math.max(r, desp)}
+          total={Math.max(r, saidas)}
           segmentos={atual}
           deficitAcimaDe={deficit > 0 ? r : undefined}
         />

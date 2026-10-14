@@ -78,7 +78,7 @@ export default function PlanoAtual() {
     { nome: "Renda líquida do cliente", valor: r.cliente.liquida },
     { nome: "Renda extra", valor: r.extra },
     {
-      nome: `13º e bônus (média mensal de ${fmtBRL(r.decimoTerceiro + r.bonusAnual)}/ano)`,
+      nome: `13º e bônus (${fmtBRL(r.decimoTerceiro + r.bonusAnual)}/ano ÷ 12)`,
       valor: r.anualMensal,
     },
     { nome: "Renda líquida do cônjuge", valor: r.conjuge },
@@ -102,6 +102,10 @@ export default function PlanoAtual() {
           <>
             Sobram <strong className="text-gold">{fmtBRL(da.sobraLivre)}</strong> livres
             {m.renda > 0 && ` (${fmtPct(da.sobraLivre / m.renda)} da renda)`}.
+          </>
+        ) : m.sobra >= 0 ? (
+          <>
+            Os aportes nos projetos passam a sobra em <strong className="text-destructive">{fmtBRL(-da.sobraLivre)}</strong> por mês.
           </>
         ) : (
           <>
@@ -138,7 +142,7 @@ export default function PlanoAtual() {
       </div>
 
       <SubBloco titulo="Modelo 50-30-20 (renda líquida)">
-        <Grafico503020 renda={m.renda} necessidades={nec.atual} desejos={des.atual} />
+        <Grafico503020 renda={m.renda} necessidades={nec.atual} desejos={des.atual} aportes={m.aportesProjetos} />
       </SubBloco>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -190,12 +194,20 @@ export default function PlanoAtual() {
                         <Icone className={`h-3.5 w-3.5 shrink-0 ${ok ? "text-success" : ""}`} aria-hidden="true" />
                         {situacao} · ideal {fmtBRL(p.ideal)}
                       </p>
-                      {ehPoupanca && m.aportesProjetos > 0 && (
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {fmtBRL(m.aportesProjetos)} em aportes nos projetos
-                          {m.sobraLivre > 0 ? ` + ${fmtBRL(m.sobraLivre)} de sobra livre` : ""}.
-                        </p>
-                      )}
+                      {ehPoupanca &&
+                        m.aportesProjetos > 0 &&
+                        (m.sobraLivre >= 0 ? (
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {fmtBRL(m.aportesProjetos)} em aportes nos projetos
+                            {m.sobraLivre > 0 ? ` + ${fmtBRL(m.sobraLivre)} de sobra livre` : ""}.
+                          </p>
+                        ) : (
+                          <p className="mt-0.5 text-xs font-medium text-warning">
+                            {m.sobra > 0
+                              ? `Os aportes declarados nos projetos (${fmtBRL(m.aportesProjetos)}) passam a sobra em ${fmtBRL(-m.sobraLivre)}.`
+                              : `Não há sobra para os aportes declarados nos projetos (${fmtBRL(m.aportesProjetos)}).`}
+                          </p>
+                        ))}
                     </li>
                   );
                 })}
@@ -288,12 +300,25 @@ export default function PlanoAtual() {
                 </span>
               </div>
               <ul className="divide-y divide-border/60">
-                {m.aportesProjetos > 0 && <LinhaCategoria nome="Aportes em projetos" valor={m.aportesProjetos} base={m.renda} cor="var(--serie-1)" />}
-                <LinhaCategoria nome={m.sobraLivre >= 0 ? "Sobra livre" : "Aportes acima da sobra"} valor={Math.abs(m.sobraLivre)} base={m.renda} cor="rgb(var(--success))" />
+                {m.aportesProjetos > 0 && (
+                  <LinhaCategoria nome="Aportes em projetos" valor={Math.min(m.aportesProjetos, m.sobra)} base={m.renda} cor="var(--serie-1)" />
+                )}
+                {m.sobraLivre >= 0 && <LinhaCategoria nome="Sobra livre" valor={m.sobraLivre} base={m.renda} cor="rgb(var(--success))" />}
               </ul>
+              {m.sobraLivre < 0 && (
+                <p className="mt-1.5 text-xs font-medium text-warning">Aportes declarados acima da sobra: {fmtBRL(-m.sobraLivre)} por mês.</p>
+              )}
             </div>
           ) : (
-            <LinhaTotal nome="Déficit" valor={m.deficit} base={m.renda} perigo />
+            <>
+              {m.aportesProjetos > 0 && (
+                <ul className="divide-y divide-border/60">
+                  <LinhaCategoria nome="Aportes em projetos (sem sobra para cobrir)" valor={m.aportesProjetos} base={m.renda} cor="rgb(var(--warning))" />
+                </ul>
+              )}
+              {/* O mesmo déficit do topo e das despesas atuais: despesas + aportes − renda. */}
+              <LinhaTotal nome="Déficit" valor={-da.sobraLivre} base={m.renda} perigo />
+            </>
           )}
         </SubBloco>
       </div>

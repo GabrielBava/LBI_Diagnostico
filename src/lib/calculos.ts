@@ -395,6 +395,21 @@ export function fluxo(c: Cliente) {
 //   para poupança e investimentos (a sobra). A parte de cada bloco de
 //   despesa está em src/config/despesas.ts (campo `modelo`).
 // ---------------------------------------------------------------------
+/**
+ * Quanto o cliente diz que consegue poupar por mês (12 · Futuro). Valores negativos
+ * são ignorados; com o mínimo acima do máximo, os dois são trocados (`invertida`).
+ */
+export function poupancaDeclarada(c: Cliente) {
+  const ler = (v: Valor) => {
+    const x = nOpt(v);
+    return x !== undefined && x >= 0 ? x : undefined;
+  };
+  const a = ler(c.futuro.poupancaMinima);
+  const b = ler(c.futuro.poupancaMaxima);
+  const invertida = a !== undefined && b !== undefined && a > b;
+  return { minima: invertida ? b : a, maxima: invertida ? a : b, invertida };
+}
+
 export function modelo503020(c: Cliente) {
   const f = fluxo(c);
   const d = despesas(c);
@@ -437,10 +452,7 @@ export function modelo503020(c: Cliente) {
     aportesProjetos: f.aportesProjetos,
     sobraLivre: f.sobraLivre,
     /** Quanto o cliente diz que consegue poupar por mês (12 · Futuro), quando informado. */
-    poupancaDeclarada: {
-      minima: nOpt(c.futuro.poupancaMinima),
-      maxima: nOpt(c.futuro.poupancaMaxima),
-    },
+    poupancaDeclarada: poupancaDeclarada(c),
   };
 }
 
@@ -507,12 +519,13 @@ export function objetivo(c: Cliente, o: Item) {
 }
 
 /**
- * Probabilidade sugerida: distribui a sobra mensal entre os objetivos na ordem
- * Essencial → Desejo → Sonho e, dentro de cada um, por prioridade. A sugestão
- * é a parte do aporte necessário que a sobra consegue cobrir (limitada a 95%).
+ * Probabilidade sugerida: distribui a sobra livre do mês (depois dos aportes em
+ * projetos) entre os objetivos na ordem Essencial → Desejo → Sonho e, dentro de cada
+ * um, por prioridade. A sugestão é a parte do aporte necessário que a sobra livre
+ * consegue cobrir (limitada a 95%).
  */
 export function objetivos(c: Cliente) {
-  const sobra = Math.max(0, fluxo(c).sobra);
+  const sobra = Math.max(0, fluxo(c).sobraLivre);
   const ordenados = [...c.objetivos].sort(
     (a, b) =>
       (ORDEM_TIPO[s(a.tipo)] ?? 9) - (ORDEM_TIPO[s(b.tipo)] ?? 9) ||

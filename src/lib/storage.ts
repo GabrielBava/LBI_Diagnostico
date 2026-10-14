@@ -11,7 +11,7 @@ import type { Cliente } from "@/types";
 import { CAMPOS_FUTURO, CAMPOS_PARAMETROS, CAMPOS_PREMISSAS_PROTECAO, CAMPOS_PROTECAO, JORNADA_PADRAO, padroes } from "@/config/campos";
 import { CONFIG_PADRAO, type ConfigConsultor } from "@/config/defaults";
 import { uid } from "./format";
-import { atualizarV4, atualizarV6, atualizarV8, migrarV1 } from "./migracao";
+import { atualizarV4, atualizarV6, atualizarV8, atualizarV9, migrarV1 } from "./migracao";
 
 const CHAVE_CLIENTES = "life-diagnostico-v2:clientes";
 const CHAVE_CLIENTES_V1 = "life-diagnostico:clientes";
@@ -43,7 +43,7 @@ export function novoCliente(nome = ""): Cliente {
 
 export function normalizar(original: Partial<Cliente> & { id: string }): Cliente {
   const agora = new Date().toISOString();
-  const c = atualizarV8(atualizarV6(atualizarV4(original)));
+  const c = atualizarV9(atualizarV8(atualizarV6(atualizarV4(original))));
   return {
     id: c.id,
     versaoDados: c.versaoDados,

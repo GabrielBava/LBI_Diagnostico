@@ -86,7 +86,7 @@ export default function Renda() {
         <Formulario campos={CAMPOS_RENDA_IR} dados={cliente.renda} cliente={cliente} colunas={4} onChange={(key, v) => setCampo("renda", key, v)} />
       </SubBloco>
 
-      <SubBloco titulo="Outras rendas · bônus, PLR, aluguel ou de outra pessoa">
+      <SubBloco titulo="Outras rendas · PLR, aluguel ou de outra pessoa">
         <ListaItens
           campos={CAMPOS_OUTRA_RENDA}
           itens={cliente.outrasRendas}

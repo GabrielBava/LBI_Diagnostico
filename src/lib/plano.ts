@@ -141,6 +141,16 @@ export function planoAtual(c: Cliente): CardPlano[] {
       `O modelo 50-30-20 pede ${fmtBRL(f.renda * 0.2)}/mês para o futuro. Maiores gastos: ${maioresGastos(c)}.`,
       "Objetivos adiados, aposentadoria dependente do INSS e pouca margem para imprevistos.",
     );
+  if (f.renda > 0 && f.sobra >= 0 && f.sobraLivre < 0)
+    add(
+      "aportes-projetos",
+      "Fluxo de caixa",
+      "Aportes em projetos acima da sobra",
+      "Média",
+      `Os aportes declarados nos projetos (${fmtBRL(f.aportesProjetos)}/mês) passam a sobra de ${fmtBRL(f.sobra)}/mês em ${fmtBRL(-f.sobraLivre)}.`,
+      "O que o cliente diz guardar para os projetos não cabe no orçamento informado: renda, despesas ou aportes precisam ser revistos.",
+      "Para manter os aportes, o cliente usa a reserva ou crédito, ou os projetos atrasam.",
+    );
   if (orc.renda > 0) {
     const nec = orc.partes.find((x) => x.id === "Necessidades")!;
     const des = orc.partes.find((x) => x.id === "Desejos")!;
@@ -276,9 +286,11 @@ export function planoAtual(c: Cliente): CardPlano[] {
       "nao-investe",
       "Investimentos",
       "Sem investimentos",
-      f.sobra > 0 ? "Média" : "Baixa",
+      f.sobraLivre > 0 ? "Média" : "Baixa",
       "Ainda não tem investimentos.",
-      f.sobra > 0 ? `Sobram ${fmtBRL(f.sobra)}/mês que não estão sendo investidos.` : "Hoje não sobra dinheiro no mês para investir.",
+      f.sobraLivre > 0
+        ? `Sobram ${fmtBRL(f.sobraLivre)}/mês livres${f.aportesProjetos > 0 ? ", depois dos aportes em projetos," : ""} que não estão sendo investidos.`
+        : "Hoje não sobra dinheiro livre no mês para investir.",
       "O dinheiro parado perde para a inflação e os objetivos ficam sem fonte de recursos.",
     );
 
@@ -325,13 +337,13 @@ export function planoAtual(c: Cliente): CardPlano[] {
 
   // Objetivos
   const comPrazo = c.objetivos.filter((o) => n(o.prazoMeses) > 0 && n(o.valorFuturo) > 0);
-  if (c.objetivos.length && ob.aporteTotal > Math.max(0, f.sobra))
+  if (c.objetivos.length && ob.aporteTotal > Math.max(0, f.sobraLivre))
     add(
       "objetivos-sobra",
       "Objetivos",
       "Objetivos maiores que a sobra",
       "Média",
-      `Os objetivos pedem ${fmtBRL(ob.aporteTotal)}/mês${f.sobra > 0 ? ` e sobram ${fmtBRL(f.sobra)}/mês` : " e hoje não sobra dinheiro no mês"}.`,
+      `Os objetivos pedem ${fmtBRL(ob.aporteTotal)}/mês${f.sobraLivre > 0 ? ` e sobram ${fmtBRL(f.sobraLivre)}/mês livres` : " e hoje não sobra dinheiro livre no mês"}${f.aportesProjetos > 0 ? ` (já descontados ${fmtBRL(f.aportesProjetos)} em aportes nos projetos)` : ""}.`,
       `${plural(comPrazo.length, "objetivo", "objetivos")} com prazo, somando ${fmtBRL(comPrazo.reduce((t, o) => t + n(o.valorFuturo), 0))}.`,
       "Sem priorizar, os objetivos competem entre si e nenhum é cumprido no prazo.",
     );
@@ -803,7 +815,7 @@ export function bussola(c: Cliente) {
         acoes.push({ id: "bu-idade", texto: "Rever a idade de aposentadoria ou a renda desejada", area: "Futuro", prioridade: "Alta", prazo: "Curto" });
     }
     if (c.objetivos.length && ob.aporteTotal > 0) {
-      comps.push({ valor: Math.max(0, f.sobra) / ob.aporteTotal, peso: 20 });
+      comps.push({ valor: Math.max(0, f.sobraLivre) / ob.aporteTotal, peso: 20 });
       ind.push({ nome: "Objetivos cabem na sobra", valor: ob.cabeNaSobra ? "Sim" : "Não", ok: ob.cabeNaSobra });
       if (!ob.cabeNaSobra)
         acoes.push({ id: "sg-objetivos", texto: `Priorizar os objetivos: pedem ${fmtBRL(ob.aporteTotal)}/mês`, area: "Objetivos", prioridade: "Média", prazo: "Curto" });

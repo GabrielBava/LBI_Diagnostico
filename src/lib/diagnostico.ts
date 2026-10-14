@@ -120,7 +120,8 @@ export function pilares(c: Cliente): Pilar[] {
   else if (ob.aporteTotal <= 0 && ob.semPrazo > 0)
     out.push({ id: "objetivos", nome: "Objetivos", nota: 0, status: "sem-dados", resumo: "Informe o prazo dos objetivos." });
   else {
-    const sobra = Math.max(0, f.sobra);
+    // Sobra livre: o que já vai para os projetos não está disponível para os objetivos.
+    const sobra = Math.max(0, f.sobraLivre);
     const nota = ob.aporteTotal <= 0 ? 100 : limitar((sobra / ob.aporteTotal) * 100);
     out.push({
       id: "objetivos",
@@ -195,8 +196,8 @@ export function sugestoes(c: Cliente): Sugestao[] {
     out.push({ id: "sg-comprometimento", acao: `Reduzir parcelas para menos de ${fmtPct(limite)} da renda`, area: "Dívidas", prioridade: "Alta", prazo: "Médio" });
   if (r.falta > 0)
     out.push({ id: "sg-reserva", acao: `Completar a reserva de emergência (faltam ${fmtBRL(r.falta)})`, area: "Investimentos", prioridade: r.meses < 3 ? "Alta" : "Média", prazo: "Curto" });
-  if (ob.aporteTotal > Math.max(0, f.sobra) && c.objetivos.length)
-    out.push({ id: "sg-objetivos", acao: "Repriorizar objetivos: o aporte necessário supera a sobra mensal", area: "Objetivos", prioridade: "Média", prazo: "Curto" });
+  if (!ob.cabeNaSobra && c.objetivos.length)
+    out.push({ id: "sg-objetivos", acao: "Repriorizar objetivos: o aporte necessário supera a sobra livre do mês", area: "Objetivos", prioridade: "Média", prazo: "Curto" });
 
   // Gasto único programado (12 · Futuro) vira reserva com prazo.
   mudancasVida(c)

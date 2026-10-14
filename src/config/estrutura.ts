@@ -189,7 +189,7 @@ export const SECOES: SecaoDef[] = [
     etapa: "protecao",
     numero: "11",
     titulo: "Proteção",
-    subtitulo: "Reserva, seguros, saúde e previdência",
+    subtitulo: "Reserva, seguros e previdência",
     icone: Shield,
     coleta: true,
     concluida: (c) => !!s(c.protecao.temReserva) && !!s(c.protecao.temSeguroVida),

@@ -375,18 +375,19 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       valor: x.valor,
     }),
   );
-  // Sobra folgada e sem consórcio: carta para construir patrimônio (imóvel para renda).
-  // Carta estimada: parcela × 200 meses ÷ 1,2 (taxa de administração de cerca de 20%).
-  const parcelaPatrimonio = Math.round(f.sobra * 0.3);
+  // Sobra livre folgada (depois dos aportes em projetos) e sem consórcio: carta para construir
+  // patrimônio (imóvel para renda). Carta estimada: parcela × 200 meses ÷ 1,2 (taxa de administração de cerca de 20%).
+  const livre = Math.max(0, f.sobraLivre);
+  const parcelaPatrimonio = Math.round(livre * 0.3);
   const cartaPatrimonio = Math.round((parcelaPatrimonio * 200) / 1.2 / 10_000) * 10_000;
-  if (f.sobra >= 3000 && c.consorcios.length === 0 && f.comprometimento < 0.2)
+  if (livre >= 3000 && c.consorcios.length === 0 && f.comprometimento < 0.2)
     add({
       id: "op-cons-patrimonio",
       area: "Patrimonial",
       produto: "Consórcio",
       titulo: "Consórcio imobiliário para construir patrimônio",
-      oferta: `Carta de imóvel de cerca de ${fmtBRL(cartaPatrimonio)}, com parcela de até ${fmtBRL(parcelaPatrimonio)}/mês (30% da sobra), para um imóvel de renda.`,
-      porque: `Sobram ${fmtBRL(f.sobra)}/mês ${f.parcelas > 0 ? `e as parcelas comprometem só ${fmtPct(f.comprometimento)} da renda` : "e não há parcelas comprometendo a renda"}.`,
+      oferta: `Carta de imóvel de cerca de ${fmtBRL(cartaPatrimonio)}, com parcela de até ${fmtBRL(parcelaPatrimonio)}/mês (30% da sobra livre), para um imóvel de renda.`,
+      porque: `Sobram ${fmtBRL(livre)}/mês livres ${f.parcelas > 0 ? `e as parcelas comprometem só ${fmtPct(f.comprometimento)} da renda` : "e não há parcelas comprometendo a renda"}.`,
       objetivo: "Aumentar o patrimônio e criar renda de aluguel no longo prazo.",
       potencial: potencial("Consórcio", -8),
       prioridade: "Baixa",

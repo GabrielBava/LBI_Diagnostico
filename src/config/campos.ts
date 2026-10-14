@@ -117,7 +117,7 @@ export const OPCOES = {
     "Aluguel",
     "Dividendos / Juros",
     "Pró-labore / Empresa",
-    "Bônus / PLR",
+    "PLR",
     "Pensão / Aposentadoria",
     "Outros",
   ],
@@ -348,7 +348,7 @@ export const CAMPOS_RENDA_EXTRA: CampoDef[] = [
 /** 13º e bônus do cliente: valores do ano (líquidos). No fluxo entram como média mensal (÷ 12). */
 export const CAMPOS_RENDA_ANUAL: CampoDef[] = [
   { key: "decimoTerceiro", label: "13º salário (por ano)", tipo: "moeda", largura: 2, ajuda: "Valor líquido recebido no ano." },
-  { key: "bonusAnual", label: "Bônus anual", tipo: "moeda", largura: 2, ajuda: "Valor líquido recebido no ano." },
+  { key: "bonusAnual", label: "Bônus anual", tipo: "moeda", largura: 2, ajuda: "Valor líquido recebido no ano. Não repita em Outras rendas." },
 ];
 
 /** Renda do cônjuge (só para casado(a) ou união estável). */

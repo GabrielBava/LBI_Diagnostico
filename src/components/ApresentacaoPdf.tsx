@@ -14,8 +14,21 @@ interface Link {
   w: number;
   h: number;
 }
+/** Destino legível do link (ex.: "navigator.dashycrm.com.br"). */
+const destino = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+};
 const PAGINAS = (dados.paginas as { arquivo: string; largura: number; altura: number; links: Link[] }[])
-  .map((p) => ({ ...p, src: imagens[`/src/assets/v1/${p.arquivo}`] }))
+  .map((p) => ({
+    ...p,
+    src: imagens[`/src/assets/v1/${p.arquivo}`],
+    // O PDF repete o mesmo link em várias áreas: só a primeira de cada destino entra no Tab e no leitor de tela.
+    links: p.links.map((l, i) => ({ ...l, repetido: p.links.findIndex((x) => x.url === l.url) < i })),
+  }))
   .filter((p) => !!p.src);
 
 const botaoSeta =
@@ -28,6 +41,12 @@ export function ApresentacaoPdf() {
   const miniaturas = useRef<HTMLDivElement>(null);
   const total = PAGINAS.length;
   const ir = useCallback((i: number) => setAtual(Math.max(0, Math.min(total - 1, i))), [total]);
+  /** Setas da imagem: na primeira/última página o botão some (disabled) e o foco volta para a região. */
+  const passar = (passo: number) => {
+    const novo = Math.max(0, Math.min(total - 1, atual + passo));
+    ir(novo);
+    if (novo === 0 || novo === total - 1) raiz.current?.focus({ preventScroll: true });
+  };
 
   // Tela cheia: a do navegador quando existe; senão (ex.: iPhone), a página inteira com a apresentação por cima.
   const alternarTelaCheia = async () => {
@@ -68,9 +87,15 @@ export function ApresentacaoPdf() {
     };
   }, [telaCheia, atual, ir, total]);
 
-  // A miniatura da página atual fica visível na faixa.
+  // A miniatura da página atual fica visível na faixa. Rola só a faixa, na horizontal:
+  // scrollIntoView rolaria a página inteira até o V1 ao abrir o cliente.
   useEffect(() => {
-    miniaturas.current?.querySelector<HTMLElement>(`[data-pagina='${atual}']`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const faixa = miniaturas.current;
+    const el = faixa?.querySelector<HTMLElement>(`[data-pagina='${atual}']`);
+    if (!faixa || !el) return;
+    const a = el.getBoundingClientRect();
+    const f = faixa.getBoundingClientRect();
+    if (a.left < f.left || a.right > f.right) faixa.scrollBy({ left: a.left - f.left - (f.width - a.width) / 2 });
   }, [atual]);
 
   if (!total) return <p className="text-sm text-muted-foreground">Nenhuma página da apresentação encontrada.</p>;
@@ -96,14 +121,14 @@ export function ApresentacaoPdf() {
           : "space-y-3 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
       }
     >
-      <div className={telaCheia ? "relative flex min-h-0 flex-1 items-center justify-center" : "relative overflow-hidden rounded-xl border border-border bg-black"}>
-        {/* Na tela cheia a página cabe inteira (largura limitada pela altura livre), e os links seguem a imagem. */}
+      <div
+        className={telaCheia ? "relative flex min-h-0 flex-1 items-center justify-center" : "relative overflow-hidden rounded-xl border border-border bg-black"}
+        style={telaCheia ? { containerType: "size" } : undefined}
+      >
+        {/* Na tela cheia a página cabe inteira no espaço livre (container query, ver .v1-pagina-cheia), e os links seguem a imagem. */}
         <div
-          className="relative mx-auto"
-          style={{
-            aspectRatio: `${pagina.largura} / ${pagina.altura}`,
-            width: telaCheia ? `min(100%, calc((100vh - 72px) * ${pagina.largura / pagina.altura}))` : "100%",
-          }}
+          className={`relative mx-auto ${telaCheia ? "v1-pagina-cheia" : "w-full"}`}
+          style={{ aspectRatio: `${pagina.largura} / ${pagina.altura}`, ["--razao" as string]: pagina.largura / pagina.altura }}
         >
           <img src={pagina.src} alt={`Página ${atual + 1} de ${total} da apresentação institucional`} className="h-full w-full select-none object-contain" draggable={false} />
           {pagina.links.map((l, i) => (
@@ -112,23 +137,25 @@ export function ApresentacaoPdf() {
               href={l.url}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Abrir link da apresentação"
-              title="Abrir link"
+              aria-label={l.repetido ? undefined : `Abrir ${destino(l.url)} (nova aba)`}
+              aria-hidden={l.repetido || undefined}
+              tabIndex={l.repetido ? -1 : undefined}
+              title={`Abrir ${destino(l.url)}`}
               className="absolute rounded-sm hover:bg-white/10"
               style={{ left: `${l.x}%`, top: `${l.y}%`, width: `${l.w}%`, height: `${l.h}%` }}
             />
           ))}
         </div>
-        <button type="button" onClick={() => ir(atual - 1)} disabled={atual === 0} aria-label="Página anterior" className={`${botaoSeta} left-3`}>
+        <button type="button" onClick={() => passar(-1)} disabled={atual === 0} aria-label="Página anterior" className={`${botaoSeta} left-3`}>
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <button type="button" onClick={() => ir(atual + 1)} disabled={atual === total - 1} aria-label="Próxima página" className={`${botaoSeta} right-3`}>
+        <button type="button" onClick={() => passar(1)} disabled={atual === total - 1} aria-label="Próxima página" className={`${botaoSeta} right-3`}>
           <ChevronRight className="h-5 w-5" />
         </button>
       </div>
 
       <div className={`flex items-center gap-3 ${telaCheia ? "px-4 py-3 text-white" : ""}`}>
-        <span className="shrink-0 text-xs tabular-nums text-muted-foreground" aria-live="polite">
+        <span className={`shrink-0 text-xs tabular-nums ${telaCheia ? "text-white/75" : "text-muted-foreground"}`} aria-live="polite">
           {atual + 1} / {total}
         </span>
         <div ref={miniaturas} className={`flex min-w-0 flex-1 gap-2 overflow-x-auto py-1 ${telaCheia ? "hidden sm:flex" : ""}`}>

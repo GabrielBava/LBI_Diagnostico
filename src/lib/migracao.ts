@@ -102,7 +102,7 @@ export function migrarV1(v1: V1): Partial<Cliente> & { id: string } {
       .map((r) => ({
         id: r.id,
         descricao: r.fonte,
-        tipo: String(r.tipo ?? "").startsWith("Passiva") ? "Aluguel" : r.frequencia === "Anual" ? "Bônus / PLR" : "Outros",
+        tipo: String(r.tipo ?? "").startsWith("Passiva") ? "Aluguel" : r.frequencia === "Anual" ? "PLR" : "Outros",
         pessoa: r.titular === "Cônjuge" ? "Cônjuge" : r.titular === "Família" ? "Outra pessoa" : "Cliente",
         valor: r.valor,
         frequencia: r.frequencia,
@@ -339,5 +339,24 @@ export function atualizarV8(c: Partial<Cliente> & { id: string }): Partial<Clien
       ...(pontosFortes ?? []).filter(texto).map((p) => ({ id: p.id || uid(), titulo: "Ponto forte", descricao: texto(p) })),
     ],
     plano: (c.plano ?? []).map((a) => ({ ...a, area: area(a.area) as Item["area"] })),
+  };
+}
+
+/**
+ * Versão 9: as perguntas de motivação e satisfação saíram do roteiro do V1 e abrem
+ * o roteiro de Objetivos (as marcações antigas andam duas posições), e o tipo de
+ * outra renda "Bônus / PLR" vira "PLR" (o bônus anual ganhou campo próprio na Renda).
+ * Roda uma vez por cliente (marcador versaoDados).
+ */
+export function atualizarV9(c: Partial<Cliente> & { id: string }): Partial<Cliente> & { id: string } {
+  if ((c.versaoDados ?? 0) >= 9) return c;
+  const { institucional = [], ...roteiroFeito } = c.roteiroFeito ?? {};
+  const objetivos = [...institucional.filter((i) => i === 0 || i === 1), ...(roteiroFeito.objetivos ?? []).map((i) => i + 2)];
+  if (objetivos.length) roteiroFeito.objetivos = objetivos;
+  return {
+    ...c,
+    roteiroFeito,
+    outrasRendas: c.outrasRendas?.map((r) => (r.tipo === "Bônus / PLR" ? { ...r, tipo: "PLR" } : r)),
+    versaoDados: 9,
   };
 }

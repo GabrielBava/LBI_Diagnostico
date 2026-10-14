@@ -93,7 +93,7 @@ export default function Objetivos() {
                         <span className="no-print">
                           Aporte necessário: <strong className="text-foreground">{fmtBRL(ob.aportes[o.id] ?? 0)}/mês</strong>
                           {` por ${n(o.prazoMeses)} meses`}
-                          {f.renda > 0 && ` · a sobra atual cobre ${ob.sugestao[o.id] ?? 0}% deste aporte`}
+                          {f.renda > 0 && ` · a sobra livre cobre ${ob.sugestao[o.id] ?? 0}% deste aporte`}
                         </span>
                       )
               }

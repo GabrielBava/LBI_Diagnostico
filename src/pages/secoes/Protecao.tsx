@@ -1,4 +1,4 @@
-// 11 · Proteção: reserva de emergência, seguros, saúde e previdência (PGBL/VGBL).
+// 11 · Proteção: reserva de emergência, seguros (com o campo fumante) e previdência (PGBL/VGBL).
 // O cálculo do que contratar (educacional, padrão de vida e sucessão) fica em 6.3 · Plano potencial.
 import { CircleCheck, TriangleAlert } from "lucide-react";
 import { CAMPOS_PROTECAO } from "@/config/campos";

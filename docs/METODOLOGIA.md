@@ -57,11 +57,11 @@ O progresso de **coleta** (menu lateral) considera as seções 1 e 3 a 13. Seç�
 - **Objetivos:** categoria escolhida por ícones. Na coleta não aparecem totais, aportes nem "cabe na sobra"; o aporte de cada objetivo aparece só na versão consultor. Cada cartão tem um botão à direita que oculta os campos e deixa só o resumo (valor, prazo e prioridade).
 - **Sucessão:** nada aparece sem filhos ou dependentes. Para adicionar, escolhe-se primeiro a categoria. Filhos, enteados e netos têm idade e escolaridade; Pai/Mãe e "Outro dependente" mostram auxílio e outros custos. Mensalidades, auxílios e custos entram sozinhos nas despesas fixas (bloco Dependentes). Sem totalizadores no topo.
 - **Despesas:** blocos (Casa, Mercado, Transporte…) com subcategorias (Aluguel, Condomínio, Luz…). Cada bloco aceita itens extras. Transporte: combustível, estacionamento/garagem, aplicativos (Uber e 99) e transporte público; manutenção e IPVA vêm dos veículos (Patrimônio). A anuidade dos cartões (Renda) entra em "Outras despesas fixas". As parcelas não são digitadas aqui: vêm da seção 8 e aparecem só no total.
-- **Renda:** bruta e líquida do cliente; renda extra; **13º salário e bônus anual** (valores líquidos do ano); do cônjuge só para casado(a) ou união estável. Se só uma for informada, a outra é estimada. Modelo da declaração do IR (simplificada, completa ou não declara). Rendas extras ou de outra pessoa ficam em lista própria. Cartões: qual, limite, gasto mensal, milhas e anuidade (valor por ano).
+- **Renda:** bruta e líquida do cliente; renda extra; **13º salário e bônus anual** (valores líquidos do ano); do cônjuge só para casado(a) ou união estável. Se só uma for informada, a outra é estimada. Modelo da declaração do IR (simplificada, completa ou não declara). Rendas extras ou de outra pessoa ficam em lista própria ("Outras rendas · PLR, aluguel ou de outra pessoa"); o bônus anual não se repete ali (o antigo tipo "Bônus / PLR" virou "PLR"). Cartões: qual, limite, gasto mensal, milhas e anuidade (valor por ano).
 - **Patrimônio:** imóveis e móveis com situação **Quitado / Financiado** e flag de seguro. Bem financiado abre instituição, parcela, prazo e saldo (opcional) e vira financiamento automaticamente na seção 8. Veículos: manutenção e IPVA por ano; "pensa em ampliação/troca" abre o modelo de desejo. **Futuras aquisições:** com "Sim", lista de segmento (imóvel/veículo), categoria, tipo, valor desejado e estratégia (à vista, financiamento, consórcio).
 - **Financiamento e crédito (8):** financiamentos (inclusive os do patrimônio), consórcios (parcela, prazo, carta) e dívidas com categoria (cartão, cheque especial, carnê, renegociação, empréstimo pessoal, consignado…). A soma das parcelas entra no total de despesas.
 - **Proteção:** reserva de emergência (valor e meses na visão do cliente), seguros, invalidez/DIT, **é fumante?** (substituiu o antigo "plano de saúde"; entra nas ofertas de seguro como "Cotação para fumante") e previdência (PGBL, VGBL ou os dois).
-- **Futuro (12):** idade de aposentadoria, investimento mensal, **valor mínimo que pode poupar e valor máximo que consegue poupar** por mês, renda desejada, outras fontes e estilo de vida (cartões). **Mudanças de vida programadas:** com "Sim", lista com a mudança, o impacto (aumenta/reduz despesas, aumenta/reduz renda ou gasto único), daqui a quantos meses e o valor.
+- **Futuro (12):** idade de aposentadoria, investimento mensal, **valor mínimo que pode poupar e valor máximo que consegue poupar** por mês (negativos são ignorados; com o mínimo acima do máximo aparece um aviso e o diagnóstico usa o menor como mínimo), renda desejada, outras fontes e estilo de vida (cartões). **Mudanças de vida programadas:** com "Sim", lista com a mudança, o impacto (aumenta/reduz despesas, aumenta/reduz renda ou gasto único), daqui a quantos meses e o valor.
 - **Investimentos:** conhecimento, perfil, temas já estudados (múltipla escolha); valor (sem a reserva), assessor e instituição só aparecem com "Tem investimentos? Sim".
 
 ---
@@ -90,7 +90,8 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 - **Modelo 50-30-20 (renda líquida)** e o **resumo da análise**:
   - **Essencial (50)** — até 50% da renda: casa, alimentação, mercado, transporte, saúde, seguros, educação, dependentes, outras fixas e parcelas.
   - **Estilo e Desejos (30)** — até 30%: cuidados pessoais, profissionais, restaurantes, lazer, roupas, assinaturas, esportes, viagens e outros.
-  - **Projeto e Investimentos (20)** — pelo menos 20%: aportes em projetos + sobra livre (= renda − despesas).
+  - **Projeto e Investimentos (20)** — pelo menos 20%: renda − despesas = aportes em projetos + sobra livre.
+- Aportes declarados acima da sobra: o topo, as despesas atuais, o gráfico e a lista de categorias mostram o mesmo déficit (despesas + aportes − renda), com o alerta em amarelo; no 6.2 aparece o cartão "Aportes em projetos acima da sobra".
 - Com a poupança declarada (12 · Futuro), o resumo compara o mínimo e o máximo que o cliente diz conseguir poupar com o ideal de 20%.
 - A parte de cada bloco fica no campo `modelo` de `src/config/despesas.ts`; os nomes, em `MODELO_50_30_20`.
 
@@ -108,7 +109,7 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 ### Objetivos
 - `Aporte mensal = valor futuro × i ÷ ((1 + i)^meses − 1)`, com `i` = retorno nominal mensal.
 - Objetivo sem prazo não tem aporte calculado e não soma no total (o pilar pede o prazo).
-- **Probabilidade sugerida** ("sug." ao lado da régua): a sobra mensal é distribuída entre os objetivos na ordem Essencial → Desejo → Sonho e, dentro de cada grupo, por prioridade. A sugestão é a parte do aporte que a sobra cobre, limitada a 95%. O consultor decide o valor final.
+- **Probabilidade sugerida** ("sug." ao lado da régua): a sobra livre do mês (depois dos aportes em projetos) é distribuída entre os objetivos na ordem Essencial → Desejo → Sonho e, dentro de cada grupo, por prioridade. A sugestão é a parte do aporte que a sobra livre cobre, limitada a 95%. O consultor decide o valor final.
 
 ### Proteção — o que contratar (6.3 · Plano potencial)
 ```
@@ -134,7 +135,7 @@ A contratar        = max(0, capital necessário − seguro de vida individual at
 Renda desejada  = informada (ou custo de vida × fator do estilo de vida: mais simples 0,7 · igual a hoje 1,0 · mais confortável 1,3 · sofisticado 1,6)
 Outras rendas   = informada (ou aluguéis + pensão/aposentadoria atuais; juros e dividendos ficam de fora porque o capital que os gera já está na projeção)
 Patrimônio necessário = (renda desejada − outras rendas) × 12 ÷ 4%    (25×)
-Projeção = investimentos + previdência hoje (sem a reserva), investindo todo mês o "investimento mensal" (ou, em branco, a sobra), a retorno real
+Projeção = investimentos + previdência hoje (sem a reserva), investindo todo mês o "investimento mensal" (ou, em branco, a sobra livre), a retorno real
 Independência = projeção ÷ patrimônio necessário
 Aporte necessário = aporte mensal que leva o patrimônio de hoje ao necessário até a idade de aposentadoria
 ```
@@ -160,7 +161,7 @@ Nota de 0 a 100 por pilar. Status: Saudável ≥ 75 · Atenção ≥ 45 · Crít
 | Dívidas | 100 − (comprometimento ÷ limite) × 60 |
 | Proteção | capital atual ÷ capital necessário |
 | Independência financeira | projeção ÷ patrimônio necessário |
-| Objetivos | sobra ÷ aporte necessário dos objetivos |
+| Objetivos | sobra livre ÷ aporte necessário dos objetivos |
 
 **Nota LIFE** = média dos pilares com dados (sem nenhum pilar com dados, aparece “—”). O pilar Dívidas pede a renda antes de dar nota.
 - Idade de aposentadoria já atingida: não há aporte mensal; o diagnóstico mostra quanto falta hoje para a meta.
@@ -185,9 +186,9 @@ Cada plano é uma lista de cartões com três colunas:
 
 | Plano | Colunas | Origem dos cartões automáticos |
 |---|---|---|
-| 6.2 Plano atual | Diagnóstico · Motivo · Risco da inação | `planoAtual()`: déficit ou poupança < 20%, necessidades > 50%, desejos > 30%, anuidade, dívidas caras, parcelas acima do limite, família descoberta, renda sem invalidez/DIT, sem plano de saúde, bens sem seguro, reserva incompleta, sem investimentos, PGBL no simplificado, independência abaixo da meta, objetivos maiores que a sobra ou com chance < 50%, mudanças de vida que apertam o orçamento e custo do inventário. Ordem: gravidade Alta → Média → Baixa. |
+| 6.2 Plano atual | Diagnóstico · Motivo · Risco da inação | `planoAtual()`: déficit ou poupança < 20%, aportes em projetos acima da sobra, essencial > 50%, estilo e desejos > 30%, anuidade, dívidas caras, parcelas acima do limite, família descoberta, renda sem invalidez/DIT, bens sem seguro, reserva incompleta, sem investimentos (com a sobra livre), PGBL no simplificado, independência abaixo da meta, objetivos maiores que a sobra livre ou com chance < 50%, mudanças de vida que apertam o orçamento e custo do inventário. Ordem: gravidade Alta → Média → Baixa. |
 | 6.3 Plano potencial | Oportunidade identificada · Como podemos atuar juntos · Objetivo desejado | As oportunidades da matriz (6.6), na ordem de potencial. Mostra 6 e "Ver mais". Abaixo, o cálculo de **Proteção · o que contratar**. |
-| 6.4 Plano otimização | Descrição · Motivo da escolha · Como melhorar | `planoOtimizacao()`: boa poupança, orçamento no 50-30-20, milhas, sem dívidas ou parcelas sob controle, imóveis quitados, patrimônio sólido, seguro de vida, invalidez, saúde, bens segurados, reserva completa, investimentos, previdência (PGBL com declaração completa), independência no caminho e mudanças que aliviam o orçamento. |
+| 6.4 Plano otimização | Descrição · Motivo da escolha · Como melhorar | `planoOtimizacao()`: boa poupança, orçamento no 50-30-20, milhas, sem dívidas ou parcelas sob controle, imóveis quitados, patrimônio sólido, seguro de vida, invalidez, bens segurados, reserva completa, investimentos, previdência (PGBL com declaração completa), independência no caminho e mudanças que aliviam o orçamento. |
 
 Na versão consultor, cada cartão tem:
 - **Lápis:** personaliza o texto (o cartão automático vira um cartão editável com título, área, gravidade/prioridade e as três colunas; a seta circular volta ao texto automático).
@@ -216,8 +217,8 @@ Exemplos de ajuste: seguro de vida sobe com o tamanho do gap em anos de renda; c
 **Nota do radar por área** = 80% da maior oportunidade da área + 4 pontos por oportunidade extra (máximo 100).
 
 Oportunidades por área:
-- **Proteção (seguros):** vida (gap), invalidez/doenças graves/DIT (não se aplica a aposentados), vida do cônjuge, saúde, auto/náutico, residencial, empresarial, seguro de sócio, vida em grupo (empresa com funcionários), saúde PME, RC profissional (autônomo/liberal) e viagem anual.
-- **Patrimonial (consórcios):** consórcio para futuras aquisições (no lugar do financiamento), para objetivos de casa e veículo, para a troca de bens (modelo de desejo), para a próxima troca de veículo financiado, para bens da empresa, de serviços (reformas e gastos únicos ≥ R$ 15 mil) e imobiliário para construir patrimônio (sobra ≥ R$ 3 mil); portabilidade/amortização de financiamento.
+- **Proteção (seguros):** vida (gap), invalidez/doenças graves/DIT (não se aplica a aposentados; vida e DIT pedem "Cotação para fumante" quando o cliente é fumante), vida do cônjuge, auto/náutico, residencial, empresarial, seguro de sócio, vida em grupo (empresa com funcionários), saúde PME, RC profissional (autônomo/liberal) e viagem anual.
+- **Patrimonial (consórcios):** consórcio para futuras aquisições (no lugar do financiamento), para objetivos de casa e veículo, para a troca de bens (modelo de desejo), para a próxima troca de veículo financiado, para bens da empresa, de serviços (reformas e gastos únicos ≥ R$ 15 mil) e imobiliário para construir patrimônio (sobra livre ≥ R$ 3 mil; parcela de até 30% da sobra livre); portabilidade/amortização de financiamento.
 - **Sucessão:** seguro de vida para o inventário (só quando os recursos financeiros já cobrem a necessidade e não há seguro de vida; com capital a contratar, o inventário já está dentro do seguro de vida), holding/planejamento sucessório e VGBL como instrumento sucessório (reserva + investimentos ≥ R$ 200 mil, já que a previdência não entra no inventário).
 - **Fiscal/Tributário:** PGBL para quem declara no completo e já tem previdência (sem previdência, a oportunidade de previdência privada do Futuro já oferece o PGBL; o limite de 12% é sobre a renda bruta tributável do cliente), rever PGBL no simplificado, comparar simplificada × completa (só para quem declara no simplificado), revisão tributária da empresa e investimentos isentos (LCI/LCA com FGC; CRI/CRA sem FGC).
 - **Investimentos:** começar a investir, reserva de emergência, assessoria, diversificação, investimento para compra à vista, suitability, patrimônio financeiro e cartão com benefícios.
@@ -231,8 +232,8 @@ Quatro direções, cada uma com nota de 0 a 100 (média ponderada dos indicadore
 | Direção | Pergunta | Indicadores (peso) |
 |---|---|---|
 | N · Organização | O dinheiro do mês está sob controle? | taxa de poupança ÷ 20% (35) · excesso sobre 50-30-20 (20) · parcelas sobre a renda (25) · dívidas caras (20) |
-| L · Patrimonial | O patrimônio e a família estão protegidos? | cobertura do seguro de vida (35) · bens com seguro (20) · plano de saúde (15) · dívidas sobre os bens (15) · inventário coberto (15) |
-| S · Liberdade financeira | O futuro está garantido? | % da meta de independência (55) · aporte atual ÷ necessário (25) · objetivos cabem na sobra (20) |
+| L · Patrimonial | O patrimônio e a família estão protegidos? | cobertura do seguro de vida (35) · bens com seguro (20) · dívidas sobre os bens (15) · inventário coberto (15) |
+| S · Liberdade financeira | O futuro está garantido? | % da meta de independência (55) · aporte atual ÷ necessário (25) · objetivos cabem na sobra livre (20) |
 | O · Gestão de ativos | Os investimentos estão bem cuidados? | reserva em meses (35) · investe (20) · assessoria e perfil (15) · temas conhecidos (15) · previdência × declaração do IR (15) |
 
 - **Saúde financeira** = média das direções com dados.

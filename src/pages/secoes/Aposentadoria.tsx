@@ -8,7 +8,7 @@ import { Formulario } from "@/components/campos";
 import { ListaItens } from "@/components/ListaEditor";
 import { SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { futuro, mesFuturo, n, nOpt, s, sim } from "@/lib/calculos";
+import { futuro, mesFuturo, n, nOpt, poupancaDeclarada, s, sim } from "@/lib/calculos";
 import { fmtBRL, uid } from "@/lib/format";
 import type { Item } from "@/types";
 
@@ -46,6 +46,11 @@ export default function Aposentadoria() {
         onChange={(k, v) => setCampo("futuro", k, v)}
         automaticos={{ idadeAposentadoria: 60, outrasRendas: fu.outrasAuto || undefined }}
       />
+      {poupancaDeclarada(cliente).invertida && (
+        <p role="status" className="-mt-2 text-xs text-warning">
+          O valor mínimo que pode poupar está maior que o máximo. Confira os dois campos: o diagnóstico usa o menor como mínimo.
+        </p>
+      )}
 
       <SubBloco titulo="Estilo de vida na aposentadoria">
         <div role="radiogroup" aria-label="Estilo de vida na aposentadoria" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
