@@ -1,4 +1,4 @@
-# Metodologia do Diagnóstico LIFE (versão 8)
+# Metodologia do Diagnóstico LIFE (versão 9)
 
 Este documento descreve **o processo com o cliente** e **as fórmulas** de cada seção.
 Tudo corresponde a arquivos editáveis:
@@ -40,7 +40,7 @@ Tudo corresponde a arquivos editáveis:
 | **2 · Raio-X financeiro** | 5 Despesas · 6 Renda · 7 Patrimônio · 8 Financiamento e crédito · 9 Projetos · 10 Corporativo |
 | **3 · Proteção e futuro** | 11 Proteção · 12 Futuro (aposentadoria) |
 | **4 · Investimentos** | 13 Investimentos |
-| **5 · Pré-diagnóstico** | 5.1 Plano atual: fluxo atual e modelo 50-30-20 (liberado por "Finalizar coleta") |
+| **5 · Pré-diagnóstico** | 5.1 Plano atual: renda total, despesas atuais e modelo 50-30-20 (liberado por "Finalizar coleta") |
 | **6 · Diagnóstico completo** | 6.1 Panorama geral · 6.2 Plano atual · 6.3 Plano potencial · 6.4 Plano otimização · 6.5 Futuro (simulação) · 6.6 Matriz de oportunidades · 6.7 Bússola financeira · 6.8 Plano de ação |
 | **7 · Jornada** | 7.1 Jornada do cliente · 7.2 Cronograma de implementação |
 
@@ -50,15 +50,18 @@ O progresso de **coleta** (menu lateral) considera as seções 1 e 3 a 13. Seç�
 
 - **Estado civil:** "Nome do cônjuge" e "Renda do cônjuge" só aparecem para Casado(a) ou União estável.
 - **Tem filhos?** Com "Sim", aparece o contador de filhos. A quantidade **cria os cartões automaticamente em Sucessão**. Diminuir remove só cartões ainda vazios. Com "Não", nada aparece.
+- **Cadastro:** sexo (Homem / Mulher), usado no perfil.
+- **V1 Institucional:** só a apresentação em PDF (páginas como imagens), com setas, miniaturas, teclado, tela cheia ("Apresentar") e os links do PDF clicáveis. Sem textos nem campos.
+- **Ponto de partida (3 · Objetivos):** motivação e satisfação financeira (0 a 10), guardadas no cadastro; aparecem em "Nas palavras do cliente" (6.1) e na capa do PDF.
 - **Satisfação financeira e impacto dos objetivos:** escala de 0 a 10 com um botão por nota.
 - **Objetivos:** categoria escolhida por ícones. Na coleta não aparecem totais, aportes nem "cabe na sobra"; o aporte de cada objetivo aparece só na versão consultor. Cada cartão tem um botão à direita que oculta os campos e deixa só o resumo (valor, prazo e prioridade).
 - **Sucessão:** nada aparece sem filhos ou dependentes. Para adicionar, escolhe-se primeiro a categoria. Filhos, enteados e netos têm idade e escolaridade; Pai/Mãe e "Outro dependente" mostram auxílio e outros custos. Mensalidades, auxílios e custos entram sozinhos nas despesas fixas (bloco Dependentes). Sem totalizadores no topo.
 - **Despesas:** blocos (Casa, Mercado, Transporte…) com subcategorias (Aluguel, Condomínio, Luz…). Cada bloco aceita itens extras. Transporte: combustível, estacionamento/garagem, aplicativos (Uber e 99) e transporte público; manutenção e IPVA vêm dos veículos (Patrimônio). A anuidade dos cartões (Renda) entra em "Outras despesas fixas". As parcelas não são digitadas aqui: vêm da seção 8 e aparecem só no total.
-- **Renda:** bruta e líquida do cliente; do cônjuge só para casado(a) ou união estável. Se só uma for informada, a outra é estimada. Modelo da declaração do IR (simplificada, completa ou não declara). Rendas extras ou de outra pessoa ficam em lista própria. Cartões: qual, limite, gasto mensal, milhas e anuidade (valor por ano).
+- **Renda:** bruta e líquida do cliente; renda extra; **13º salário e bônus anual** (valores líquidos do ano); do cônjuge só para casado(a) ou união estável. Se só uma for informada, a outra é estimada. Modelo da declaração do IR (simplificada, completa ou não declara). Rendas extras ou de outra pessoa ficam em lista própria. Cartões: qual, limite, gasto mensal, milhas e anuidade (valor por ano).
 - **Patrimônio:** imóveis e móveis com situação **Quitado / Financiado** e flag de seguro. Bem financiado abre instituição, parcela, prazo e saldo (opcional) e vira financiamento automaticamente na seção 8. Veículos: manutenção e IPVA por ano; "pensa em ampliação/troca" abre o modelo de desejo. **Futuras aquisições:** com "Sim", lista de segmento (imóvel/veículo), categoria, tipo, valor desejado e estratégia (à vista, financiamento, consórcio).
 - **Financiamento e crédito (8):** financiamentos (inclusive os do patrimônio), consórcios (parcela, prazo, carta) e dívidas com categoria (cartão, cheque especial, carnê, renegociação, empréstimo pessoal, consignado…). A soma das parcelas entra no total de despesas.
-- **Proteção:** reserva de emergência (valor e meses na visão do cliente), seguros, saúde e previdência (PGBL, VGBL ou os dois).
-- **Futuro (12):** idade de aposentadoria, investimento mensal, renda desejada, outras fontes e estilo de vida (cartões). **Mudanças de vida programadas:** com "Sim", lista com a mudança, o impacto (aumenta/reduz despesas, aumenta/reduz renda ou gasto único), daqui a quantos meses e o valor.
+- **Proteção:** reserva de emergência (valor e meses na visão do cliente), seguros, invalidez/DIT, **é fumante?** (substituiu o antigo "plano de saúde"; entra nas ofertas de seguro como "Cotação para fumante") e previdência (PGBL, VGBL ou os dois).
+- **Futuro (12):** idade de aposentadoria, investimento mensal, **valor mínimo que pode poupar e valor máximo que consegue poupar** por mês, renda desejada, outras fontes e estilo de vida (cartões). **Mudanças de vida programadas:** com "Sim", lista com a mudança, o impacto (aumenta/reduz despesas, aumenta/reduz renda ou gasto único), daqui a quantos meses e o valor.
 - **Investimentos:** conhecimento, perfil, temas já estudados (múltipla escolha); valor (sem a reserva), assessor e instituição só aparecem com "Tem investimentos? Sim".
 
 ---
@@ -70,7 +73,7 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 
 ### Renda
 - Para cada pessoa: se só a **bruta** for informada, a **líquida** é estimada (bruta − INSS − IRRF); se só a líquida, a bruta é estimada pelo inverso. Tabelas de referência em `src/config/tributos.ts`: INSS empregado 2026 (teto R$ 8.475,55), IRRF mensal (maio/2025) com desconto simplificado de R$ 607,20 e o redutor de 2026 (isenção até R$ 5.000, redução parcial até R$ 7.350). É uma estimativa para assalariado; pró-labore e autônomo diferem.
-- `Renda familiar (líquida) = líquida do cliente + renda extra + líquida do cônjuge + outras rendas` (frequência Anual ÷ 12).
+- `Renda total (líquida) = líquida do cliente + renda extra + (13º + bônus anual) ÷ 12 + líquida do cônjuge + outras rendas` (frequência Anual ÷ 12).
 - **Renda passiva** = outras fontes do tipo Aluguel, Dividendos/Juros e Pensão/Aposentadoria.
 - Renda marcada como do cônjuge só entra no total quando o estado civil é casado(a) ou união estável.
 ### Despesas
@@ -78,14 +81,18 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 - `Despesas = fixas + variáveis`. As fixas incluem Dependentes (de Sucessão), as parcelas da seção 8, manutenção e IPVA dos veículos (÷ 12) e a anuidade dos cartões (÷ 12).
 - O gasto informado nos cartões **não** é somado de novo: ele já está distribuído nas despesas.
 - `Sobra = Renda − Despesas` · `Taxa de poupança = Sobra ÷ Renda`.
+- **Aportes em projetos** = soma do "aporte mensal" dos projetos (9) · `Sobra livre = Sobra − Aportes em projetos`. Com o investimento mensal (12) em branco, o futuro usa a sobra livre.
 - `Comprometimento = Parcelas ÷ Renda` (alerta acima do limite dos parâmetros, padrão 30%). As parcelas são as da seção 8 (com os bens financiados do Patrimônio).
 
-### Modelo 50-30-20 (5.1 · pré-diagnóstico)
-- **Necessidades** (meta: até 50% da renda líquida): casa, alimentação, mercado, transporte, saúde, seguros, educação, dependentes, outras fixas e parcelas.
-- **Desejos** (meta: até 30%): cuidados pessoais, profissionais (diarista, personal…), restaurantes, lazer, roupas, assinaturas, esportes, viagens e outros.
-- **Poupança e investimentos** (meta: pelo menos 20%): a sobra (renda − despesas).
-- A parte de cada bloco fica no campo `modelo` de `src/config/despesas.ts`.
-- O 5.1 mostra em cima as colunas **Renda · Despesas atuais · Modelo 50-30-20**; embaixo, à esquerda, a análise de cada parte (hoje × ideal) e, à direita, o fluxo atual por categoria (entradas, necessidades, desejos e sobra).
+### 5.1 · Plano atual (pré-diagnóstico)
+- **Renda total (cliente e dependentes):** líquida do cliente, renda extra, 13º e bônus (média mensal), líquida do cônjuge e outras rendas por pessoa (cliente, cônjuge, outra pessoa).
+- **Despesas atuais:** despesas fixas (sem parcelas), despesas variáveis, financiamentos e consórcios (parcelas, inclusive bens financiados), dívidas (parcelas) e aportes em projetos; total de saídas e **sobra livre** (ou déficit).
+- **Modelo 50-30-20 (renda líquida)** e o **resumo da análise**:
+  - **Essencial (50)** — até 50% da renda: casa, alimentação, mercado, transporte, saúde, seguros, educação, dependentes, outras fixas e parcelas.
+  - **Estilo e Desejos (30)** — até 30%: cuidados pessoais, profissionais, restaurantes, lazer, roupas, assinaturas, esportes, viagens e outros.
+  - **Projeto e Investimentos (20)** — pelo menos 20%: aportes em projetos + sobra livre (= renda − despesas).
+- Com a poupança declarada (12 · Futuro), o resumo compara o mínimo e o máximo que o cliente diz conseguir poupar com o ideal de 20%.
+- A parte de cada bloco fica no campo `modelo` de `src/config/despesas.ts`; os nomes, em `MODELO_50_30_20`.
 
 ### Balanço patrimonial
 - **Ativos** = imóveis + móveis + reserva + investimentos + previdência + participação em empresa.
@@ -133,7 +140,7 @@ Aporte necessário = aporte mensal que leva o patrimônio de hoje ao necessário
 ```
 Valores reais (R$ de hoje).
 
-**Simulação (6.5):** quatro réguas deslizantes — investimento mensal, rentabilidade real, idade de aposentadoria e renda desejada — refazem a conta na hora. A simulação fica salva no cliente (não altera os dados da coleta); "Voltar aos dados da coleta" desfaz. Com a simulação ativa, o gráfico mostra as duas trajetórias (simulação × dados da coleta).
+**Simulação (6.5):** quatro réguas deslizantes — investimento mensal (com atalhos "mínimo" e "máximo" da poupança declarada), rentabilidade real, idade de aposentadoria e renda desejada — refazem a conta na hora. A simulação fica salva no cliente (não altera os dados da coleta); "Voltar aos dados da coleta" desfaz. Com a simulação ativa, o gráfico mostra as duas trajetórias (simulação × dados da coleta).
 
 **Patrimônio ao longo da vida:** até os 95 anos. Antes da aposentadoria o patrimônio recebe o aporte mensal; depois, paga todo mês a renda que falta (renda desejada − outras rendas). Se o saldo zerar, o sistema mostra a idade em que o patrimônio acaba.
 
