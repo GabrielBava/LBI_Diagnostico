@@ -69,7 +69,7 @@ const pctPiso = (v: number) => `${(Math.floor(v * 1000) / 10).toLocaleString("pt
 const pctAcima = (v: number, limite: number) =>
   Math.round(v * 100) <= Math.round(limite * 100) ? `${(Math.ceil(v * 1000) / 10).toLocaleString("pt-BR")}%` : fmtPct(v);
 
-/** Maiores categorias de despesa (opcionalmente só necessidades ou desejos), já com valores. */
+/** Maiores categorias de despesa (opcionalmente só Essencial ou Estilo e Desejos), já com valores. */
 function maioresGastos(c: Cliente, modelo?: "Necessidades" | "Desejos", quantos = 3) {
   const itens = despesas(c)
     .porCategoria.filter((x) => x.valor > 0 && (!modelo || x.modelo === modelo))
@@ -148,20 +148,20 @@ export function planoAtual(c: Cliente): CardPlano[] {
       add(
         "necessidades",
         "Fluxo de caixa",
-        "Necessidades acima de 50%",
+        "Essencial acima de 50%",
         "Média",
-        `Necessidades consomem ${pctAcima(nec.pct, 0.5)} da renda (${fmtBRL(nec.atual)}/mês); o modelo 50-30-20 indica até 50%.`,
-        `Maiores necessidades: ${maioresGastos(c, "Necessidades")}.`,
+        `O essencial consome ${pctAcima(nec.pct, 0.5)} da renda (${fmtBRL(nec.atual)}/mês); o modelo 50-30-20 indica até 50%.`,
+        `Maiores gastos essenciais: ${maioresGastos(c, "Necessidades")}.`,
         "Orçamento engessado: uma queda de renda não tem onde ser absorvida e vira dívida.",
       );
     if (des.foraDoModelo)
       add(
         "desejos",
         "Fluxo de caixa",
-        "Desejos acima de 30%",
+        "Estilo e desejos acima de 30%",
         "Média",
-        `Desejos consomem ${pctAcima(des.pct, 0.3)} da renda (${fmtBRL(des.atual)}/mês); o modelo 50-30-20 indica até 30%.`,
-        `Maiores desejos: ${maioresGastos(c, "Desejos")}.`,
+        `Estilo e desejos consomem ${pctAcima(des.pct, 0.3)} da renda (${fmtBRL(des.atual)}/mês); o modelo 50-30-20 indica até 30%.`,
+        `Maiores gastos de estilo e desejos: ${maioresGastos(c, "Desejos")}.`,
         "O padrão de vida cresce junto com a renda e o patrimônio não se forma.",
       );
   }
@@ -232,16 +232,6 @@ export function planoAtual(c: Cliente): CardPlano[] {
         ? `Como ${regime.toLowerCase()}, a renda para se o cliente parar de trabalhar.`
         : "A previdência oficial (INSS ou regime próprio) cobre só parte da renda em caso de invalidez, com regras e carência.",
       "Um afastamento longo corta a renda justamente quando os gastos com saúde sobem.",
-    );
-  if (s(c.protecao.temSaude) === "Não")
-    add(
-      "saude",
-      "Proteção",
-      "Sem plano de saúde",
-      "Alta",
-      "A família não tem plano de saúde.",
-      "Os atendimentos dependem do SUS ou de pagamento particular.",
-      "Uma internação ou cirurgia pode consumir a reserva e os investimentos em poucos dias.",
     );
   const moveisSemSeguro = c.moveis.filter((m) => m.temSeguro !== true);
   if (moveisSemSeguro.length)
@@ -446,7 +436,7 @@ export function planoOtimizacao(c: Cliente): CardPlano[] {
       "503020",
       "Fluxo de caixa",
       "Orçamento equilibrado",
-      `Necessidades em ${pct("Necessidades")}, desejos em ${pct("Desejos")} e poupança em ${pct("Poupança")} da renda: dentro do modelo 50-30-20.`,
+      `Essencial em ${pct("Necessidades")}, estilo e desejos em ${pct("Desejos")} e projeto e investimentos em ${pct("Poupança")} da renda: dentro do modelo 50-30-20.`,
       "Equilíbrio entre viver bem hoje e construir o futuro.",
       "Revisar o orçamento a cada 6 meses e levar parte de cada aumento de renda para os investimentos.",
     );
@@ -537,17 +527,6 @@ export function planoOtimizacao(c: Cliente): CardPlano[] {
       "Tem cobertura de invalidez ou afastamento.",
       "A renda continua se o cliente precisar parar de trabalhar.",
       `Conferir se a diária ou o capital acompanham a renda atual de ${fmtBRL(renda(c).cliente.liquida || f.renda)}/mês.`,
-    );
-  if (s(c.protecao.temSaude) === "Sim")
-    add(
-      "saude",
-      "Proteção",
-      "Plano de saúde",
-      "Família com plano de saúde.",
-      "Acesso a tratamento sem comprometer o patrimônio.",
-      sim(c.corporativo.possuiEmpresa) && c.corporativo.saudeEmpresarial !== true
-        ? "Comparar com um plano PME pelo CNPJ da empresa, que costuma custar menos."
-        : "Revisar coparticipação, rede e reajustes a cada ano.",
     );
   if (c.moveis.length && c.moveis.every((m) => m.temSeguro === true))
     add(
@@ -703,7 +682,7 @@ export function bussola(c: Cliente) {
       const des = orc.partes.find((x) => x.id === "Desejos")!;
       const excesso = Math.max(0, nec.pct - 0.5) + Math.max(0, des.pct - 0.3);
       comps.push({ valor: 1 - excesso / 0.3, peso: 20 });
-      ind.push({ nome: "Necessidades · desejos", valor: `${fmtPct(nec.pct)} · ${fmtPct(des.pct)}`, ok: !nec.foraDoModelo && !des.foraDoModelo });
+      ind.push({ nome: "Essencial · estilo e desejos", valor: `${fmtPct(nec.pct)} · ${fmtPct(des.pct)}`, ok: !nec.foraDoModelo && !des.foraDoModelo });
       comps.push({ valor: f.parcelas <= 0 ? 1 : 1 - (f.comprometimento / limite) * 0.6, peso: 25 });
       ind.push({ nome: "Parcelas sobre a renda", valor: fmtPct(f.comprometimento), ok: f.comprometimento <= limite });
       comps.push({ valor: caras.length ? 0 : 1, peso: 20 });
@@ -718,9 +697,9 @@ export function bussola(c: Cliente) {
       if (f.comprometimento > limite)
         acoes.push({ id: "sg-comprometimento", texto: `Reduzir as parcelas para menos de ${fmtPct(limite)} da renda`, area: "Dívidas", prioridade: "Alta", prazo: "Médio" });
       if (nec.foraDoModelo)
-        acoes.push({ id: "bu-necessidades", texto: `Trazer as necessidades para até 50% da renda (hoje ${pctAcima(nec.pct, 0.5)})`, area: "Fluxo de caixa", prioridade: "Média", prazo: "Médio" });
+        acoes.push({ id: "bu-necessidades", texto: `Trazer o essencial para até 50% da renda (hoje ${pctAcima(nec.pct, 0.5)})`, area: "Fluxo de caixa", prioridade: "Média", prazo: "Médio" });
       if (des.foraDoModelo)
-        acoes.push({ id: "bu-desejos", texto: `Limitar os desejos a 30% da renda: ${fmtBRL(des.atual - des.ideal)}/mês a menos`, area: "Fluxo de caixa", prioridade: "Média", prazo: "Curto" });
+        acoes.push({ id: "bu-desejos", texto: `Limitar estilo e desejos a 30% da renda: ${fmtBRL(des.atual - des.ideal)}/mês a menos`, area: "Fluxo de caixa", prioridade: "Média", prazo: "Curto" });
       if (ct.anuidadeAnual > 0)
         acoes.push({ id: "bu-anuidade", texto: `Negociar a isenção da anuidade (${fmtBRL(ct.anuidadeAnual)}/ano)`, area: "Fluxo de caixa", prioridade: "Baixa", prazo: "Curto" });
       if (!acoes.length)
@@ -762,12 +741,6 @@ export function bussola(c: Cliente) {
       ind.push({ nome: "Bens com seguro", valor: `${segurados} de ${bens.length}`, ok: segurados === bens.length });
       if (segurados < bens.length)
         acoes.push({ id: "bu-bens", texto: `Segurar ${bens.length - segurados === 1 ? "o bem" : `os ${bens.length - segurados} bens`} sem seguro`, area: "Proteção", prioridade: "Média", prazo: "Curto" });
-    }
-    if (s(c.protecao.temSaude)) {
-      comps.push({ valor: sim(c.protecao.temSaude) ? 1 : 0, peso: 15 });
-      ind.push({ nome: "Plano de saúde", valor: sim(c.protecao.temSaude) ? "Sim" : "Não", ok: sim(c.protecao.temSaude) });
-      if (!sim(c.protecao.temSaude))
-        acoes.push({ id: "op-saude", texto: "Contratar plano de saúde para a família", area: "Proteção", prioridade: "Alta", prazo: "Curto" });
     }
     if (s(c.protecao.temInvalidez) === "Não" && f.renda > 0 && s(c.cadastro.regimeTrabalho) !== "Aposentado")
       acoes.push({ id: "op-dit", texto: "Proteger a renda com seguro de invalidez e DIT", area: "Proteção", prioridade: "Média", prazo: "Curto" });
@@ -1019,7 +992,7 @@ export function dadosPerfil(c: Cliente) {
     nome: s(c.cadastro.nome) || "Cliente",
     rotulo: s(c.cadastro.perfil),
     /** "34 anos · Casado(a) com Ana · Engenheiro · CLT" */
-    linha: [idade !== undefined ? `${idade} anos` : "", estado ? `${estado}${conjuge}` : "", ocupacao].filter(Boolean),
+    linha: [idade !== undefined ? `${idade} anos` : "", s(c.cadastro.sexo), estado ? `${estado}${conjuge}` : "", ocupacao].filter(Boolean),
     dados: [
       { rotulo: "Filhos e dependentes", valor: dependentes.length ? dependentes.join(", ") : "Sem dependentes" },
       {
@@ -1030,6 +1003,7 @@ export function dadosPerfil(c: Cliente) {
       { rotulo: "Perfil de investidor", valor: s(c.investimentos.perfil) || "Não definido" },
       { rotulo: "Aposentadoria desejada", valor: `aos ${fu.idadeAposentadoria} anos${fu.estilo ? ` · estilo ${fu.estilo.toLowerCase()}` : ""}` },
       { rotulo: "Empresa", valor: s(c.corporativo.possuiEmpresa) === "Sim" ? s(c.corporativo.ramo) || "Possui empresa" : "Não possui" },
+      { rotulo: "Fumante", valor: s(c.protecao.fumante) || "Não informado" },
     ],
   };
 }

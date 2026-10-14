@@ -103,6 +103,8 @@ export function oportunidades(c: Cliente): Oportunidade[] {
   const rendaAnual = Math.max(1, f.renda * 12);
   const regime = s(c.cadastro.regimeTrabalho);
   const semInss = ["Empresário", "Autônomo / Liberal"].includes(regime);
+  // Fumante: muda a cotação dos seguros de vida e de invalidez (prêmio maior).
+  const fumante = sim(c.protecao.fumante);
 
   // ------------------------------------------------------------- Proteção
   if (pr.gap > 0)
@@ -111,7 +113,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       area: "Proteção",
       produto: "Seguro",
       titulo: "Seguro de vida",
-      oferta: `Seguro de vida com capital de ${fmtBRL(pr.gap)}: ${componentesProtecao(pr)}.`,
+      oferta: `Seguro de vida com capital de ${fmtBRL(pr.gap)}: ${componentesProtecao(pr)}.${fumante ? " Cotação para fumante." : ""}`,
       porque: `A família precisa de ${fmtBRL(pr.necessario)} ${pr.atual > 0 ? `e hoje tem ${fmtBRL(pr.atual)} em seguro individual` : "e hoje não tem seguro de vida individual"}.`,
       objetivo: "A família mantém o padrão de vida e os planos mesmo sem a renda do cliente.",
       // Quanto maior o gap em anos de renda, maior o potencial.
@@ -126,7 +128,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       area: "Proteção",
       produto: "Seguro",
       titulo: "Invalidez, doenças graves e DIT",
-      oferta: `Cobertura de invalidez, doenças graves e diária por incapacidade temporária para repor a renda de ${fmtBRL(rd.cliente.liquida || f.renda)}/mês.`,
+      oferta: `Cobertura de invalidez, doenças graves e diária por incapacidade temporária para repor a renda de ${fmtBRL(rd.cliente.liquida || f.renda)}/mês.${fumante ? " Cotação para fumante." : ""}`,
       porque: semInss
         ? `Como ${regime.toLowerCase()}, o cliente não tem salário garantido se ficar afastado.`
         : s(c.protecao.temInvalidez) === "Não"
@@ -148,19 +150,6 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       objetivo: "O orçamento da família não depende de uma pessoa só.",
       potencial: potencial("Seguro", -2),
       prioridade: "Média",
-      prazo: "Curto",
-    });
-  if (s(c.protecao.temSaude) === "Não")
-    add({
-      id: "op-saude",
-      area: "Proteção",
-      produto: "Seguro",
-      titulo: "Plano de saúde",
-      oferta: `Plano de saúde para o cliente${su.dependentes ? " e os dependentes" : ""}.`,
-      porque: "Hoje não há plano de saúde: uma internação pode consumir a reserva e os investimentos.",
-      objetivo: "Acesso a tratamento sem comprometer o patrimônio.",
-      potencial: potencial("Seguro", -4),
-      prioridade: "Alta",
       prazo: "Curto",
     });
   const semSeguroMovel = c.moveis.filter((m) => m.temSeguro !== true);
@@ -238,10 +227,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       produto: "Seguro",
       titulo: "Plano de saúde empresarial (PME)",
       oferta: `Plano de saúde pelo CNPJ para ${funcionarios > 0 ? "os sócios, os funcionários e as famílias" : "o cliente e a família"}.`,
-      porque:
-        s(c.protecao.temSaude) === "Sim"
-          ? "A empresa não tem plano empresarial: o plano PME costuma custar menos que o individual."
-          : "A empresa não tem plano empresarial e a família está sem plano de saúde.",
+      porque: "A empresa não tem plano empresarial: o plano PME costuma custar menos que o individual e pode incluir a família.",
       objetivo: "Saúde garantida pagando menos.",
       potencial: potencial("Seguro", -6),
       prioridade: "Média",

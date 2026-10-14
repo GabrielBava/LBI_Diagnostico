@@ -273,11 +273,42 @@ export default function Relatorio() {
         )}
 
         {mostra("plano-atual") && orc.renda > 0 && (
-          <Bloco titulo="Pré-diagnóstico · modelo 50-30-20">
+          <Bloco titulo="Pré-diagnóstico · plano atual">
+            <div className="mb-4 grid gap-6 md:grid-cols-2">
+              <Tabela
+                cab={["Renda total (cliente e dependentes)", "Valor"]}
+                linhas={[
+                  ...(
+                    [
+                      ["Renda líquida do cliente", rd.cliente.liquida],
+                      ["Renda extra", rd.extra],
+                      ["13º e bônus (média mensal)", rd.anualMensal],
+                      ["Renda líquida do cônjuge", rd.conjuge],
+                      ...rd.outrasPorPessoa.map((x) => [`Outras rendas · ${x.pessoa.toLowerCase()}`, x.valor]),
+                    ] as [string, number][]
+                  )
+                    .filter(([, v]) => v > 0)
+                    .map(([nome, v]): ReactNode[] => [nome, fmtBRL(v)]),
+                  [<strong key="a">Renda total</strong>, <strong key="b">{fmtBRL(orc.renda)}</strong>],
+                ]}
+              />
+              <Tabela
+                cab={["Despesas atuais", "Valor"]}
+                linhas={[
+                  ...orc.despesasAtuais.linhas.filter((x) => x.valor > 0).map((x) => [x.nome, fmtBRL(x.valor)]),
+                  [<strong key="a">Total de saídas</strong>, <strong key="b">{fmtBRL(orc.despesasAtuais.total)}</strong>],
+                  [
+                    <strong key="c">{orc.despesasAtuais.sobraLivre >= 0 ? "Sobra livre" : "Déficit"}</strong>,
+                    <strong key="d">{fmtBRL(Math.abs(orc.despesasAtuais.sobraLivre))}</strong>,
+                  ],
+                ]}
+              />
+            </div>
+            <div className="mb-1 text-xs font-semibold">Modelo 50-30-20 (renda líquida)</div>
             <Tabela
               cab={["Parte da renda", "Hoje", "% da renda", "Ideal", "Situação"]}
               linhas={orc.partes.map((p) => [
-                p.label,
+                `${p.label} (${Math.round(p.meta * 100)})`,
                 fmtBRL(p.atual),
                 fmtPct(p.pct),
                 `${fmtBRL(p.ideal)} (${p.id === "Poupança" ? "mín." : "máx."} ${fmtPct(p.meta)})`,
@@ -382,7 +413,7 @@ export default function Relatorio() {
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
                   {simulado ? "Simulação: " : "Meta: "}renda de {fmtBRL(fu.rendaDesejada)}/mês aos {fu.idadeAposentadoria} anos, investindo{" "}
-                  {simulado || fu.aporteInformado ? "" : "a sobra atual de "}
+                  {simulado || fu.aporteInformado ? "" : "a sobra livre de "}
                   {fmtBRL(fu.aporteAtual)}/mês com retorno real de {fmtPct(fu.retornoReal, 1)} a.a. (valores de hoje).
                   {fu.retiradaMensal > 0 &&
                     ` Retirando a renda, o patrimônio dura ${fu.esgotaAos !== undefined ? `até os ${fu.esgotaAos} anos` : "além dos 95 anos"}.`}

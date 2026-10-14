@@ -194,7 +194,7 @@ export const ROTEIRO: Record<string, Roteiro> = {
   },
   "plano-atual": {
     objetivo: "Mostrar uma primeira leitura, ainda na reunião de coleta: o fluxo atual comparado ao modelo 50-30-20.",
-    abertura: "Com o que você me contou, olha o retrato de hoje. Uma referência simples: 50% da renda para necessidades, 30% para desejos e 20% para o futuro.",
+    abertura: "Com o que você me contou, olha o retrato de hoje. Uma referência simples: 50% da renda para o essencial, 30% para estilo e desejos e 20% para projetos e investimentos.",
     perguntas: ["Isso faz sentido com o que você sente no dia a dia?", "O que mais te surpreendeu?", "Onde você acha que dá para ajustar?"],
     atencao: [
       "Aparece só depois de “Finalizar coleta”.",

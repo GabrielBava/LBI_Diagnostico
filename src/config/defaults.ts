@@ -4,7 +4,7 @@
 export const APP = {
   nome: "Diagnóstico LIFE",
   slogan: "Financial Operating System™",
-  versao: "v8.0.0",
+  versao: "v9.0.0",
 };
 
 export interface ConfigConsultor {

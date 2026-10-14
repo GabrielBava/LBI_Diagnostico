@@ -9,7 +9,7 @@
 //  Para incluir um bloco, acrescente um grupo novo.
 //  Grupos com `automatico` são preenchidos por outras seções.
 //  `modelo` diz em que parte do modelo 50-30-20 o bloco entra
-//  (Necessidades = 50% da renda, Desejos = 30%; os 20% são a sobra).
+//  (Essencial = 50% da renda, Estilo e Desejos = 30%; Projeto e Investimentos = 20%, a sobra).
 //  Ao remover uma subcategoria, inclua-a em DESPESAS_REMOVIDAS (migracao.ts)
 //  para o valor já salvo virar um item extra e não sumir do total.
 // =====================================================================
@@ -51,7 +51,7 @@ export interface GrupoDespesa {
   bloco: "Fixa" | "Variável";
   icone: LucideIcon;
   itens: SubDespesa[];
-  /** Parte do modelo 50-30-20 (Necessidades 50% · Desejos 30%). */
+  /** Parte do modelo 50-30-20: "Necessidades" = Essencial (50%) · "Desejos" = Estilo e Desejos (30%). */
   modelo: ParteModelo;
   /**
    * "dividas": parcelas de 8 · Financiamento e crédito (inclui bens financiados do Patrimônio).
@@ -291,8 +291,8 @@ export const grupoDespesa = (id: string) => GRUPOS_DESPESA.find((g) => g.id === 
 
 /** Modelo 50-30-20: metas de cada parte em % da renda líquida. */
 export const MODELO_50_30_20: { id: ParteModelo | "Poupança"; label: string; meta: number; descricao: string }[] = [
-  { id: "Necessidades", label: "Necessidades", meta: 0.5, descricao: "Moradia, mercado, transporte, saúde, educação, dependentes, seguros e parcelas" },
-  { id: "Desejos", label: "Desejos", meta: 0.3, descricao: "Restaurantes, lazer, viagens, roupas, assinaturas, cuidados e serviços" },
-  { id: "Poupança", label: "Poupança e investimentos", meta: 0.2, descricao: "O que sobra para reserva, objetivos e aposentadoria" },
+  { id: "Necessidades", label: "Essencial", meta: 0.5, descricao: "Moradia, mercado, transporte, saúde, educação, dependentes, seguros e parcelas" },
+  { id: "Desejos", label: "Estilo e Desejos", meta: 0.3, descricao: "Restaurantes, lazer, viagens, roupas, assinaturas, cuidados e serviços" },
+  { id: "Poupança", label: "Projeto e Investimentos", meta: 0.2, descricao: "Aportes em projetos e o que sobra para reserva, objetivos e aposentadoria" },
 ];
 export const chaveDespesa = (grupo: string, item: string) => `${grupo}.${item}`;

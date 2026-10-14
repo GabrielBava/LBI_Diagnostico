@@ -8,6 +8,7 @@ import {
   CAMPOS_RENDA_CARTAO,
   CAMPOS_RENDA_CLIENTE,
   CAMPOS_RENDA_CONJUGE,
+  CAMPOS_RENDA_ANUAL,
   CAMPOS_RENDA_EXTRA,
   CAMPOS_RENDA_IR,
 } from "@/config/campos";
@@ -58,7 +59,13 @@ export default function Renda() {
         />
         <Estimativa detalhe={r.cliente} />
         <div className="mt-4">
-          <Formulario campos={CAMPOS_RENDA_EXTRA} dados={cliente.renda} cliente={cliente} colunas={4} onChange={(key, v) => setCampo("renda", key, v)} />
+          <Formulario
+            campos={[...CAMPOS_RENDA_EXTRA, ...CAMPOS_RENDA_ANUAL]}
+            dados={cliente.renda}
+            cliente={cliente}
+            colunas={4}
+            onChange={(key, v) => setCampo("renda", key, v)}
+          />
         </div>
       </SubBloco>
 

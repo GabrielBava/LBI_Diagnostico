@@ -218,7 +218,7 @@ export const SECOES: SecaoDef[] = [
   },
 
   // Etapa 5 · Pré-diagnóstico
-  { id: "plano-atual", etapa: "pre", numero: "5.1", titulo: "Plano atual", subtitulo: "Fluxo atual e modelo 50-30-20", icone: Gauge },
+  { id: "plano-atual", etapa: "pre", numero: "5.1", titulo: "Plano atual", subtitulo: "Renda total, despesas atuais e modelo 50-30-20", icone: Gauge },
 
   // Etapa 6 · Diagnóstico completo
   { id: "panorama", etapa: "completo", numero: "6.1", titulo: "Panorama geral", subtitulo: "Perfil e perfil financeiro", icone: ChartPie },

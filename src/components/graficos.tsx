@@ -450,7 +450,7 @@ export function RendaVsDespesas({ renda, fixas, variaveis }: { renda: number; fi
 
 // ---------------------------------------------------------------------
 //  Renda × despesas atuais × modelo 50-30-20 (HTML/CSS): três colunas na
-//  mesma escala. Necessidades (azul) e desejos (laranja) empilhados; a
+//  mesma escala. Essencial (azul) e Estilo e Desejos (laranja) empilhados; a
 //  poupança/sobra é tracejada. Paleta validada para daltonismo
 //  (--serie-1/2/3 em index.css, claro e escuro).
 // ---------------------------------------------------------------------
@@ -572,26 +572,26 @@ export function Grafico503020({
   const tracejado = "border-2 border-dashed border-success/70 bg-success/10 text-foreground";
 
   const atual: Segmento[] = [
-    { id: "nec", nome: "Necessidades (hoje)", valor: nec, estilo: azul, rotulo: pct(nec) },
-    { id: "des", nome: "Desejos (hoje)", valor: des, estilo: laranja, rotulo: pct(des) },
-    ...(sobra > 0 ? [{ id: "sobra", nome: "Poupança e investimentos (sobra)", valor: sobra, estilo: {}, classe: tracejado, rotulo: pct(sobra) }] : []),
+    { id: "nec", nome: "Essencial (hoje)", valor: nec, estilo: azul, rotulo: pct(nec) },
+    { id: "des", nome: "Estilo e Desejos (hoje)", valor: des, estilo: laranja, rotulo: pct(des) },
+    ...(sobra > 0 ? [{ id: "sobra", nome: "Projeto e Investimentos (sobra)", valor: sobra, estilo: {}, classe: tracejado, rotulo: pct(sobra) }] : []),
   ];
 
   const modelo: Segmento[] = [
-    { id: "nec", nome: "Necessidades (50%)", valor: r * 0.5, estilo: azul, rotulo: "50%" },
-    { id: "des", nome: "Desejos (30%)", valor: r * 0.3, estilo: laranja, rotulo: "30%" },
-    { id: "pou", nome: "Poupança e investimentos (20%)", valor: r * 0.2, estilo: {}, classe: tracejado, rotulo: "20%" },
+    { id: "nec", nome: "Essencial (50%)", valor: r * 0.5, estilo: azul, rotulo: "50%" },
+    { id: "des", nome: "Estilo e Desejos (30%)", valor: r * 0.3, estilo: laranja, rotulo: "30%" },
+    { id: "pou", nome: "Projeto e Investimentos (20%)", valor: r * 0.2, estilo: {}, classe: tracejado, rotulo: "20%" },
   ];
 
   const legenda = [
     { nome: "Renda líquida", valor: r, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm bg-gold" /> },
-    { nome: "Necessidades", valor: nec, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={azul} /> },
-    { nome: "Desejos", valor: des, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={laranja} /> },
+    { nome: "Essencial", valor: nec, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={azul} /> },
+    { nome: "Estilo e Desejos", valor: des, amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={laranja} /> },
     ...(deficit > 0
       ? [{ nome: "Déficit (acima da linha da renda)", valor: deficit, amostra: <span className="h-0 w-3 shrink-0 border-t-2 border-dashed border-foreground" /> }]
       : [
           {
-            nome: "Poupança e investimentos (sobra)",
+            nome: "Projeto e Investimentos (sobra)",
             valor: sobra,
             amostra: <span className="h-2.5 w-2.5 shrink-0 rounded-sm border border-dashed border-success bg-success/15" />,
           },
@@ -602,9 +602,9 @@ export function Grafico503020({
     <figure className="m-0">
       <div
         role="img"
-        aria-label={`Renda líquida de ${fmtBRL(r)}. Hoje: necessidades ${fmtBRL(nec)}, desejos ${fmtBRL(des)}, ${
+        aria-label={`Renda líquida de ${fmtBRL(r)}. Hoje: essencial ${fmtBRL(nec)}, estilo e desejos ${fmtBRL(des)}, ${
           deficit > 0 ? `déficit de ${fmtBRL(deficit)}` : `sobra de ${fmtBRL(sobra)}`
-        }. Modelo 50-30-20: necessidades ${fmtBRL(r * 0.5)}, desejos ${fmtBRL(r * 0.3)}, poupança ${fmtBRL(r * 0.2)}.`}
+        }. Modelo 50-30-20: essencial ${fmtBRL(r * 0.5)}, estilo e desejos ${fmtBRL(r * 0.3)}, projeto e investimentos ${fmtBRL(r * 0.2)}.`}
         className="grid grid-cols-3 gap-3 pt-6 sm:gap-6"
       >
         <Coluna

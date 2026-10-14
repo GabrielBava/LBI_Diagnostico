@@ -237,17 +237,34 @@ export function renda(c: Cliente) {
   );
   // Renda extra do cliente (campo único em 6 · Renda), líquida e mensal.
   const extra = Math.max(0, n(c.renda.rendaExtra));
+  // 13º e bônus anual (valores do ano, líquidos): no fluxo mensal entram como média (÷ 12).
+  const decimoTerceiro = Math.max(0, n(c.renda.decimoTerceiro));
+  const bonusAnual = Math.max(0, n(c.renda.bonusAnual));
+  const anualMensal = (decimoTerceiro + bonusAnual) / 12;
+  // Outras rendas por pessoa (cliente, cônjuge ou outra pessoa).
+  const outrasPorPessoa = OPCOES.pessoaRenda.map((pessoa) => ({
+    pessoa,
+    valor: soma(
+      validas.filter((r) => (s(r.pessoa) || "Cliente") === pessoa),
+      mensal,
+    ),
+  }));
   return {
     cliente,
     conjugeDetalhe: conjuge,
     principal: cliente.liquida,
     conjuge: conjuge.liquida,
     extra,
+    decimoTerceiro,
+    bonusAnual,
+    /** 13º + bônus anual ÷ 12. */
+    anualMensal,
     outras,
+    outrasPorPessoa,
     passiva,
     futura,
-    /** Renda familiar líquida mensal. */
-    total: cliente.liquida + extra + conjuge.liquida + outras,
+    /** Renda familiar líquida mensal (13º e bônus como média mensal). */
+    total: cliente.liquida + extra + anualMensal + conjuge.liquida + outras,
     brutaTotal: cliente.bruta + conjuge.bruta,
   };
 }
@@ -345,10 +362,14 @@ export function despesas(c: Cliente) {
   };
 }
 
+/** Aportes mensais que o cliente já faz nos projetos (9 · Projetos). */
+export const aportesProjetos = (c: Cliente) => soma(c.projetos, (p) => Math.max(0, n(p.aporteMensal)));
+
 export function fluxo(c: Cliente) {
   const r = renda(c);
   const d = despesas(c);
   const sobra = r.total - d.total;
+  const aportes = aportesProjetos(c);
   return {
     renda: r.total,
     rendaPassiva: r.passiva,
@@ -358,6 +379,10 @@ export function fluxo(c: Cliente) {
     despesas: d.total,
     parcelas: d.parcelas,
     sobra,
+    /** Aportes mensais em projetos (saem da sobra: fazem parte de "Projeto e Investimentos"). */
+    aportesProjetos: aportes,
+    /** Sobra depois dos aportes em projetos (o que fica livre para investir). */
+    sobraLivre: sobra - aportes,
     taxaPoupanca: r.total > 0 ? sobra / r.total : 0,
     // Parcelas de 8 · Financiamento e crédito (incluem os bens financiados do Patrimônio).
     comprometimento: r.total > 0 ? d.parcelas / r.total : 0,
@@ -366,7 +391,7 @@ export function fluxo(c: Cliente) {
 
 // ---------------------------------------------------------------------
 //  Modelo 50-30-20 (pré-diagnóstico)
-//   Necessidades até 50% da renda líquida, desejos até 30% e ao menos 20%
+//   Essencial até 50% da renda líquida, Estilo e Desejos até 30% e ao menos 20%
 //   para poupança e investimentos (a sobra). A parte de cada bloco de
 //   despesa está em src/config/despesas.ts (campo `modelo`).
 // ---------------------------------------------------------------------
@@ -396,6 +421,26 @@ export function modelo503020(c: Cliente) {
     partes,
     categorias: d.porCategoria.filter((x) => x.valor > 0).sort((a, b) => b.valor - a.valor),
     dentroDoModelo: renda > 0 && partes.every((p) => !p.foraDoModelo),
+    /** Despesas atuais por natureza (fixas sem parcelas, variáveis, financiamentos, dívidas) + aportes em projetos. */
+    despesasAtuais: (() => {
+      const dv = dividas(c);
+      const linhas = [
+        { id: "fixas", nome: "Despesas fixas", valor: Math.max(0, d.fixas - d.parcelas) },
+        { id: "variaveis", nome: "Despesas variáveis", valor: d.variaveis },
+        { id: "financiamentos", nome: "Financiamentos e consórcios (parcelas)", valor: dv.parcelasFin + dv.parcelasCons },
+        { id: "dividas", nome: "Dívidas (parcelas)", valor: dv.parcelasEmp },
+        { id: "projetos", nome: "Aportes em projetos", valor: f.aportesProjetos },
+      ];
+      const total = linhas.reduce((t, x) => t + x.valor, 0);
+      return { linhas, total, sobraLivre: f.renda - total };
+    })(),
+    aportesProjetos: f.aportesProjetos,
+    sobraLivre: f.sobraLivre,
+    /** Quanto o cliente diz que consegue poupar por mês (12 · Futuro), quando informado. */
+    poupancaDeclarada: {
+      minima: nOpt(c.futuro.poupancaMinima),
+      maxima: nOpt(c.futuro.poupancaMaxima),
+    },
   };
 }
 
@@ -660,9 +705,9 @@ export function futuro(c: Cliente, simulacao?: SimulacaoFuturo) {
   const alvo = (Math.max(0, rendaDesejada - outras) * 12) / TAXA_RETIRADA;
   // A reserva de emergência não entra: ela existe para imprevistos.
   const atual = p.investimentos + p.previdencia;
-  // Investimento mensal informado (12 · Futuro); em branco, a sobra do mês.
+  // Investimento mensal informado (12 · Futuro); em branco, a sobra livre do mês (depois dos aportes em projetos).
   const investimentoInformado = nOpt(fu.investimentoMensal);
-  const aporteAtual = Math.max(0, simulacao?.aporte ?? investimentoInformado ?? f.sobra);
+  const aporteAtual = Math.max(0, simulacao?.aporte ?? investimentoInformado ?? f.sobraLivre);
   const i = taxaMensal(retornoReal);
   const meses = anos * 12;
   const projetado = valorFuturo(atual, aporteAtual, i, meses);

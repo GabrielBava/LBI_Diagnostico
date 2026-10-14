@@ -82,6 +82,7 @@ const sim = (v: Valor) => v === "Sim" || v === true;
 //  Opções compartilhadas
 // ---------------------------------------------------------------------
 export const OPCOES = {
+  sexo: ["Homem", "Mulher"],
   estadoCivil: ["Solteiro(a)", "Casado(a)", "União estável", "Divorciado(a)", "Viúvo(a)"],
   comConjuge: ["Casado(a)", "União estável"],
   regimeTrabalho: ["CLT", "Servidor público", "Empresário", "Autônomo / Liberal", "Aposentado", "Outro"],
@@ -177,6 +178,7 @@ export const CAMPOS_CADASTRO: CampoDef[] = [
   { key: "email", label: "E-mail", tipo: "email" },
   { key: "telefone", label: "Telefone", tipo: "telefone", placeholder: "(00) 00000-0000" },
   { key: "nascimento", label: "Data de nascimento", tipo: "data" },
+  { key: "sexo", label: "Sexo", tipo: "chips", opcoes: OPCOES.sexo },
   { key: "ocupacao", label: "Ocupação", tipo: "texto", placeholder: "Ex.: Engenheiro" },
   { key: "regimeTrabalho", label: "Regime de trabalho", tipo: "select", opcoes: OPCOES.regimeTrabalho },
   { key: "perfil", label: "Perfil", tipo: "texto", placeholder: "Ex.: Cliente Private" },
@@ -339,8 +341,14 @@ export const CAMPOS_RENDA_EXTRA: CampoDef[] = [
     label: "Renda extra mensal",
     tipo: "moeda",
     largura: 2,
-    ajuda: "Comissões, freelas, bicos (líquido). Bônus, PLR, aluguéis e renda de outra pessoa vão em Outras rendas.",
+    ajuda: "Comissões, freelas, bicos (líquido). PLR, aluguéis e renda de outra pessoa vão em Outras rendas.",
   },
+];
+
+/** 13º e bônus do cliente: valores do ano (líquidos). No fluxo entram como média mensal (÷ 12). */
+export const CAMPOS_RENDA_ANUAL: CampoDef[] = [
+  { key: "decimoTerceiro", label: "13º salário (por ano)", tipo: "moeda", largura: 2, ajuda: "Valor líquido recebido no ano." },
+  { key: "bonusAnual", label: "Bônus anual", tipo: "moeda", largura: 2, ajuda: "Valor líquido recebido no ano." },
 ];
 
 /** Renda do cônjuge (só para casado(a) ou união estável). */
@@ -501,6 +509,7 @@ export const CAMPOS_PROJETO: CampoDef[] = [
   { key: "tipo", label: "Tipo", tipo: "select", opcoes: OPCOES.tipoProjeto, padrao: "Outro" },
   { key: "valor", label: "Investimento estimado", tipo: "moeda" },
   { key: "prazoMeses", label: "Prazo (meses)", tipo: "numero" },
+  { key: "aporteMensal", label: "Aporte mensal", tipo: "moeda", ajuda: "Quanto o cliente já guarda por mês para este projeto." },
   { key: "status", label: "Status", tipo: "chips", opcoes: OPCOES.statusProjeto, padrao: "Ideia", largura: 2 },
 ];
 
@@ -538,7 +547,7 @@ export const CAMPOS_PROTECAO: CampoDef[] = [
   { key: "premioAtual", label: "Prêmio mensal", tipo: "moeda", mostrarSe: (d) => sim(d.temSeguroVida) },
   { key: "seguroEmpresa", label: "Seguro de vida pela empresa", tipo: "moeda", largura: 2, ajuda: "Termina quando o vínculo acaba." },
   { key: "temInvalidez", label: "Cobertura de invalidez / DIT", tipo: "simnao" },
-  { key: "temSaude", label: "Plano de saúde", tipo: "simnao" },
+  { key: "fumante", label: "É fumante?", tipo: "simnao" },
   // Previdência em linha própria: o tipo e o saldo abrem ao lado.
   { key: "temPrevidencia", label: "Previdência privada", tipo: "simnao", novaLinha: true },
   { key: "tipoPrevidencia", label: "Tipo de plano", tipo: "chips", opcoes: OPCOES.tipoPrevidencia, largura: 2, mostrarSe: (d) => sim(d.temPrevidencia) },
@@ -606,8 +615,10 @@ export const CAMPOS_FUTURO: CampoDef[] = [
     label: "Investimento mensal",
     tipo: "moeda",
     largura: 2,
-    ajuda: "Quanto investe por mês hoje. Em branco, o diagnóstico usa a sobra do mês.",
+    ajuda: "Quanto investe por mês hoje. Em branco, o diagnóstico usa a sobra livre do mês.",
   },
+  { key: "poupancaMinima", label: "Valor mínimo que pode poupar /mês", tipo: "moeda", largura: 2, ajuda: "O mínimo que o cliente garante guardar todo mês." },
+  { key: "poupancaMaxima", label: "Valor máximo que consegue poupar /mês", tipo: "moeda", largura: 2, ajuda: "O máximo que caberia no orçamento com esforço." },
   { key: "rendaDesejada", label: "Renda desejada /mês", tipo: "moeda", largura: 2, ajuda: "Em valores de hoje. Em branco, o diagnóstico usa o estilo de vida." },
   { key: "outrasRendas", label: "Outras fontes de renda /mês", tipo: "moeda", largura: 2, ajuda: "INSS, aluguéis, previdência. Em branco = aluguéis e aposentadorias atuais (juros e dividendos já vêm dos investimentos)." },
 ];
