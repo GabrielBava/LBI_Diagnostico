@@ -784,12 +784,8 @@ export function RadarOportunidades({
                 const [dyNome, dyConta] = vertical ? (props.y < cy ? [-16, -2] : [12, 26]) : [0, 14];
                 const anchor = props.textAnchor as "start" | "middle" | "end";
                 return (
-                  <g
-                    className={onSelecionar ? "cursor-pointer" : ""}
-                    onClick={() => onSelecionar?.(area)}
-                    role={onSelecionar ? "button" : undefined}
-                    aria-label={onSelecionar ? `Filtrar por ${area}` : undefined}
-                  >
+                  // Atalho de mouse: o filtro acessível pelo teclado é a lista de áreas ao lado do radar.
+                  <g className={onSelecionar && d?.quantidade ? "cursor-pointer" : ""} onClick={() => onSelecionar?.(area)}>
                     <text x={props.x} y={props.y + dyNome} textAnchor={anchor} fill={ativa ? "rgb(var(--primary))" : "rgb(var(--foreground))"} fontSize={12} fontWeight={600}>
                       {curto ? AREA_CURTA[area] ?? area : area}
                     </text>

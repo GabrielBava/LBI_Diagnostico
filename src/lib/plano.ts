@@ -13,10 +13,14 @@
 // =====================================================================
 
 import type { Cliente, Item } from "@/types";
-import { fmtBRL, fmtPct, plural } from "./format";
+import { fmtBRL, fmtPct, juntar, plural } from "./format";
 import {
   bemQuitado,
   cartoes,
+  idadePorNascimento,
+  nOpt,
+  rotuloDependente,
+  temConjuge,
   despesas,
   dividas,
   fluxo,
@@ -35,7 +39,7 @@ import {
   sim,
 } from "./calculos";
 import { dividaCara, statusPorNota, type Status } from "./diagnostico";
-import { oportunidades } from "./oportunidades";
+import { componentesProtecao, nomeBem, oportunidades } from "./oportunidades";
 
 export type Gravidade = "Alta" | "Média" | "Baixa";
 
@@ -50,15 +54,20 @@ export interface CardPlano {
   /** Plano potencial: produto e potencial (vindos da matriz de oportunidades). */
   produto?: string;
   potencial?: number;
+  /** Plano potencial: texto da ação ao levar ao plano de ação. */
+  acao?: string;
 }
 
 const ORDEM: Record<Gravidade, number> = { Alta: 0, Média: 1, Baixa: 2 };
 const porGravidade = (a: CardPlano, b: CardPlano) => ORDEM[a.selo ?? "Baixa"] - ORDEM[b.selo ?? "Baixa"];
 const fmtMeses = (m: number) => m.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
-/** "a, b e c" */
-const juntar = (itens: string[]) => (itens.length <= 1 ? itens.join("") : `${itens.slice(0, -1).join(", ")} e ${itens[itens.length - 1]}`);
+/** Meses com uma casa, arredondando para baixo (5,96 de 6 meses não vira "6 de 6"). */
+const fmtMesesPiso = (m: number) => (Math.floor(m * 10) / 10).toLocaleString("pt-BR");
 /** Uma casa decimal, arredondando para baixo: 19,96% não aparece como "20%, abaixo dos 20%". */
 const pctPiso = (v: number) => `${(Math.floor(v * 1000) / 10).toLocaleString("pt-BR")}%`;
+/** Percentual acima de um limite: só usa casa decimal quando o arredondamento cairia no limite (50,2% e não "50%"). */
+const pctAcima = (v: number, limite: number) =>
+  Math.round(v * 100) <= Math.round(limite * 100) ? `${(Math.ceil(v * 1000) / 10).toLocaleString("pt-BR")}%` : fmtPct(v);
 
 /** Maiores categorias de despesa (opcionalmente só necessidades ou desejos), já com valores. */
 function maioresGastos(c: Cliente, modelo?: "Necessidades" | "Desejos", quantos = 3) {
@@ -66,7 +75,8 @@ function maioresGastos(c: Cliente, modelo?: "Necessidades" | "Desejos", quantos 
     .porCategoria.filter((x) => x.valor > 0 && (!modelo || x.modelo === modelo))
     .sort((a, b) => b.valor - a.valor)
     .slice(0, quantos)
-    .map((x) => `${x.label} (${fmtBRL(x.valor)})`);
+    // "Parcelas (Financiamento e Crédito)" vira "Parcelas de financiamento e crédito" (sem parênteses duplos).
+    .map((x) => `${x.label.replace(/ \((.+)\)$/, (_, r: string) => ` de ${r.toLowerCase()}`)} (${fmtBRL(x.valor)})`);
   return juntar(itens);
 }
 
@@ -85,7 +95,8 @@ export function perfilFinanceiro(c: Cliente): { nome: string; descricao: string 
   if (f.sobra < 0) return { nome: "Em déficit", descricao: "Gasta mais do que ganha: o primeiro passo é reorganizar o orçamento." };
   if (f.comprometimento > limite || carasRelevantes)
     return { nome: "Endividado", descricao: "Parcelas e dívidas tomam parte relevante da renda e limitam as escolhas." };
-  if (f.taxaPoupanca >= 0.2 && (sim(c.investimentos.temInvestimento) || p.financeiro > 0))
+  // A reserva de emergência não conta como investimento.
+  if (f.taxaPoupanca >= 0.2 && (sim(c.investimentos.temInvestimento) || p.investimentos + p.previdencia > 0))
     return { nome: "Construtor de patrimônio", descricao: "Poupa com consistência e já faz o dinheiro trabalhar." };
   if (f.taxaPoupanca >= 0.2) return { nome: "Poupador", descricao: "Gasta menos do que ganha; falta direcionar a sobra para investimentos." };
   if (f.taxaPoupanca >= 0.1) return { nome: "Equilibrado", descricao: "Vive bem e poupa um pouco todo mês; dá para acelerar os objetivos." };
@@ -139,7 +150,7 @@ export function planoAtual(c: Cliente): CardPlano[] {
         "Fluxo de caixa",
         "Necessidades acima de 50%",
         "Média",
-        `Necessidades consomem ${fmtPct(nec.pct)} da renda (${fmtBRL(nec.atual)}/mês); o modelo 50-30-20 indica até 50%.`,
+        `Necessidades consomem ${pctAcima(nec.pct, 0.5)} da renda (${fmtBRL(nec.atual)}/mês); o modelo 50-30-20 indica até 50%.`,
         `Maiores necessidades: ${maioresGastos(c, "Necessidades")}.`,
         "Orçamento engessado: uma queda de renda não tem onde ser absorvida e vira dívida.",
       );
@@ -149,7 +160,7 @@ export function planoAtual(c: Cliente): CardPlano[] {
         "Fluxo de caixa",
         "Desejos acima de 30%",
         "Média",
-        `Desejos consomem ${fmtPct(des.pct)} da renda (${fmtBRL(des.atual)}/mês); o modelo 50-30-20 indica até 30%.`,
+        `Desejos consomem ${pctAcima(des.pct, 0.3)} da renda (${fmtBRL(des.atual)}/mês); o modelo 50-30-20 indica até 30%.`,
         `Maiores desejos: ${maioresGastos(c, "Desejos")}.`,
         "O padrão de vida cresce junto com a renda e o patrimônio não se forma.",
       );
@@ -168,7 +179,7 @@ export function planoAtual(c: Cliente): CardPlano[] {
   // Dívidas
   const caras = c.emprestimos.filter((e) => dividaCara(s(e.categoria)));
   if (caras.length) {
-    const categorias = [...new Set(caras.map((e) => s(e.categoria)).filter(Boolean))];
+    const categorias = [...new Set(caras.map((e) => s(e.categoria) || "empréstimos"))];
     const parcelas = caras.reduce((t, e) => t + n(e.parcela), 0);
     add(
       "dividas-caras",
@@ -205,19 +216,21 @@ export function planoAtual(c: Cliente): CardPlano[] {
       "Família descoberta",
       "Alta",
       `Faltam ${fmtBRL(pr.gap)} de capital segurado para proteger a família.`,
-      `A família precisaria de ${fmtBRL(pr.necessario)} (educação, ${pr.horizonte === 1 ? "1 ano" : `${pr.horizonte} anos`} de padrão de vida e inventário, já descontados os recursos financeiros) e o seguro atual é de ${fmtBRL(pr.atual)}.`,
-      "Na falta do cliente, a família perde o padrão de vida, os estudos dos filhos ficam em risco e bens podem ser vendidos às pressas.",
+      `A família precisaria de ${fmtBRL(pr.necessario)} (${componentesProtecao(pr)}, já descontados os recursos financeiros) ${pr.atual > 0 ? `e o seguro atual é de ${fmtBRL(pr.atual)}` : "e hoje não há seguro de vida individual"}.`,
+      `Na falta do cliente, a família perde o padrão de vida${pr.componentes.educacional > 0 ? ", os estudos dos filhos ficam em risco" : ""} e bens podem ser vendidos às pressas.`,
     );
   const regime = s(c.cadastro.regimeTrabalho);
   const semInss = ["Empresário", "Autônomo / Liberal"].includes(regime);
-  if (s(c.protecao.temInvalidez) === "Não" && f.renda > 0)
+  if (s(c.protecao.temInvalidez) === "Não" && f.renda > 0 && regime !== "Aposentado")
     add(
       "invalidez",
       "Proteção",
       "Renda sem proteção",
       semInss ? "Alta" : "Média",
       "Não há seguro de invalidez, doenças graves ou afastamento (DIT).",
-      semInss ? `Como ${regime.toLowerCase()}, a renda para se o cliente parar de trabalhar.` : "O INSS cobre só parte da renda, com teto e carência.",
+      semInss
+        ? `Como ${regime.toLowerCase()}, a renda para se o cliente parar de trabalhar.`
+        : "A previdência oficial (INSS ou regime próprio) cobre só parte da renda em caso de invalidez, com regras e carência.",
       "Um afastamento longo corta a renda justamente quando os gastos com saúde sobem.",
     );
   if (s(c.protecao.temSaude) === "Não")
@@ -237,7 +250,7 @@ export function planoAtual(c: Cliente): CardPlano[] {
       "Proteção",
       "Veículos sem seguro",
       "Média",
-      `${plural(moveisSemSeguro.length, "bem", "bens")} sem seguro: ${juntar(moveisSemSeguro.map((m) => s(m.nome) || s(m.tipo) || "bem"))}.`,
+      `${plural(moveisSemSeguro.length, "bem", "bens")} sem seguro: ${juntar(moveisSemSeguro.map(nomeBem))}.`,
       `${fmtBRL(moveisSemSeguro.reduce((t, m) => t + n(m.valor), 0))} em bens expostos a roubo, colisão e danos a terceiros.`,
       "Um sinistro vira prejuízo direto no patrimônio, e um acidente com terceiros pode gerar dívida.",
     );
@@ -260,7 +273,9 @@ export function planoAtual(c: Cliente): CardPlano[] {
       "Investimentos",
       "Reserva de emergência incompleta",
       r.meses < 3 ? "Alta" : "Média",
-      `A reserva cobre ${fmtMeses(r.meses)} de ${r.mesesMeta} meses de despesas; faltam ${fmtBRL(r.falta)}.`,
+      r.atual > 0
+        ? `A reserva cobre ${fmtMesesPiso(r.meses)} de ${r.mesesMeta} meses de despesas; faltam ${fmtBRL(r.falta)}.`
+        : `Não há reserva de emergência; faltam ${fmtBRL(r.falta)} para ${r.mesesMeta} meses de despesas.`,
       r.atual > 0
         ? `Reserva atual de ${fmtBRL(r.atual)} para despesas de ${fmtBRL(f.despesas)}/mês.`
         : `Não há reserva separada para despesas de ${fmtBRL(f.despesas)}/mês.`,
@@ -312,21 +327,22 @@ export function planoAtual(c: Cliente): CardPlano[] {
         "Independência financeira",
         fu.independencia < 0.5 ? "Alta" : "Média",
         `No ritmo atual, a projeção cobre ${fmtPct(fu.independencia)} da meta de independência aos ${fu.idadeAposentadoria} anos.`,
-        `Investindo ${fmtBRL(fu.aporteAtual)}/mês, o patrimônio chega a ${fmtBRL(fu.projetado)} para uma meta de ${fmtBRL(fu.alvo)}. Seriam necessários ${fmtBRL(fu.aporte)}/mês.`,
+        `${fu.aporteAtual > 0 ? `Investindo ${fmtBRL(fu.aporteAtual)}/mês` : "Sem aportes mensais"}, o patrimônio chega a ${fmtBRL(fu.projetado)} para uma meta de ${fmtBRL(fu.alvo)}. Seriam necessários ${fmtBRL(fu.aporte)}/mês.`,
         `Aposentadoria com renda de cerca de ${fmtBRL(fu.rendaProjetada)}/mês em vez de ${fmtBRL(fu.rendaDesejada)}` +
           (fu.esgotaAos !== undefined ? `, ou o patrimônio acabando aos ${fu.esgotaAos} anos.` : "."),
       );
   }
 
   // Objetivos
+  const comPrazo = c.objetivos.filter((o) => n(o.prazoMeses) > 0 && n(o.valorFuturo) > 0);
   if (c.objetivos.length && ob.aporteTotal > Math.max(0, f.sobra))
     add(
       "objetivos-sobra",
       "Objetivos",
       "Objetivos maiores que a sobra",
       "Média",
-      `Os objetivos pedem ${fmtBRL(ob.aporteTotal)}/mês e sobram ${fmtBRL(Math.max(0, f.sobra))}/mês.`,
-      `${plural(c.objetivos.length - ob.semPrazo, "objetivo", "objetivos")} com prazo, somando ${fmtBRL(ob.valorTotal)}.`,
+      `Os objetivos pedem ${fmtBRL(ob.aporteTotal)}/mês${f.sobra > 0 ? ` e sobram ${fmtBRL(f.sobra)}/mês` : " e hoje não sobra dinheiro no mês"}.`,
+      `${plural(comPrazo.length, "objetivo", "objetivos")} com prazo, somando ${fmtBRL(comPrazo.reduce((t, o) => t + n(o.valorFuturo), 0))}.`,
       "Sem priorizar, os objetivos competem entre si e nenhum é cumprido no prazo.",
     );
   const baixas = c.objetivos.filter((o) => s(o.probAtual) !== "" && n(o.probAtual) < 50);
@@ -365,8 +381,10 @@ export function planoAtual(c: Cliente): CardPlano[] {
   });
 
   // Sucessão
+  // Coberto quando o seguro de vida atual já cobre toda a necessidade (que inclui o inventário).
   const inventario = pr.itcmd + pr.honorarios;
-  if (pr.quitados >= 300_000 && inventario > 0)
+  const inventarioCoberto = sim(c.protecao.temSeguroVida) && pr.gap <= 0;
+  if (pr.quitados >= 300_000 && inventario > 0 && !inventarioCoberto)
     add(
       "inventario",
       "Sucessão",
@@ -392,6 +410,7 @@ export function planoPotencial(c: Cliente): CardPlano[] {
     produto: o.produto,
     potencial: o.potencial,
     textos: { oportunidade: o.porque, comoAtuar: o.oferta, objetivo: o.objetivo },
+    acao: o.detalhe,
   }));
 }
 
@@ -443,7 +462,7 @@ export function planoOtimizacao(c: Cliente): CardPlano[] {
     );
 
   const caras = c.emprestimos.some((e) => dividaCara(s(e.categoria)));
-  if (f.renda > 0 && f.parcelas <= 0 && !c.emprestimos.length)
+  if (f.renda > 0 && f.parcelas <= 0 && !c.emprestimos.length && dv.passivos <= 0)
     add(
       "sem-dividas",
       "Dívidas",
@@ -489,12 +508,14 @@ export function planoOtimizacao(c: Cliente): CardPlano[] {
     );
 
   if (sim(c.protecao.temSeguroVida)) {
-    if (pr.gap <= 0 && pr.necessario > 0)
+    if (pr.gap <= 0 && pr.atual > 0)
       add(
         "seguro-vida",
         "Proteção",
         "Família protegida",
-        `Seguro de vida de ${fmtBRL(pr.atual)} cobre a necessidade de ${fmtBRL(pr.necessario)}.`,
+        pr.necessario > 0
+          ? `Seguro de vida de ${fmtBRL(pr.atual)} cobre a necessidade de ${fmtBRL(pr.necessario)}.`
+          : `Seguro de vida de ${fmtBRL(pr.atual)}; reserva e investimentos já cobrem a necessidade da família.`,
         "A família mantém o padrão de vida e os planos mesmo sem a renda do cliente.",
         "Revisar capital e beneficiários a cada mudança de vida e comparar o custo do seguro atual com o mercado.",
       );
@@ -505,7 +526,7 @@ export function planoOtimizacao(c: Cliente): CardPlano[] {
         "Já tem seguro de vida",
         `Capital segurado de ${fmtBRL(pr.atual)}.`,
         "Primeiro passo para proteger a família.",
-        pr.gap > 0 ? `Complementar com ${fmtBRL(pr.gap)} para cobrir toda a necessidade da família.` : "Revisar capital e beneficiários uma vez por ano.",
+        `Complementar com ${fmtBRL(pr.gap)} para cobrir toda a necessidade da família.`,
       );
   }
   if (sim(c.protecao.temInvalidez))
@@ -586,7 +607,7 @@ export function planoOtimizacao(c: Cliente): CardPlano[] {
         "PGBL com benefício fiscal",
         "Tem PGBL e declara o IR no modelo completo.",
         "Deduz até 12% da renda bruta tributável.",
-        `Conferir se os aportes chegam a ${fmtBRL(renda(c).brutaTotal * 12 * 0.12)}/ano e se a tabela regressiva de IR foi escolhida.`,
+        `Conferir se os aportes chegam a ${fmtBRL(renda(c).cliente.bruta * 12 * 0.12)}/ano (12% da renda bruta tributável do cliente) e se a tabela regressiva de IR foi escolhida.`,
       );
     else
       add(
@@ -605,8 +626,10 @@ export function planoOtimizacao(c: Cliente): CardPlano[] {
       "Futuro",
       "Independência no caminho",
       `No ritmo atual, atinge a independência aos ${fu.idadeAposentadoria} anos.`,
-      `O patrimônio projetado de ${fmtBRL(fu.projetado)} cobre a meta de ${fmtBRL(fu.alvo)}.`,
-      "Simular em 6.5 · Futuro uma aposentadoria antecipada ou uma renda maior.",
+      fu.alvo <= 0
+        ? `As outras rendas (${fmtBRL(fu.outras)}/mês) já cobrem a renda desejada de ${fmtBRL(fu.rendaDesejada)}/mês.`
+        : `O patrimônio projetado de ${fmtBRL(fu.projetado)} cobre a meta de ${fmtBRL(fu.alvo)}.`,
+      "Simular uma aposentadoria antecipada ou uma renda maior no simulador do Futuro.",
     );
   mudancasVida(c)
     .filter((m) => m.efeitoMensal > 0)
@@ -687,15 +710,15 @@ export function bussola(c: Cliente) {
       ind.push({ nome: "Dívidas caras", valor: caras.length ? String(caras.length) : "Nenhuma", ok: !caras.length });
 
       if (f.sobra < 0)
-        acoes.push({ id: "bu-deficit", texto: `Eliminar o déficit de ${fmtBRL(-f.sobra)}/mês, começando pelos maiores gastos`, area: "Fluxo de caixa", prioridade: "Alta", prazo: "Curto" });
+        acoes.push({ id: "sg-deficit", texto: `Eliminar o déficit de ${fmtBRL(-f.sobra)}/mês, começando pelos maiores gastos`, area: "Fluxo de caixa", prioridade: "Alta", prazo: "Curto" });
       else if (f.taxaPoupanca < 0.2)
-        acoes.push({ id: "bu-poupanca", texto: `Chegar a 20% de poupança: ${fmtBRL(f.renda * 0.2)}/mês`, area: "Fluxo de caixa", prioridade: f.taxaPoupanca < 0.1 ? "Alta" : "Média", prazo: "Médio" });
+        acoes.push({ id: "sg-poupanca", texto: `Chegar a 20% de poupança: ${fmtBRL(f.renda * 0.2)}/mês`, area: "Fluxo de caixa", prioridade: f.taxaPoupanca < 0.1 ? "Alta" : "Média", prazo: "Médio" });
       if (caras.length)
-        acoes.push({ id: "bu-caras", texto: "Quitar ou renegociar as dívidas caras", area: "Dívidas", prioridade: "Alta", prazo: "Curto" });
+        acoes.push({ id: "sg-emprestimos", texto: "Quitar ou renegociar as dívidas caras", area: "Dívidas", prioridade: "Alta", prazo: "Curto" });
       if (f.comprometimento > limite)
-        acoes.push({ id: "bu-parcelas", texto: `Reduzir as parcelas para menos de ${fmtPct(limite)} da renda`, area: "Dívidas", prioridade: "Alta", prazo: "Médio" });
+        acoes.push({ id: "sg-comprometimento", texto: `Reduzir as parcelas para menos de ${fmtPct(limite)} da renda`, area: "Dívidas", prioridade: "Alta", prazo: "Médio" });
       if (nec.foraDoModelo)
-        acoes.push({ id: "bu-necessidades", texto: `Trazer as necessidades para até 50% da renda (hoje ${fmtPct(nec.pct)})`, area: "Fluxo de caixa", prioridade: "Média", prazo: "Médio" });
+        acoes.push({ id: "bu-necessidades", texto: `Trazer as necessidades para até 50% da renda (hoje ${pctAcima(nec.pct, 0.5)})`, area: "Fluxo de caixa", prioridade: "Média", prazo: "Médio" });
       if (des.foraDoModelo)
         acoes.push({ id: "bu-desejos", texto: `Limitar os desejos a 30% da renda: ${fmtBRL(des.atual - des.ideal)}/mês a menos`, area: "Fluxo de caixa", prioridade: "Média", prazo: "Curto" });
       if (ct.anuidadeAnual > 0)
@@ -730,7 +753,7 @@ export function bussola(c: Cliente) {
       comps.push({ valor: pr.cobertura, peso: 35 });
       ind.push({ nome: "Cobertura do seguro de vida", valor: fmtPct(pr.cobertura), ok: pr.gap <= 0 });
       if (pr.gap > 0)
-        acoes.push({ id: "bu-vida", texto: `Contratar ${fmtBRL(pr.gap)} de seguro de vida`, area: "Proteção", prioridade: "Alta", prazo: "Curto" });
+        acoes.push({ id: "op-vida", texto: `Contratar ${fmtBRL(pr.gap)} de seguro de vida`, area: "Proteção", prioridade: "Alta", prazo: "Curto" });
     }
     const bens = [...c.imoveis, ...c.moveis];
     if (bens.length) {
@@ -744,10 +767,10 @@ export function bussola(c: Cliente) {
       comps.push({ valor: sim(c.protecao.temSaude) ? 1 : 0, peso: 15 });
       ind.push({ nome: "Plano de saúde", valor: sim(c.protecao.temSaude) ? "Sim" : "Não", ok: sim(c.protecao.temSaude) });
       if (!sim(c.protecao.temSaude))
-        acoes.push({ id: "bu-saude", texto: "Contratar plano de saúde para a família", area: "Proteção", prioridade: "Alta", prazo: "Curto" });
+        acoes.push({ id: "op-saude", texto: "Contratar plano de saúde para a família", area: "Proteção", prioridade: "Alta", prazo: "Curto" });
     }
-    if (s(c.protecao.temInvalidez) === "Não" && f.renda > 0)
-      acoes.push({ id: "bu-invalidez", texto: "Proteger a renda com seguro de invalidez e DIT", area: "Proteção", prioridade: "Média", prazo: "Curto" });
+    if (s(c.protecao.temInvalidez) === "Não" && f.renda > 0 && s(c.cadastro.regimeTrabalho) !== "Aposentado")
+      acoes.push({ id: "op-dit", texto: "Proteger a renda com seguro de invalidez e DIT", area: "Proteção", prioridade: "Média", prazo: "Curto" });
     if (p.ativos > 0) {
       const alavancagem = p.passivos / p.ativos;
       comps.push({ valor: 1 - alavancagem / 0.5, peso: 15 });
@@ -797,7 +820,7 @@ export function bussola(c: Cliente) {
         ind.push({ nome: "Aporte atual · necessário", valor: `${fmtBRL(fu.aporteAtual)} · ${fmtBRL(fu.aporte)}`, ok: fu.aporteAtual >= fu.aporte });
         if (fu.aporte > fu.aporteAtual)
           acoes.push({
-            id: "bu-aporte",
+            id: "op-independencia",
             texto: `Investir ${fmtBRL(fu.aporte)}/mês para a independência aos ${fu.idadeAposentadoria} anos`,
             area: "Futuro",
             prioridade: fu.independencia < 0.5 ? "Alta" : "Média",
@@ -810,12 +833,12 @@ export function bussola(c: Cliente) {
       comps.push({ valor: Math.max(0, f.sobra) / ob.aporteTotal, peso: 20 });
       ind.push({ nome: "Objetivos cabem na sobra", valor: ob.cabeNaSobra ? "Sim" : "Não", ok: ob.cabeNaSobra });
       if (!ob.cabeNaSobra)
-        acoes.push({ id: "bu-objetivos", texto: `Priorizar os objetivos: pedem ${fmtBRL(ob.aporteTotal)}/mês`, area: "Objetivos", prioridade: "Média", prazo: "Curto" });
+        acoes.push({ id: "sg-objetivos", texto: `Priorizar os objetivos: pedem ${fmtBRL(ob.aporteTotal)}/mês`, area: "Objetivos", prioridade: "Média", prazo: "Curto" });
     }
     if (s(c.protecao.temPrevidencia) === "Não")
-      acoes.push({ id: "bu-previdencia", texto: "Abrir uma previdência privada para a aposentadoria", area: "Futuro", prioridade: "Média", prazo: "Médio" });
+      acoes.push({ id: "op-previdencia", texto: "Abrir uma previdência privada para a aposentadoria", area: "Futuro", prioridade: "Média", prazo: "Médio" });
     if (!acoes.length && comps.length)
-      acoes.push({ id: "bu-lib-manter", texto: "Simular uma aposentadoria antecipada em 6.5 · Futuro", area: "Futuro", prioridade: "Baixa", prazo: "Longo" });
+      acoes.push({ id: "bu-lib-manter", texto: "Simular uma aposentadoria antecipada no simulador do Futuro", area: "Futuro", prioridade: "Baixa", prazo: "Longo" });
     const nota = notaDe(comps);
     return {
       id: "liberdade",
@@ -828,7 +851,7 @@ export function bussola(c: Cliente) {
           ? "Informe nascimento e renda desejada para projetar a aposentadoria."
           : "Informe nascimento, renda desejada e objetivos."
         : fu.idadeAtingida
-          ? `Aposentadoria aos ${fu.idadeAposentadoria} anos já atingida.`
+          ? `A idade de aposentadoria (${fu.idadeAposentadoria} anos) já chegou; o patrimônio cobre ${fmtPct(Math.min(fu.independencia, 9.99))} da meta.`
           : `Projeção cobre ${fmtPct(Math.min(fu.independencia, 9.99))} da meta aos ${fu.idadeAposentadoria} anos.`,
       indicadores: ind,
       acoes,
@@ -842,16 +865,16 @@ export function bussola(c: Cliente) {
     const acoes: AcaoBussola[] = [];
     if (r.meta > 0) {
       comps.push({ valor: r.meses / r.mesesMeta, peso: 35 });
-      ind.push({ nome: "Reserva de emergência", valor: `${fmtMeses(r.meses)} de ${r.mesesMeta} meses`, ok: r.falta <= 0 });
+      ind.push({ nome: "Reserva de emergência", valor: `${r.falta > 0 ? fmtMesesPiso(r.meses) : fmtMeses(r.meses)} de ${r.mesesMeta} meses`, ok: r.falta <= 0 });
       if (r.falta > 0)
-        acoes.push({ id: "bu-reserva", texto: `Completar a reserva de emergência: faltam ${fmtBRL(r.falta)}`, area: "Investimentos", prioridade: r.meses < 3 ? "Alta" : "Média", prazo: "Curto" });
+        acoes.push({ id: "sg-reserva", texto: `Completar a reserva de emergência: faltam ${fmtBRL(r.falta)}`, area: "Investimentos", prioridade: r.meses < 3 ? "Alta" : "Média", prazo: "Curto" });
     }
     const investe = s(c.investimentos.temInvestimento);
     if (investe) {
       comps.push({ valor: sim(investe) ? 1 : 0, peso: 20 });
       ind.push({ nome: "Investimentos", valor: sim(investe) ? fmtBRL(p.investimentos) : "Não investe", ok: sim(investe) });
       if (!sim(investe))
-        acoes.push({ id: "bu-comecar", texto: "Começar a investir, com uma carteira por objetivo", area: "Investimentos", prioridade: "Média", prazo: "Curto" });
+        acoes.push({ id: "op-comecar", texto: "Começar a investir, com uma carteira por objetivo", area: "Investimentos", prioridade: "Média", prazo: "Curto" });
     }
     if (sim(investe)) {
       const assessor = s(c.investimentos.temAssessor) === "Sim";
@@ -860,15 +883,15 @@ export function bussola(c: Cliente) {
       comps.push({ valor: (assessor ? 0.6 : 0.2) + (perfilDefinido ? 0.4 : 0), peso: 15 });
       ind.push({ nome: "Assessoria · perfil", valor: `${assessor ? "Sim" : "Não"} · ${perfilDefinido ? perfil : "não definido"}`, ok: assessor && perfilDefinido });
       if (!assessor)
-        acoes.push({ id: "bu-assessoria", texto: "Ter acompanhamento profissional da carteira", area: "Investimentos", prioridade: "Média", prazo: "Curto" });
+        acoes.push({ id: "op-assessoria", texto: "Ter acompanhamento profissional da carteira", area: "Investimentos", prioridade: "Média", prazo: "Curto" });
       if (!perfilDefinido)
-        acoes.push({ id: "bu-perfil", texto: "Definir o perfil de investidor (suitability)", area: "Investimentos", prioridade: "Baixa", prazo: "Curto" });
+        acoes.push({ id: "op-suitability", texto: "Definir o perfil de investidor (suitability)", area: "Investimentos", prioridade: "Baixa", prazo: "Curto" });
       const temas = lista(c.investimentos.temas).filter((t) => t !== "Nenhum").length;
       if (p.investimentos >= 50_000) {
         comps.push({ valor: temas / 4, peso: 15 });
         ind.push({ nome: "Temas que conhece", valor: String(temas), ok: temas >= 4 });
         if (temas < 4)
-          acoes.push({ id: "bu-diversificar", texto: "Diversificar a carteira entre classes de ativos", area: "Investimentos", prioridade: "Baixa", prazo: "Médio" });
+          acoes.push({ id: "op-diversificacao", texto: "Diversificar a carteira entre classes de ativos", area: "Investimentos", prioridade: "Baixa", prazo: "Médio" });
       }
     }
     const ir = s(c.renda.declaracaoIR);
@@ -878,10 +901,11 @@ export function bussola(c: Cliente) {
       const eficiencia = ir === "Completa" ? (temPgbl ? 1 : 0.4) : temPgbl ? 0.3 : 0.8;
       comps.push({ valor: eficiencia, peso: 15 });
       ind.push({ nome: "Previdência × IR", valor: `${ir}${sim(c.protecao.temPrevidencia) && tipo ? ` · ${tipo}` : ""}`, ok: eficiencia >= 0.8 });
-      if (ir === "Completa" && !temPgbl)
-        acoes.push({ id: "bu-pgbl", texto: "Usar o PGBL para deduzir até 12% da renda no IR", area: "Fiscal/Tributário", prioridade: "Média", prazo: "Curto" });
+      // Sem previdência, a ação de abrir uma previdência (Liberdade financeira) já sugere o PGBL.
+      if (ir === "Completa" && !temPgbl && s(c.protecao.temPrevidencia) !== "Não")
+        acoes.push({ id: "op-pgbl", texto: "Usar o PGBL para deduzir até 12% da renda no IR", area: "Fiscal/Tributário", prioridade: "Média", prazo: "Curto" });
       if (ir === "Simplificada" && temPgbl)
-        acoes.push({ id: "bu-pgbl-vgbl", texto: "Rever o PGBL: declara no modelo simplificado", area: "Fiscal/Tributário", prioridade: "Média", prazo: "Curto" });
+        acoes.push({ id: "op-pgbl-vgbl", texto: "Rever o PGBL: declara no modelo simplificado", area: "Fiscal/Tributário", prioridade: "Média", prazo: "Curto" });
     }
     if (!acoes.length && comps.length)
       acoes.push({ id: "bu-ativos-manter", texto: "Revisar a carteira, os custos e os impostos uma vez por ano", area: "Investimentos", prioridade: "Baixa", prazo: "Longo" });
@@ -902,8 +926,13 @@ export function bussola(c: Cliente) {
 
   const dimensoes = [organizacao(), patrimonial(), liberdade(), ativos()];
   const comDados = dimensoes.filter((d) => d.status !== "sem-dados");
-  // Norte = a direção que mais precisa de atenção agora (menor nota; empate, a ordem acima).
-  const norte = comDados.reduce<DimensaoBussola | undefined>((m, d) => (!m || d.nota < m.nota ? d : m), undefined);
+  // Norte = a direção que mais precisa de atenção agora (empate: a ordem acima).
+  // Primeiro a gravidade do status (crítico antes de atenção), depois a nota.
+  const grav: Record<Status, number> = { critico: 0, atencao: 1, ok: 2, "sem-dados": 3 };
+  const norte = comDados.reduce<DimensaoBussola | undefined>(
+    (m, d) => (!m || grav[d.status] < grav[m.status] || (grav[d.status] === grav[m.status] && d.nota < m.nota) ? d : m),
+    undefined,
+  );
   return {
     dimensoes,
     norte,
@@ -946,9 +975,13 @@ export function mesclarCards(c: Cliente, lista: ListaCards, automaticos: CardPla
         ? { ...doItem(item, chaves, temSelo), id: a.id, produto: a.produto, potencial: a.potencial, item, automatico: a, oculto: !!c.cardsOcultos[a.id] }
         : { ...a, oculto: !!c.cardsOcultos[a.id] };
     }),
+    // Personalizado cujo automático deixou de existir mantém a chave da origem (e o "oculto").
     ...itens
       .filter((i) => !idsAuto.has(s(i.origem)))
-      .map((i) => ({ ...doItem(i, chaves, temSelo), item: i, oculto: !!c.cardsOcultos[i.id] })),
+      .map((i) => {
+        const chave = s(i.origem) || i.id;
+        return { ...doItem(i, chaves, temSelo), id: chave, item: i, oculto: !!c.cardsOcultos[chave] };
+      }),
   ];
 }
 
@@ -962,3 +995,41 @@ export const COLUNAS_PLANO: Record<ListaCards, { chaves: string[]; rotulos: stri
   },
   planoOtimizacao: { chaves: ["descricao", "motivo", "comoMelhorar"], rotulos: ["Descrição", "Motivo da escolha", "Como melhorar"], selo: false },
 };
+
+// ---------------------------------------------------------------------
+//  6.1 · Perfil do cliente (tela e relatório)
+// ---------------------------------------------------------------------
+const PLURAL_TIPO: Record<string, string> = { Essencial: "essenciais", Desejo: "desejos", Sonho: "sonhos" };
+
+export function dadosPerfil(c: Cliente) {
+  const idade = idadePorNascimento(s(c.cadastro.nascimento));
+  const estado = s(c.cadastro.estadoCivil);
+  const conjuge = temConjuge(c) && s(c.cadastro.conjuge) ? ` com ${s(c.cadastro.conjuge)}` : "";
+  const ocupacao = [s(c.cadastro.ocupacao), s(c.cadastro.regimeTrabalho)].filter(Boolean).join(" · ");
+  const fu = futuro(c);
+  const dependentes = c.dependentes.map((d) => {
+    const i = nOpt(d.idade);
+    return `${s(d.nome) || rotuloDependente(c.dependentes, d)}${i !== undefined ? ` (${i} ${i === 1 ? "ano" : "anos"})` : ""}`;
+  });
+  const tipos = ["Essencial", "Desejo", "Sonho"]
+    .map((t) => [t, c.objetivos.filter((o) => s(o.tipo) === t).length] as const)
+    .filter(([, q]) => q > 0)
+    .map(([t, q]) => `${q} ${q > 1 ? PLURAL_TIPO[t] : t.toLowerCase()}`);
+  return {
+    nome: s(c.cadastro.nome) || "Cliente",
+    rotulo: s(c.cadastro.perfil),
+    /** "34 anos · Casado(a) com Ana · Engenheiro · CLT" */
+    linha: [idade !== undefined ? `${idade} anos` : "", estado ? `${estado}${conjuge}` : "", ocupacao].filter(Boolean),
+    dados: [
+      { rotulo: "Filhos e dependentes", valor: dependentes.length ? dependentes.join(", ") : "Sem dependentes" },
+      {
+        rotulo: "Objetivos",
+        valor: c.objetivos.length ? `${plural(c.objetivos.length, "objetivo", "objetivos")}${tipos.length ? ` (${tipos.join(", ")})` : ""}` : "Não registrados",
+      },
+      { rotulo: "Declaração do IR", valor: s(c.renda.declaracaoIR) || "Não informada" },
+      { rotulo: "Perfil de investidor", valor: s(c.investimentos.perfil) || "Não definido" },
+      { rotulo: "Aposentadoria desejada", valor: `aos ${fu.idadeAposentadoria} anos${fu.estilo ? ` · estilo ${fu.estilo.toLowerCase()}` : ""}` },
+      { rotulo: "Empresa", valor: s(c.corporativo.possuiEmpresa) === "Sim" ? s(c.corporativo.ramo) || "Possui empresa" : "Não possui" },
+    ],
+  };
+}

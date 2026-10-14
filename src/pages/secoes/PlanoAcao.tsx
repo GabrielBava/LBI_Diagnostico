@@ -5,7 +5,7 @@ import { ListaItens } from "@/components/ListaEditor";
 import { BarraProgresso, Selo, SubBloco, corPrioridade } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { s } from "@/lib/calculos";
-import { sugestoes } from "@/lib/diagnostico";
+import { origensNoPlano, sugestoes } from "@/lib/diagnostico";
 import { uid } from "@/lib/format";
 import { usePreferencias } from "@/lib/preferencias";
 
@@ -14,7 +14,7 @@ export default function PlanoAcao() {
   const { cliente, setLista } = useCliente();
   const { apresentacao } = usePreferencias();
   const lista = sugestoes(cliente);
-  const noPlano = new Set(cliente.plano.map((a) => s(a.origem)));
+  const noPlano = origensNoPlano(cliente.plano);
   const pendentes = lista.filter((x) => !noPlano.has(x.id));
   const concluidas = cliente.plano.filter((a) => s(a.status) === "Concluída").length;
 

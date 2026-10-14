@@ -14,6 +14,7 @@ import { oportunidades } from "@/lib/oportunidades";
 import {
   COLUNAS_PLANO,
   bussola,
+  dadosPerfil,
   mesclarCards,
   perfilFinanceiro,
   planoAtual,
@@ -26,10 +27,11 @@ import { fmtBRL, fmtData, fmtPct } from "@/lib/format";
 import { lerConfig, useClientes } from "@/lib/storage";
 import type { Cliente } from "@/types";
 
-function Bloco({ titulo, children }: { titulo: string; children: ReactNode }) {
+/** Bloco do relatório. `longo`: pode quebrar entre páginas (cada cartão fica inteiro), sem deixar meia página em branco. */
+function Bloco({ titulo, children, longo }: { titulo: string; children: ReactNode; longo?: boolean }) {
   return (
-    <section className="print-avoid mt-8">
-      <h2 className="mb-3 border-b-2 border-primary pb-1 text-sm font-bold uppercase tracking-widest text-primary">{titulo}</h2>
+    <section className={`mt-8 ${longo ? "" : "print-avoid"}`}>
+      <h2 className="mb-3 border-b-2 border-primary pb-1 text-sm font-bold uppercase tracking-widest text-primary [break-after:avoid]">{titulo}</h2>
       {children}
     </section>
   );
@@ -75,8 +77,9 @@ function CardsRelatorio({ cliente, lista, automaticos, limite }: { cliente: Clie
   return (
     <div className="space-y-3">
       {todos.length > cards.length && (
-        <p className="text-xs text-muted-foreground">
-          As {cards.length} oportunidades de maior potencial (de {todos.length}). Oculte cartões na seção 6.3 para escolher quais entram aqui.
+        // Instrução de uso: só na tela, fora do PDF.
+        <p className="no-print text-xs text-muted-foreground">
+          O PDF traz as {cards.length} primeiras oportunidades (de {todos.length}). Oculte cartões na seção 6.3 para escolher quais entram aqui.
         </p>
       )}
       {cards.map((c) => (
@@ -140,6 +143,7 @@ export default function Relatorio() {
   const ps = pilares(cliente);
   const nota = notaGeral(ps);
   const pf = perfilFinanceiro(cliente);
+  const perfil = dadosPerfil(cliente);
   const bu = bussola(cliente);
   // Futuro: com a simulação do 6.5, quando houver.
   const sm = cliente.simulacao;
@@ -196,6 +200,21 @@ export default function Relatorio() {
 
         {mostra("panorama") && (
           <Bloco titulo="Panorama geral">
+            <div className="mb-4">
+              <p className="text-sm">
+                <strong>{perfil.nome}</strong>
+                {perfil.rotulo && ` · ${perfil.rotulo}`}
+                {perfil.linha.length > 0 && <span className="text-muted-foreground"> · {perfil.linha.join(" · ")}</span>}
+              </p>
+              <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm md:grid-cols-3">
+                {perfil.dados.map((x) => (
+                  <div key={x.rotulo}>
+                    <dt className="text-[10px] uppercase tracking-widest text-muted-foreground">{x.rotulo}</dt>
+                    <dd>{x.valor}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
             <p className="mb-3 text-sm">
               <strong>Perfil financeiro: {pf.nome}.</strong> {pf.descricao}
             </p>
@@ -273,17 +292,17 @@ export default function Relatorio() {
         )}
 
         {mostra("plano-atual-completo") && (
-          <Bloco titulo="Plano atual — diagnóstico">
+          <Bloco titulo="Plano atual — diagnóstico" longo>
             <CardsRelatorio cliente={cliente} lista="planoAtual" automaticos={planoAtual(cliente)} />
           </Bloco>
         )}
         {mostra("plano-potencial") && (
-          <Bloco titulo="Plano potencial — como podemos atuar juntos">
+          <Bloco titulo="Plano potencial — como podemos atuar juntos" longo>
             <CardsRelatorio cliente={cliente} lista="planoPotencial" automaticos={planoPotencial(cliente)} limite={8} />
           </Bloco>
         )}
         {mostra("plano-otimizacao") && (
-          <Bloco titulo="Plano otimização — o que você já faz bem">
+          <Bloco titulo="Plano otimização — o que você já faz bem" longo>
             <CardsRelatorio cliente={cliente} lista="planoOtimizacao" automaticos={planoOtimizacao(cliente)} />
           </Bloco>
         )}
@@ -387,7 +406,7 @@ export default function Relatorio() {
         )}
 
         {mostra("oportunidades") && oportunidades(cliente).length > 0 && (
-          <Bloco titulo="Matriz de oportunidades">
+          <Bloco titulo="Matriz de oportunidades" longo>
             <Tabela
               cab={["Oportunidade", "Área", "Produto", "Potencial"]}
               linhas={oportunidades(cliente).map((o) => [

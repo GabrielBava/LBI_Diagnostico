@@ -174,15 +174,15 @@ export default function Futuro() {
                 <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   <SlidersHorizontal className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Simulação
                 </h3>
-                {simulando && (
-                  <button
-                    type="button"
-                    onClick={restaurar}
-                    className="no-print inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" /> Voltar aos dados da coleta
-                  </button>
-                )}
+                {/* Sempre na tela (desabilitado sem simulação): o foco do teclado não se perde ao clicar. */}
+                <button
+                  type="button"
+                  onClick={restaurar}
+                  disabled={!simulando}
+                  className="no-print inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-semibold text-muted-foreground enabled:hover:bg-muted enabled:hover:text-foreground disabled:opacity-40"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" /> Voltar aos dados da coleta
+                </button>
               </div>
               <div className="space-y-5">
                 <Slider
@@ -219,7 +219,7 @@ export default function Futuro() {
                   rotulo="Renda desejada na aposentadoria"
                   valor={sim.rendaDesejada}
                   base={base.rendaDesejada}
-                  min={0}
+                  min={500}
                   max={maxRenda}
                   passo={500}
                   formatar={(v) => fmtBRL(v)}
@@ -256,7 +256,7 @@ export default function Futuro() {
                     <div className="mt-1 flex flex-wrap items-baseline gap-x-3">
                       <span className="text-4xl font-bold tabular-nums">{fmtPct(Math.min(sim.independencia, 9.99))}</span>
                       <span className="text-sm text-muted-foreground">
-                        da meta aos {sim.idadeAposentadoria} anos ({sim.anos} anos a partir de hoje)
+                        da meta aos {sim.idadeAposentadoria} anos ({sim.anos === 1 ? "1 ano" : `${sim.anos} anos`} a partir de hoje)
                       </span>
                     </div>
                     <BarraProgresso valor={sim.independencia * 100} className="mt-3 h-2" />
@@ -273,7 +273,7 @@ export default function Futuro() {
                   </>
                 )}
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 <Kpi tom="ouro" rotulo="Patrimônio necessário" valor={fmtBRL(sim.alvo)} />
                 <Kpi rotulo="Investimentos e previdência hoje" valor={fmtBRL(sim.atual)} detalhe="Sem a reserva de emergência" />
                 <Kpi
@@ -302,14 +302,15 @@ export default function Futuro() {
             <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               <Flag className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Plano de independência
             </h3>
-            <ol className="relative grid gap-3 md:grid-cols-3">
+            <ol className="relative grid gap-3 lg:grid-cols-3">
               {/* Linha do tempo ligando os marcos (desktop) */}
-              <span aria-hidden="true" className="absolute left-[16%] right-[16%] top-[18px] hidden h-px bg-border md:block" />
+              <span aria-hidden="true" className="absolute left-[16%] right-[16%] top-[18px] hidden h-px bg-border lg:block" />
               {sim.marcos.map((m) => {
-                const rendimento = Math.max(0, m.patrimonio - m.aportado);
+                // Rendimentos = patrimônio + o que já foi retirado na aposentadoria − o que foi aportado.
+                const rendimento = Math.max(0, m.patrimonio + m.retirado - m.aportado);
                 return (
                   <li key={m.anos} className="relative min-w-0">
-                    <div className="mb-2 flex items-center gap-2 md:justify-center">
+                    <div className="mb-2 flex items-center gap-2 lg:justify-center">
                       <span className="relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold text-sm font-bold text-primary-foreground">
                         {m.anos}
                       </span>
@@ -327,18 +328,24 @@ export default function Futuro() {
                       </div>
                       <div className="mt-1 text-[11px] text-muted-foreground">da meta de independência</div>
                       <dl className="mt-3 space-y-1 border-t border-border/60 pt-3 text-sm">
-                        <div className="flex justify-between gap-3">
+                        <div className="flex flex-wrap justify-between gap-x-3">
                           <dt className="text-muted-foreground">Renda passiva</dt>
-                          <dd className="tabular-nums font-semibold">{fmtBRL(m.rendaPassiva)}/mês</dd>
+                          <dd className="whitespace-nowrap tabular-nums font-semibold">{fmtBRL(m.rendaPassiva)}/mês</dd>
                         </div>
-                        <div className="flex justify-between gap-3">
+                        <div className="flex flex-wrap justify-between gap-x-3">
                           <dt className="text-muted-foreground">Total aportado</dt>
-                          <dd className="tabular-nums">{fmtBRL(m.aportado)}</dd>
+                          <dd className="whitespace-nowrap tabular-nums">{fmtBRL(m.aportado)}</dd>
                         </div>
-                        <div className="flex justify-between gap-3">
+                        <div className="flex flex-wrap justify-between gap-x-3">
                           <dt className="text-muted-foreground">Rendimentos</dt>
-                          <dd className="tabular-nums">{fmtBRL(rendimento)}</dd>
+                          <dd className="whitespace-nowrap tabular-nums">{fmtBRL(rendimento)}</dd>
                         </div>
+                        {m.retirado > 0 && (
+                          <div className="flex flex-wrap justify-between gap-x-3">
+                            <dt className="text-muted-foreground">Retirado na aposentadoria</dt>
+                            <dd className="whitespace-nowrap tabular-nums">{fmtBRL(m.retirado)}</dd>
+                          </div>
+                        )}
                       </dl>
                     </div>
                   </li>

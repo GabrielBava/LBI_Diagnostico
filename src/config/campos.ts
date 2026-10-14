@@ -546,8 +546,8 @@ export const CAMPOS_PROTECAO: CampoDef[] = [
 ];
 
 /**
- * Premissas do cálculo de proteção (6.2 · Plano atual). Versão consultor.
- * O horizonte do padrão de vida (1, 5 ou 15 anos) é escolhido nos cartões da 6.2.
+ * Premissas do cálculo de proteção (6.3 · Plano potencial). Versão consultor.
+ * O horizonte do padrão de vida (1, 5 ou 15 anos) é escolhido na proteção do 6.3.
  */
 export const CAMPOS_PREMISSAS_PROTECAO: CampoDef[] = [
   { key: "itcmd", label: "ITCMD (%)", tipo: "percentual", padrao: 4, somenteConsultor: true, ajuda: "Varia por estado (até 8%)." },

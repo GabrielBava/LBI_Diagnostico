@@ -5,8 +5,7 @@ import { CircleAlert, CircleCheck, Compass, Navigation } from "lucide-react";
 import { BotaoLevarAoPlano } from "@/components/CardsPlano";
 import { BarraProgresso, Selo, corStatus, textoStatus } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { s } from "@/lib/calculos";
-import type { Status } from "@/lib/diagnostico";
+import { origensNoPlano, type Status } from "@/lib/diagnostico";
 import { uid } from "@/lib/format";
 import { bussola, type AcaoBussola, type DimensaoBussola, type IdDimensao } from "@/lib/plano";
 import { usePreferencias } from "@/lib/preferencias";
@@ -76,8 +75,8 @@ function Rosa({ dimensoes, norte }: { dimensoes: DimensaoBussola[]; norte?: Dime
       })}
       {/* Agulha */}
       <g
-        className="motion-reduce:transition-none"
-        style={{ transform: `rotate(${angulo}deg)`, transformOrigin: `${C}px ${C}px`, transition: "transform 0.9s cubic-bezier(.2,.8,.2,1)" }}
+        className="transition-transform duration-[900ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none"
+        style={{ transform: `rotate(${angulo}deg)`, transformOrigin: `${C}px ${C}px` }}
       >
         <polygon points={`${C},${C - 82} ${C + 8},${C} ${C - 8},${C}`} fill={corAgulha} />
         <polygon points={`${C},${C + 56} ${C + 8},${C} ${C - 8},${C}`} fill="rgb(var(--muted-foreground))" fillOpacity={0.55} />
@@ -92,7 +91,7 @@ export default function Bussola() {
   const { cliente, setLista } = useCliente();
   const { apresentacao } = usePreferencias();
   const b = bussola(cliente);
-  const noPlano = new Set(cliente.plano.map((a) => s(a.origem)));
+  const noPlano = origensNoPlano(cliente.plano);
   const levar = (a: AcaoBussola) =>
     setLista("plano", [
       ...cliente.plano,
@@ -104,7 +103,7 @@ export default function Bussola() {
   const norte = b.norte!;
   return (
     <div className="space-y-4">
-      <div className="grid items-center gap-4 rounded-xl border border-border bg-secondary/20 p-4 md:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
+      <div className="grid items-center gap-4 rounded-xl border border-border bg-secondary/20 p-4 lg:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
         <Rosa dimensoes={b.dimensoes} norte={norte} />
         <div className="min-w-0 space-y-4">
           <div className="flex flex-wrap items-end gap-x-6 gap-y-2">
@@ -147,7 +146,7 @@ export default function Bussola() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         {b.dimensoes.map((d) => {
           const eNorte = d.id === norte.id;
           return (
@@ -155,7 +154,7 @@ export default function Bussola() {
               key={d.id}
               className={`print-avoid flex min-w-0 flex-col rounded-xl border bg-card p-4 ${eNorte ? "border-primary/60 ring-1 ring-primary/30" : "border-border"}`}
             >
-              <header className="flex items-start justify-between gap-3">
+              <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
                 <div className="flex min-w-0 items-center gap-2.5">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-sm font-bold">
                     {POSICAO[d.id].letra}
@@ -182,7 +181,7 @@ export default function Bussola() {
               {d.indicadores.length > 0 && (
                 <ul className="mt-3 divide-y divide-border/60 border-y border-border/60">
                   {d.indicadores.map((x) => (
-                    <li key={x.nome} className="flex items-center justify-between gap-3 py-1.5 text-sm">
+                    <li key={x.nome} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 py-1.5 text-sm">
                       <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
                         {x.ok ? (
                           <CircleCheck className="h-3.5 w-3.5 shrink-0 text-success" aria-label="ok" />

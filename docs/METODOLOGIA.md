@@ -137,7 +137,7 @@ Valores reais (R$ de hoje).
 
 **Patrimônio ao longo da vida:** até os 95 anos. Antes da aposentadoria o patrimônio recebe o aporte mensal; depois, paga todo mês a renda que falta (renda desejada − outras rendas). Se o saldo zerar, o sistema mostra a idade em que o patrimônio acaba.
 
-**Plano de independência (1, 5 e 10 anos):** para cada marco, a mesma trajetória do gráfico mostra o patrimônio, o % da meta, a renda passiva (4% ao ano do patrimônio ÷ 12 + outras rendas), o total aportado (patrimônio de hoje + aportes) e os rendimentos (patrimônio − aportado).
+**Plano de independência (1, 5 e 10 anos):** para cada marco, a mesma trajetória do gráfico mostra o patrimônio, o % da meta, a renda passiva (4% ao ano do patrimônio ÷ 12 + outras rendas), o total aportado (patrimônio de hoje + aportes), os rendimentos (patrimônio + retiradas − aportado) e, se a aposentadoria cair antes do marco, o total retirado.
 
 ---
 
@@ -166,7 +166,7 @@ Nota de 0 a 100 por pilar. Status: Saudável ≥ 75 · Atenção ≥ 45 · Crít
 |---|---|
 | Em déficit | sobra negativa |
 | Endividado | parcelas acima do limite ou dívidas caras com parcelas ≥ 5% da renda |
-| Construtor de patrimônio | poupa ≥ 20% e já investe |
+| Construtor de patrimônio | poupa ≥ 20% e já investe (a reserva de emergência não conta como investimento) |
 | Poupador | poupa ≥ 20% |
 | Equilibrado | poupa ≥ 10% |
 | Consumidor | poupa menos de 10% |
@@ -209,12 +209,12 @@ Exemplos de ajuste: seguro de vida sobe com o tamanho do gap em anos de renda; c
 **Nota do radar por área** = 80% da maior oportunidade da área + 4 pontos por oportunidade extra (máximo 100).
 
 Oportunidades por área:
-- **Proteção (seguros):** vida (gap), invalidez/doenças graves/DIT, vida do cônjuge, saúde, auto/náutico, residencial, empresarial, seguro de sócio, vida em grupo (empresa com funcionários), saúde PME, RC profissional (autônomo/liberal) e viagem anual.
+- **Proteção (seguros):** vida (gap), invalidez/doenças graves/DIT (não se aplica a aposentados), vida do cônjuge, saúde, auto/náutico, residencial, empresarial, seguro de sócio, vida em grupo (empresa com funcionários), saúde PME, RC profissional (autônomo/liberal) e viagem anual.
 - **Patrimonial (consórcios):** consórcio para futuras aquisições (no lugar do financiamento), para objetivos de casa e veículo, para a troca de bens (modelo de desejo), para a próxima troca de veículo financiado, para bens da empresa, de serviços (reformas e gastos únicos ≥ R$ 15 mil) e imobiliário para construir patrimônio (sobra ≥ R$ 3 mil); portabilidade/amortização de financiamento.
-- **Sucessão:** seguro de vida para o inventário, holding/planejamento sucessório e VGBL como instrumento sucessório.
-- **Fiscal/Tributário:** PGBL para quem declara no completo, rever PGBL no simplificado, comparar simplificada × completa, revisão tributária da empresa e investimentos isentos.
+- **Sucessão:** seguro de vida para o inventário (só quando os recursos financeiros já cobrem a necessidade e não há seguro de vida; com capital a contratar, o inventário já está dentro do seguro de vida), holding/planejamento sucessório e VGBL como instrumento sucessório (reserva + investimentos ≥ R$ 200 mil, já que a previdência não entra no inventário).
+- **Fiscal/Tributário:** PGBL para quem declara no completo e já tem previdência (sem previdência, a oportunidade de previdência privada do Futuro já oferece o PGBL; o limite de 12% é sobre a renda bruta tributável do cliente), rever PGBL no simplificado, comparar simplificada × completa (só para quem declara no simplificado), revisão tributária da empresa e investimentos isentos (LCI/LCA com FGC; CRI/CRA sem FGC).
 - **Investimentos:** começar a investir, reserva de emergência, assessoria, diversificação, investimento para compra à vista, suitability, patrimônio financeiro e cartão com benefícios.
-- **Futuro:** previdência privada, plano de independência e fundo de educação dos filhos.
+- **Futuro:** previdência privada, plano de independência (exige a data de nascimento) e fundo de educação (dependentes com a faculdade pela frente).
 
 O topo da seção resume o **foco em receita**: quantidade de oportunidades de seguros e consórcios, capital de vida sugerido e valor em cartas. Tocar em uma área do radar (ou da lista) filtra as oportunidades. Cada oportunidade vai ao plano de ação com um clique.
 
@@ -229,7 +229,8 @@ Quatro direções, cada uma com nota de 0 a 100 (média ponderada dos indicadore
 | O · Gestão de ativos | Os investimentos estão bem cuidados? | reserva em meses (35) · investe (20) · assessoria e perfil (15) · temas conhecidos (15) · previdência × declaração do IR (15) |
 
 - **Saúde financeira** = média das direções com dados.
-- **Norte** = a direção com a menor nota: a agulha aponta para ela e o painel "Seu norte agora" traz as três primeiras ações.
+- **Norte** = a direção que mais precisa de atenção: primeiro a de status mais grave (Crítico antes de Atenção) e, entre elas, a de menor nota. A agulha aponta para ela e o painel "Seu norte agora" traz as três primeiras ações.
+- As ações da bússola usam os mesmos códigos das sugestões e oportunidades equivalentes: levar uma delas ao plano marca as outras como "No plano".
 - Cada ação vai ao plano de ação com um clique (versão consultor).
 
 ### Plano de ação (6.8) e cronograma (7.2)

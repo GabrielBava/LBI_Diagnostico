@@ -2,7 +2,7 @@
 // Cada cartão tem três colunas (ex.: Diagnóstico · Motivo · Risco da inação).
 // Os cartões automáticos saem dos dados; o consultor pode personalizar o texto,
 // ocultar o cartão na apresentação ou acrescentar cartões próprios.
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Check, ChevronDown, Eye, EyeOff, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
 import type { CampoDef } from "@/config/campos";
@@ -73,7 +73,11 @@ export function CardsPlano({
   // Automáticos (ou a versão personalizada deles) e, depois, os acrescentados.
   const cards = mesclarCards(cliente, lista, automaticos, colunas.map((c) => c.key), !!rotuloSelo);
   const visiveis = apresentacao ? cards.filter((c) => !c.oculto) : cards;
-  const mostrados = limite && !todos ? visiveis.slice(0, limite) : visiveis;
+  // O cartão em edição aparece mesmo depois do limite (ex.: um cartão recém-acrescentado).
+  const mostrados = limite && !todos ? visiveis.filter((c, i) => i < limite || (!!editando && c.item?.id === editando)) : visiveis;
+  const escondidos = visiveis.length - mostrados.length;
+  // Depois de "voltar ao texto automático", o foco vai para o botão de personalizar do mesmo cartão.
+  const focoPendente = useRef<string | null>(null);
 
   const salvarItens = (f: (itens: Item[]) => Item[]) => atualizar((c) => ({ ...c, [lista]: f(c[lista]) }));
   const alternarOculto = (id: string) =>
@@ -91,7 +95,9 @@ export function CardsPlano({
     ]);
     setEditando(id);
   };
-  const remover = (item: Item) => {
+  const remover = (card: CardTela) => {
+    const item = card.item!;
+    if (card.automatico) focoPendente.current = card.id;
     salvarItens((lst) => lst.filter((i) => i.id !== item.id));
     if (editando === item.id) setEditando(null);
   };
@@ -110,7 +116,8 @@ export function CardsPlano({
         const selo = rotuloSelo ? card.selo : undefined;
         return (
           <article
-            key={card.item?.id ?? card.id}
+            // A chave é a do cartão (o personalizado herda a do automático): o foco não se perde ao personalizar.
+            key={card.id}
             className={`print-avoid rounded-xl border border-l-4 border-border bg-card ${
               selo ? BORDA[selo] : destaque === "success" ? "border-l-success" : "border-l-primary"
             } ${oculto ? "opacity-60" : ""}`}
@@ -146,7 +153,19 @@ export function CardsPlano({
                       {emEdicao ? <Check className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
                     </button>
                   ) : (
-                    <button type="button" className={botaoIcone} title="Personalizar o texto" aria-label="Personalizar o texto" onClick={() => personalizar(card)}>
+                    <button
+                      type="button"
+                      className={botaoIcone}
+                      title="Personalizar o texto"
+                      aria-label="Personalizar o texto"
+                      onClick={() => personalizar(card)}
+                      ref={(el) => {
+                        if (el && focoPendente.current === card.id) {
+                          focoPendente.current = null;
+                          el.focus();
+                        }
+                      }}
+                    >
                       <Pencil className="h-4 w-4" />
                     </button>
                   )}
@@ -165,7 +184,7 @@ export function CardsPlano({
                       className={`${botaoIcone} hover:text-destructive`}
                       title={card.automatico ? "Voltar ao texto automático" : "Remover"}
                       aria-label={card.automatico ? "Voltar ao texto automático" : "Remover"}
-                      onClick={() => remover(card.item!)}
+                      onClick={() => remover(card)}
                     >
                       {card.automatico ? <RotateCcw className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
                     </button>
@@ -217,14 +236,14 @@ export function CardsPlano({
         );
       })}
 
-      {limite && visiveis.length > limite && (
+      {limite && (todos ? visiveis.length > limite : escondidos > 0) && (
         <button
           type="button"
           onClick={() => setTodos(!todos)}
           className="no-print mx-auto flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-semibold text-primary hover:bg-primary/10"
         >
           <ChevronDown className={`h-4 w-4 transition ${todos ? "rotate-180" : ""}`} />
-          {todos ? "Mostrar menos" : `Ver mais ${visiveis.length - limite}`}
+          {todos ? "Mostrar menos" : `Ver mais ${escondidos}`}
         </button>
       )}
 
@@ -246,12 +265,15 @@ export function selosVisiveis(cliente: Cliente, lista: ListaCards, automaticos: 
 /** Botão "Levar ao plano" (plano de ação). */
 export function BotaoLevarAoPlano({ ja, onClick }: { ja: boolean; onClick: () => void }) {
   return (
+    // aria-disabled (e não disabled): o botão continua focável depois do clique, sem perder o foco do teclado.
     <button
       type="button"
-      disabled={ja}
-      onClick={onClick}
+      aria-disabled={ja}
+      onClick={ja ? undefined : onClick}
       title={ja ? "Já está no plano de ação" : "Levar ao plano de ação"}
-      className="inline-flex h-8 items-center gap-1 rounded-md border border-primary/50 px-2.5 text-[11px] font-semibold text-primary hover:bg-primary/10 disabled:border-success/40 disabled:text-success"
+      className={`inline-flex h-8 items-center gap-1 rounded-md border px-2.5 text-[11px] font-semibold ${
+        ja ? "cursor-default border-success/40 text-success" : "border-primary/50 text-primary hover:bg-primary/10"
+      }`}
     >
       {ja ? <Check className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />} {ja ? "No plano" : "Levar ao plano"}
     </button>

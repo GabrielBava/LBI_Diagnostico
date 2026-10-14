@@ -8,20 +8,15 @@ import { useCliente } from "@/lib/cliente-context";
 import {
   despesas,
   fluxo,
-  futuro,
-  idadePorNascimento,
   n,
-  nOpt,
   parametros,
   patrimonio,
   reservaEmergencia,
-  rotuloDependente,
   s,
-  temConjuge,
 } from "@/lib/calculos";
 import { notaGeral, pilares, temNota, type Status } from "@/lib/diagnostico";
 import { fmtBRL, fmtPct } from "@/lib/format";
-import { perfilFinanceiro } from "@/lib/plano";
+import { dadosPerfil, perfilFinanceiro } from "@/lib/plano";
 
 export const iconeStatus: Record<Status, typeof CircleCheck> = {
   ok: CircleCheck,
@@ -59,48 +54,27 @@ const iniciais = (nome: string) =>
 
 function Perfil() {
   const { cliente: c } = useCliente();
-  const nome = s(c.cadastro.nome) || "Cliente";
-  const idade = idadePorNascimento(s(c.cadastro.nascimento));
-  const estado = s(c.cadastro.estadoCivil);
-  const conjuge = temConjuge(c) && s(c.cadastro.conjuge) ? ` com ${s(c.cadastro.conjuge)}` : "";
-  const ocupacao = s(c.cadastro.ocupacao);
-  const regime = s(c.cadastro.regimeTrabalho);
-  const fu = futuro(c);
-  const dependentes = c.dependentes.map((d) => {
-    const i = nOpt(d.idade);
-    return `${s(d.nome) || rotuloDependente(c.dependentes, d)}${i !== undefined ? ` (${i} ${i === 1 ? "ano" : "anos"})` : ""}`;
-  });
-  const tipos = ["Essencial", "Desejo", "Sonho"]
-    .map((t) => [t, c.objetivos.filter((o) => s(o.tipo) === t).length] as const)
-    .filter(([, q]) => q > 0)
-    .map(([t, q]) => `${q} ${t.toLowerCase()}${q > 1 ? "s" : ""}`);
-  const linha = [idade !== undefined ? `${idade} anos` : "", estado ? `${estado}${conjuge}` : "", [ocupacao, regime].filter(Boolean).join(" · ")].filter(Boolean);
-
+  const pf = dadosPerfil(c);
   return (
     <SubBloco titulo="Perfil">
       <div className="flex items-center gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gold text-base font-bold text-primary-foreground">
-          {iniciais(nome)}
+          {iniciais(pf.nome)}
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-lg font-semibold leading-tight [overflow-wrap:anywhere]">{nome}</span>
-            {s(c.cadastro.perfil) && <Selo className="border-primary/30 bg-primary/10 text-primary">{s(c.cadastro.perfil)}</Selo>}
+            <span className="text-lg font-semibold leading-tight [overflow-wrap:anywhere]">{pf.nome}</span>
+            {pf.rotulo && <Selo className="border-primary/30 bg-primary/10 text-primary">{pf.rotulo}</Selo>}
           </div>
-          {linha.length > 0 && <p className="mt-0.5 text-sm text-muted-foreground">{linha.join(" · ")}</p>}
+          {pf.linha.length > 0 && <p className="mt-0.5 text-sm text-muted-foreground">{pf.linha.join(" · ")}</p>}
         </div>
       </div>
       <dl className="mt-4 grid grid-cols-1 gap-x-4 gap-y-3 sm:grid-cols-2">
-        <Dado rotulo="Filhos e dependentes">{dependentes.length ? dependentes.join(", ") : "Sem dependentes"}</Dado>
-        <Dado rotulo="Objetivos">
-          {c.objetivos.length ? `${c.objetivos.length} ${c.objetivos.length === 1 ? "objetivo" : "objetivos"}${tipos.length ? ` (${tipos.join(", ")})` : ""}` : "Não registrados"}
-        </Dado>
-        <Dado rotulo="Declaração do IR">{s(c.renda.declaracaoIR) || "Não informada"}</Dado>
-        <Dado rotulo="Perfil de investidor">{s(c.investimentos.perfil) || "Não definido"}</Dado>
-        <Dado rotulo="Aposentadoria desejada">
-          aos {fu.idadeAposentadoria} anos{fu.estilo ? ` · estilo ${fu.estilo.toLowerCase()}` : ""}
-        </Dado>
-        <Dado rotulo="Empresa">{s(c.corporativo.possuiEmpresa) === "Sim" ? s(c.corporativo.ramo) || "Possui empresa" : "Não possui"}</Dado>
+        {pf.dados.map((d) => (
+          <Dado key={d.rotulo} rotulo={d.rotulo}>
+            {d.valor}
+          </Dado>
+        ))}
       </dl>
     </SubBloco>
   );
@@ -143,7 +117,7 @@ function PerfilFinanceiro() {
         </Dado>
         <Dado rotulo="Reserva de emergência">
           <span className={`font-semibold tabular-nums ${r.meta > 0 && r.falta > 0 ? "text-warning" : ""}`}>
-            {r.meta > 0 ? `${meses} meses` : "—"}
+            {r.meta > 0 ? `${meses} ${meses === "1" ? "mês" : "meses"}` : "—"}
           </span>
           {r.meta > 0 && <span className="text-xs text-muted-foreground"> · meta {r.mesesMeta}</span>}
         </Dado>

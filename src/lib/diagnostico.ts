@@ -5,7 +5,7 @@
 //  As regras e faixas abaixo são a "régua" da metodologia — ajuste aqui.
 // =====================================================================
 
-import type { Cliente } from "@/types";
+import type { Cliente, Item } from "@/types";
 import { fmtBRL, fmtPct } from "./format";
 import {
   fluxo,
@@ -148,6 +148,21 @@ export function notaGeral(ps: Pilar[]) {
 // ---------------------------------------------------------------------
 //  6.8 · Sugestões para o plano de ação (pontos de atuação priorizados)
 // ---------------------------------------------------------------------
+/** Texto de ação a partir do detalhe de uma oportunidade (sem o ponto final). */
+export const textoAcao = (detalhe: string) => detalhe.trim().replace(/\.$/, "");
+
+/** Ações equivalentes: levar uma ao plano marca as outras como "No plano". */
+const EQUIVALENTES: string[][] = [["sg-reserva", "op-reserva"]];
+
+/** Origens já no plano de ação (com as equivalentes). */
+export function origensNoPlano(plano: Item[]) {
+  const out = new Set(plano.map((a) => s(a.origem)).filter(Boolean));
+  EQUIVALENTES.forEach((grupo) => {
+    if (grupo.some((id) => out.has(id))) grupo.forEach((id) => out.add(id));
+  });
+  return out;
+}
+
 export interface Sugestao {
   id: string;
   acao: string;
@@ -200,7 +215,7 @@ export function sugestoes(c: Cliente): Sugestao[] {
   // "op-reserva" repete "sg-reserva", que já define a prioridade pelos meses cobertos.
   oportunidades(c)
     .filter((o) => o.id !== "op-reserva")
-    .forEach((o) => out.push({ id: o.id, acao: `${o.titulo}: ${o.detalhe}`, area: o.area, prioridade: o.prioridade, prazo: o.prazo }));
+    .forEach((o) => out.push({ id: o.id, acao: textoAcao(o.detalhe), area: o.area, prioridade: o.prioridade, prazo: o.prazo }));
   const ordem = { Alta: 0, Média: 1, Baixa: 2 };
   return out.sort((a, b) => ordem[a.prioridade] - ordem[b.prioridade]);
 }

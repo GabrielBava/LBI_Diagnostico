@@ -85,3 +85,6 @@ export const uid = () =>
 
 /** "1 cartão" / "2 cartões". */
 export const plural = (q: number, singular: string, pluralTexto: string) => `${q} ${q === 1 ? singular : pluralTexto}`;
+
+/** "a, b e c". */
+export const juntar = (itens: string[]) => (itens.length <= 1 ? itens.join("") : `${itens.slice(0, -1).join(", ")} e ${itens[itens.length - 1]}`);

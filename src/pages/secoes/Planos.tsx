@@ -20,6 +20,7 @@ import { Selo, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { n, s } from "@/lib/calculos";
 import { uid } from "@/lib/format";
+import { origensNoPlano, textoAcao } from "@/lib/diagnostico";
 import { planoAtual, planoOtimizacao, planoPotencial } from "@/lib/plano";
 import { usePreferencias } from "@/lib/preferencias";
 import ProtecaoContratar from "./ProtecaoContratar";
@@ -95,7 +96,7 @@ export function PlanoPotencial() {
   const { cliente, setLista } = useCliente();
   const { apresentacao } = usePreferencias();
   const cards = planoPotencial(cliente);
-  const noPlano = new Set(cliente.plano.map((a) => s(a.origem)));
+  const noPlano = origensNoPlano(cliente.plano);
   return (
     <div className="space-y-4">
       {!apresentacao && (
@@ -129,7 +130,8 @@ export function PlanoPotencial() {
                 {
                   id: uid(),
                   origem: card.id,
-                  acao: `${card.titulo}: ${card.textos.comoAtuar}`,
+                  // Personalizado: o texto do consultor; automático: a ação da oportunidade.
+                  acao: textoAcao((card.item ? card.textos.comoAtuar : card.acao ?? card.textos.comoAtuar) || card.titulo),
                   area: card.area || "Objetivos",
                   prioridade: card.selo ?? "Média",
                   prazo: "Curto",

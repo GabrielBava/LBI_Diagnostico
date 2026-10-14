@@ -10,7 +10,7 @@
 // =====================================================================
 
 import type { Cliente, Item } from "@/types";
-import { fmtBRL, fmtPct, plural } from "./format";
+import { fmtBRL, fmtPct, juntar, plural } from "./format";
 import { bemFinanciado } from "@/config/campos";
 import {
   cartoes,
@@ -72,6 +72,21 @@ const limitar = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
 /** Potencial = peso do produto + bônus (relevância para o cliente), até 100. */
 const potencial = (produto: Produto, bonus = 0) => limitar(PESO_PRODUTO[produto] + bonus);
 
+/** Nome de um veículo ou embarcação para os textos ("Moto 2019", "carro"...). */
+export const nomeBem = (m: Item) => s(m.nome) || s(m.tipo).toLowerCase() || "veículo";
+
+/** O que o capital do seguro de vida cobre (só os componentes com valor). */
+export function componentesProtecao(pr: ReturnType<typeof protecao>) {
+  return juntar(
+    [
+      pr.componentes.educacional > 0 && "educação dos filhos",
+      `${pr.horizonte === 1 ? "1 ano" : `${pr.horizonte} anos`} de padrão de vida`,
+      pr.componentes.sucessao > 0 && "custos do inventário",
+      pr.componentes.quitacao > 0 && "quitação de dívidas",
+    ].filter(Boolean) as string[],
+  );
+}
+
 export function oportunidades(c: Cliente): Oportunidade[] {
   const pr = protecao(c);
   const p = patrimonio(c);
@@ -96,8 +111,8 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       area: "Proteção",
       produto: "Seguro",
       titulo: "Seguro de vida",
-      oferta: `Seguro de vida com capital de ${fmtBRL(pr.gap)}: educação dos filhos, ${pr.horizonte === 1 ? "1 ano" : `${pr.horizonte} anos`} de padrão de vida e custos da sucessão.`,
-      porque: `A família precisa de ${fmtBRL(pr.necessario)} e hoje tem ${fmtBRL(pr.atual)} em seguro individual.`,
+      oferta: `Seguro de vida com capital de ${fmtBRL(pr.gap)}: ${componentesProtecao(pr)}.`,
+      porque: `A família precisa de ${fmtBRL(pr.necessario)} ${pr.atual > 0 ? `e hoje tem ${fmtBRL(pr.atual)} em seguro individual` : "e hoje não tem seguro de vida individual"}.`,
       objetivo: "A família mantém o padrão de vida e os planos mesmo sem a renda do cliente.",
       // Quanto maior o gap em anos de renda, maior o potencial.
       potencial: potencial("Seguro", Math.min(15, (pr.gap / rendaAnual) * 2)),
@@ -105,7 +120,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       prazo: "Curto",
       valor: pr.gap,
     });
-  if (s(c.protecao.temInvalidez) !== "Sim" && f.renda > 0)
+  if (s(c.protecao.temInvalidez) !== "Sim" && f.renda > 0 && regime !== "Aposentado")
     add({
       id: "op-dit",
       area: "Proteção",
@@ -114,7 +129,9 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       oferta: `Cobertura de invalidez, doenças graves e diária por incapacidade temporária para repor a renda de ${fmtBRL(rd.cliente.liquida || f.renda)}/mês.`,
       porque: semInss
         ? `Como ${regime.toLowerCase()}, o cliente não tem salário garantido se ficar afastado.`
-        : "A renda depende do trabalho do cliente e não há cobertura para afastamento.",
+        : s(c.protecao.temInvalidez) === "Não"
+          ? "A renda depende do trabalho do cliente e não há cobertura para afastamento."
+          : "Não há cobertura de invalidez ou afastamento informada; a renda depende do trabalho do cliente.",
       objetivo: "Contas em dia e tratamento garantido durante um afastamento.",
       potencial: potencial("Seguro", semInss ? 10 : 4),
       prioridade: semInss ? "Alta" : "Média",
@@ -153,7 +170,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       area: "Proteção",
       produto: "Seguro",
       titulo: "Seguro auto / náutico",
-      oferta: `Seguro para ${semSeguroMovel.map((m) => s(m.nome) || s(m.tipo)).join(", ")} (${fmtBRL(semSeguroMovel.reduce((t, m) => t + n(m.valor), 0))} em bens).`,
+      oferta: `Seguro para ${juntar(semSeguroMovel.map(nomeBem))} (${fmtBRL(semSeguroMovel.reduce((t, m) => t + n(m.valor), 0))} em bens).`,
       porque: `${plural(semSeguroMovel.length, "veículo ou embarcação", "veículos ou embarcações")} sem seguro.`,
       objetivo: "Um roubo ou acidente não vira prejuízo para o patrimônio.",
       potencial: potencial("Seguro", -10),
@@ -284,6 +301,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
         prioridade: estrategia === "Financiamento" ? "Alta" : "Média",
         prazo: "Médio",
         valor: n(a.valorDesejado),
+        detalhe: `Consórcio de ${valor} para ${nomeAquisicao(a).toLowerCase()}${estrategia === "Financiamento" ? " no lugar do financiamento" : ""}`,
       });
   });
   const segmentoComConsorcio = (segmento: string) =>
@@ -304,6 +322,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
         prioridade: "Média",
         prazo: "Médio",
         valor: n(o.valorFuturo),
+        detalhe: `Consórcio de ${fmtBRL(n(o.valorFuturo))} para “${s(o.titulo) || s(o.categoria)}”`,
       }),
     );
   const troca = c.moveis.filter((m) => m.pensaAmpliacao === true);
@@ -313,7 +332,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       area: "Patrimonial",
       produto: "Consórcio",
       titulo: "Consórcio para a troca de bens",
-      oferta: `Carta de consórcio para trocar ${troca.map((m) => `${s(m.nome) || s(m.tipo)}${s(m.modeloDesejado) ? ` pelo ${s(m.modeloDesejado)}` : ""}`).join(", ")}, usando o bem atual como lance.`,
+      oferta: `Carta de consórcio para trocar ${juntar(troca.map((m) => `${nomeBem(m)}${s(m.modeloDesejado) ? ` pelo ${s(m.modeloDesejado)}` : ""}`))}, usando o bem atual como lance.`,
       porque: "O cliente pensa em trocar ou ampliar bens.",
       objetivo: "Trocar de bem sem descapitalizar nem pagar juros.",
       potencial: potencial("Consórcio", 2),
@@ -328,9 +347,9 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       area: "Patrimonial",
       produto: "Consórcio",
       titulo: "Consórcio para a próxima troca de veículo",
-      oferta: `Carta de veículo para a próxima troca de ${veiculosFinanciados.map((m) => s(m.nome) || s(m.tipo)).join(", ")}, começando antes de o financiamento acabar.`,
+      oferta: `Carta de consórcio para a próxima troca de ${juntar(veiculosFinanciados.map(nomeBem))}, começando antes de o financiamento acabar.`,
       porque: `${veiculosFinanciados.length === 1 ? "O veículo atual foi financiado" : "Os veículos atuais foram financiados"}: sem planejamento, a próxima troca volta a pagar juros.`,
-      objetivo: "Trocar de carro sem juros e com a parcela já prevista no orçamento.",
+      objetivo: "Trocar de veículo sem juros e com a parcela já prevista no orçamento.",
       potencial: potencial("Consórcio", -6),
       prioridade: "Baixa",
       prazo: "Médio",
@@ -381,12 +400,13 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       produto: "Consórcio",
       titulo: "Consórcio imobiliário para construir patrimônio",
       oferta: `Carta de imóvel de cerca de ${fmtBRL(cartaPatrimonio)}, com parcela de até ${fmtBRL(parcelaPatrimonio)}/mês (30% da sobra), para um imóvel de renda.`,
-      porque: `Sobram ${fmtBRL(f.sobra)}/mês e as parcelas comprometem só ${fmtPct(f.comprometimento)} da renda.`,
+      porque: `Sobram ${fmtBRL(f.sobra)}/mês ${f.parcelas > 0 ? `e as parcelas comprometem só ${fmtPct(f.comprometimento)} da renda` : "e não há parcelas comprometendo a renda"}.`,
       objetivo: "Aumentar o patrimônio e criar renda de aluguel no longo prazo.",
       potencial: potencial("Consórcio", -8),
       prioridade: "Baixa",
       prazo: "Longo",
       valor: cartaPatrimonio,
+      detalhe: `Consórcio imobiliário de cerca de ${fmtBRL(cartaPatrimonio)} (parcela de até ${fmtBRL(parcelaPatrimonio)}/mês) para um imóvel de renda`,
     });
   if (dv.saldoFin > 0)
     add({
@@ -403,15 +423,17 @@ export function oportunidades(c: Cliente): Oportunidade[] {
     });
 
   // --------------------------------------------------------------- Sucessão
+  // Com gap > 0, o capital do seguro de vida (op-vida) já inclui o inventário. Este cartão
+  // fica para quem tem a necessidade coberta por recursos que ficariam presos no inventário.
   const custoInventario = pr.itcmd + pr.honorarios;
-  if (custoInventario > 0 && pr.quitados >= 300_000)
+  if (custoInventario > 0 && pr.quitados >= 300_000 && pr.gap <= 0 && !sim(c.protecao.temSeguroVida))
     add({
       id: "op-vida-sucessao",
       area: "Sucessão",
       produto: "Seguro",
       titulo: "Seguro de vida para o inventário",
       oferta: `Seguro de vida de ${fmtBRL(custoInventario)} para pagar ITCMD e honorários, com liquidez imediata para os herdeiros.`,
-      porque: `O inventário de ${fmtBRL(pr.quitados)} em bens quitados custaria cerca de ${fmtBRL(custoInventario)}.`,
+      porque: `O inventário de ${fmtBRL(pr.quitados)} em bens quitados, investimentos e reserva custaria cerca de ${fmtBRL(custoInventario)}, e esses recursos ficam bloqueados até a partilha.`,
       objetivo: "Os herdeiros não precisam vender bens para pagar o inventário.",
       potencial: potencial("Seguro", -4),
       prioridade: "Média",
@@ -431,14 +453,17 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       prioridade: "Média",
       prazo: "Longo",
     });
-  if (p.financeiro >= 200_000 && !s(c.protecao.tipoPrevidencia).includes("VGBL"))
+  // Previdência já fica fora do inventário: contam só reserva e investimentos.
+  const noInventario = p.reserva + p.investimentos;
+  const tipoPrev = sim(c.protecao.temPrevidencia) ? s(c.protecao.tipoPrevidencia) : "";
+  if (noInventario >= 200_000 && !tipoPrev.includes("VGBL"))
     add({
       id: "op-vgbl-sucessao",
       area: "Sucessão",
       produto: "Previdência",
       titulo: "VGBL como instrumento sucessório",
       oferta: "Parte dos investimentos em VGBL, com beneficiários indicados.",
-      porque: `${fmtBRL(p.financeiro)} em recursos financeiros entrariam no inventário.`,
+      porque: `${fmtBRL(noInventario)} em reserva e investimentos entrariam no inventário.`,
       objetivo: "Recursos chegam aos beneficiários em dias, fora do inventário.",
       potencial: potencial("Previdência", -4),
       prioridade: "Baixa",
@@ -447,15 +472,16 @@ export function oportunidades(c: Cliente): Oportunidade[] {
 
   // ------------------------------------------------------- Fiscal/Tributário
   const ir = s(c.renda.declaracaoIR);
-  const tipoPrev = s(c.protecao.tipoPrevidencia);
-  const brutaAnual = rd.brutaTotal * 12;
-  if (ir === "Completa" && !tipoPrev.includes("PGBL"))
+  // A dedução de 12% vale sobre a renda bruta tributável de quem declara (o cônjuge tem limite próprio).
+  const brutaAnual = rd.cliente.bruta * 12;
+  // Sem previdência, op-previdencia (Futuro) já oferece o PGBL.
+  if (ir === "Completa" && s(c.protecao.temPrevidencia) !== "Não" && !tipoPrev.includes("PGBL"))
     add({
       id: "op-pgbl",
       area: "Fiscal/Tributário",
       produto: "Previdência",
       titulo: "PGBL para deduzir no IR",
-      oferta: `Aportes em PGBL de até ${fmtBRL(brutaAnual * 0.12)}/ano (12% da renda bruta tributável).`,
+      oferta: `Aportes em PGBL de até ${fmtBRL(brutaAnual * 0.12)}/ano (12% da renda bruta tributável do cliente; o cônjuge tem limite próprio se também declarar no modelo completo).`,
       porque: "Declara no modelo completo e não aproveita a dedução de previdência.",
       objetivo: "Pagar menos IR e investir a diferença na aposentadoria.",
       potencial: potencial("Previdência", 6),
@@ -475,7 +501,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       prioridade: "Média",
       prazo: "Curto",
     });
-  if (ir !== "Completa" && su.dependentes >= 2 && (su.mensalidades > 0 || d.porCategoria.find((x) => x.id === "saude")!.valor > 0))
+  if (ir === "Simplificada" && su.dependentes >= 2 && (su.mensalidades > 0 || d.porCategoria.find((x) => x.id === "saude")!.valor > 0))
     add({
       id: "op-ir-modelo",
       area: "Fiscal/Tributário",
@@ -507,9 +533,9 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       area: "Fiscal/Tributário",
       produto: "Investimento",
       titulo: "Investimentos isentos de IR",
-      oferta: "Parte da renda fixa em LCI, LCA, CRI e CRA (isentos de IR para pessoa física).",
+      oferta: "Parte da renda fixa em LCI e LCA (com garantia do FGC) e, conforme o perfil, CRI e CRA (sem FGC), todos isentos de IR para pessoa física.",
       porque: `${fmtBRL(p.investimentos)} investidos com perfil ${s(c.investimentos.perfil).toLowerCase()}.`,
-      objetivo: "Mais rentabilidade líquida com o mesmo risco.",
+      objetivo: "Mais rentabilidade líquida, respeitando prazo, liquidez e garantia de cada título.",
       potencial: potencial("Investimento", -8),
       prioridade: "Baixa",
       prazo: "Curto",
@@ -536,11 +562,15 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       produto: "Investimento",
       titulo: "Reserva de emergência",
       oferta: `Completar ${fmtBRL(r.falta)} em aplicação de liquidez diária.`,
-      porque: `A reserva cobre ${r.meses.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} de ${r.mesesMeta} meses de despesas.`,
+      porque:
+        r.atual > 0
+          ? `A reserva cobre ${(Math.floor(r.meses * 10) / 10).toLocaleString("pt-BR")} de ${r.mesesMeta} meses de despesas.`
+          : `Não há reserva de emergência para ${r.mesesMeta} meses de despesas.`,
       objetivo: "Imprevistos pagos sem crédito caro nem resgate de investimentos de longo prazo.",
       potencial: potencial("Investimento", 6),
       prioridade: r.meses < 3 ? "Alta" : "Média",
       prazo: "Curto",
+      detalhe: `Completar a reserva de emergência: ${fmtBRL(r.falta)} em aplicação de liquidez diária`,
     });
   if (sim(c.investimentos.temInvestimento) && s(c.investimentos.temAssessor) === "Não")
     add({
@@ -548,7 +578,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       area: "Investimentos",
       produto: "Investimento",
       titulo: "Assessoria de investimentos",
-      oferta: "Acompanhamento da carteira com revisão periódica.",
+      oferta: "Assessoria de investimentos, com acompanhamento e revisão periódica da carteira.",
       porque: `Investe ${fmtBRL(p.investimentos)} sem acompanhamento.`,
       objetivo: "Carteira alinhada aos objetivos e ao perfil.",
       potencial: potencial("Investimento", 4),
@@ -576,7 +606,7 @@ export function oportunidades(c: Cliente): Oportunidade[] {
         area: "Investimentos",
         produto: "Investimento",
         titulo: `Investimento para comprar à vista (${nomeAquisicao(a)})`,
-        oferta: `Juntar ${fmtBRL(n(a.valorDesejado))} em aplicação compatível com o prazo da compra.`,
+        oferta: `Juntar ${fmtBRL(n(a.valorDesejado))} para comprar à vista, em aplicação compatível com o prazo da compra.`,
         porque: "O cliente quer comprar à vista.",
         objetivo: "Comprar com desconto e sem juros.",
         potencial: potencial("Investimento", -4),
@@ -646,28 +676,31 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       potencial: potencial("Previdência", 6),
       prioridade: "Média",
       prazo: "Médio",
+      detalhe: `${ir === "Completa" ? "Previdência privada (PGBL)" : ir === "Simplificada" ? "Previdência privada (VGBL)" : "Previdência privada"} com aporte mensal e beneficiários indicados`,
     });
-  if (fu.alvo > 0 && fu.aporte > fu.aporteAtual && !fu.idadeAtingida)
+  if (fu.alvo > 0 && fu.aporte > fu.aporteAtual && !fu.idadeAtingida && !!s(c.cadastro.nascimento))
     add({
       id: "op-independencia",
       area: "Futuro",
       produto: "Investimento",
       titulo: "Plano de independência financeira",
-      oferta: `Aporte de ${fmtBRL(fu.aporte)}/mês para chegar a ${fmtBRL(fu.alvo)} aos ${fu.idadeAposentadoria} anos.`,
-      porque: `No ritmo atual (${fmtBRL(fu.aporteAtual)}/mês), a projeção cobre ${fmtPct(Math.min(fu.independencia, 9.99))} da meta.`,
+      oferta: `Investir ${fmtBRL(fu.aporte)}/mês para chegar a ${fmtBRL(fu.alvo)} aos ${fu.idadeAposentadoria} anos.`,
+      porque: `${fu.aporteAtual > 0 ? `No ritmo atual (${fmtBRL(fu.aporteAtual)}/mês)` : "Sem aportes mensais"}, a projeção cobre ${fmtPct(Math.min(fu.independencia, 9.99))} da meta.`,
       objetivo: `Renda de ${fmtBRL(fu.rendaDesejada)}/mês na aposentadoria.`,
       potencial: potencial("Investimento", 8),
       prioridade: "Média",
       prazo: "Longo",
     });
-  if (su.escolares > 0)
+  // Só quem ainda tem a faculdade pela frente.
+  const comFaculdade = pr.educacional.lista.filter((x) => x.faculdade > 0).length;
+  if (comFaculdade > 0)
     add({
       id: "op-educacao",
       area: "Futuro",
       produto: "Previdência",
       titulo: "Fundo de educação dos filhos",
       oferta: "Previdência ou investimento dedicado à faculdade de cada filho, com o filho como beneficiário.",
-      porque: `${plural(su.escolares, "dependente", "dependentes")} em idade escolar; mensalidades atuais de ${fmtBRL(su.mensalidades)}/mês.`,
+      porque: `${plural(comFaculdade, "dependente com a faculdade pela frente", "dependentes com a faculdade pela frente")}${su.mensalidades > 0 ? `; mensalidades atuais de ${fmtBRL(su.mensalidades)}/mês` : ""}.`,
       objetivo: "Faculdade paga sem apertar o orçamento.",
       potencial: potencial("Previdência", -2),
       prioridade: "Média",

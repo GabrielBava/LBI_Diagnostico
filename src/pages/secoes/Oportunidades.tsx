@@ -8,8 +8,9 @@ import { BotaoLevarAoPlano } from "@/components/CardsPlano";
 import { RadarOportunidades } from "@/components/graficos";
 import { Selo, corPrioridade } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { s } from "@/lib/calculos";
+import { origensNoPlano, textoAcao } from "@/lib/diagnostico";
 import { fmtBRL, uid } from "@/lib/format";
+import { usePreferencias } from "@/lib/preferencias";
 import { AREAS_RADAR, focoReceita, oportunidades, radarOportunidades, type Oportunidade } from "@/lib/oportunidades";
 
 type Filtro = "Todas" | "Seguros e consórcios" | (typeof AREAS_RADAR)[number];
@@ -29,28 +30,38 @@ function Potencial({ valor }: { valor: number }) {
 
 export default function Oportunidades() {
   const { cliente, setLista } = useCliente();
+  // Na apresentação (quando o consultor decide mostrar a matriz) ficam de fora o foco em receita e os botões.
+  const { apresentacao } = usePreferencias();
   const [filtro, setFiltro] = useState<Filtro>("Todas");
   const ops = oportunidades(cliente);
   const radar = radarOportunidades(ops);
   const foco = focoReceita(ops);
-  const noPlano = new Set(cliente.plano.map((a) => s(a.origem)));
+  const noPlano = origensNoPlano(cliente.plano);
   const adicionar = (o: Oportunidade) =>
     setLista("plano", [
       ...cliente.plano,
-      { id: uid(), origem: o.id, acao: `${o.titulo}: ${o.detalhe}`, area: o.area, prioridade: o.prioridade, prazo: o.prazo, status: "Pendente" },
+      { id: uid(), origem: o.id, acao: textoAcao(o.detalhe), area: o.area, prioridade: o.prioridade, prazo: o.prazo, status: "Pendente" },
     ]);
   const lista =
     filtro === "Todas" ? ops : filtro === "Seguros e consórcios" ? ops.filter((o) => DESTAQUE.includes(o.produto)) : ops.filter((o) => o.area === filtro);
-  const alternar = (f: Filtro) => setFiltro((atual) => (atual === f ? "Todas" : f));
+  const quantidade = (f: Filtro) =>
+    f === "Todas" ? ops.length : f === "Seguros e consórcios" ? ops.filter((o) => DESTAQUE.includes(o.produto)).length : ops.filter((o) => o.area === f).length;
+  // Área sem oportunidades não vira filtro (a lista ficaria vazia).
+  const alternar = (f: Filtro) => {
+    if (!quantidade(f)) return;
+    setFiltro((atual) => (atual === f ? "Todas" : f));
+  };
 
   if (!ops.length) return <p className="text-sm text-muted-foreground">Nenhuma oportunidade identificada com os dados preenchidos.</p>;
 
   return (
     <div className="space-y-4">
-      {/* Foco em receita: seguros e consórcios */}
+      {/* Foco em receita: seguros e consórcios (só na versão consultor) */}
+      {!apresentacao && (
       <div className="grid gap-3 sm:grid-cols-3">
         <button
           type="button"
+          aria-pressed={filtro === "Seguros e consórcios"}
           onClick={() => alternar("Seguros e consórcios")}
           className={`rounded-xl p-4 text-left transition sm:col-span-1 ${
             filtro === "Seguros e consórcios" ? "bg-gold text-primary-foreground" : "border border-primary/40 bg-primary/10 hover:bg-primary/15"
@@ -89,6 +100,8 @@ export default function Oportunidades() {
         </div>
       </div>
 
+      )}
+
       {/* Radar + resumo por área */}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="min-w-0 rounded-xl border border-border bg-secondary/20 p-1 sm:p-4">
@@ -109,9 +122,10 @@ export default function Oportunidades() {
                     type="button"
                     onClick={() => alternar(r.area)}
                     aria-pressed={ativa}
-                    className={`w-full rounded-lg border p-3 text-left transition ${
-                      ativa ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/50"
-                    } ${r.quantidade ? "" : "opacity-60"}`}
+                    disabled={!r.quantidade}
+                    className={`w-full rounded-lg border p-3 text-left transition disabled:cursor-default disabled:opacity-60 ${
+                      ativa ? "border-primary bg-primary/10" : "border-border bg-card enabled:hover:border-primary/50"
+                    }`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-sm font-semibold">{r.area}</span>
@@ -131,8 +145,7 @@ export default function Oportunidades() {
       <div>
         <div className="mb-3 flex flex-wrap items-center gap-2">
           {(["Todas", "Seguros e consórcios", ...AREAS_RADAR] as Filtro[]).map((f) => {
-            const qtd =
-              f === "Todas" ? ops.length : f === "Seguros e consórcios" ? ops.filter((o) => DESTAQUE.includes(o.produto)).length : ops.filter((o) => o.area === f).length;
+            const qtd = quantidade(f);
             const ativo = filtro === f;
             return (
               <button
@@ -150,6 +163,7 @@ export default function Oportunidades() {
             );
           })}
         </div>
+        {lista.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma oportunidade neste filtro.</p>}
         <ol className="space-y-2">
           {lista.map((o) => {
             const rank = ops.indexOf(o) + 1;
@@ -171,9 +185,11 @@ export default function Oportunidades() {
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
                     <Potencial valor={o.potencial} />
-                    <span className="no-print">
-                      <BotaoLevarAoPlano ja={noPlano.has(o.id)} onClick={() => adicionar(o)} />
-                    </span>
+                    {!apresentacao && (
+                      <span className="no-print">
+                        <BotaoLevarAoPlano ja={noPlano.has(o.id)} onClick={() => adicionar(o)} />
+                      </span>
+                    )}
                   </div>
                 </div>
                 <dl className="mt-3 grid gap-3 text-sm md:grid-cols-3">

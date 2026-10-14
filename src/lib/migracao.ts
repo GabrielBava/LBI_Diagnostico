@@ -300,9 +300,35 @@ export function atualizarV8(c: Partial<Cliente> & { id: string }): Partial<Clien
   const { pontosFortes, pontosNegativos, ...resto } = antigo;
   const area = (a: unknown) => (typeof a === "string" ? AREAS_RENOMEADAS[a] ?? a : a);
   const texto = (p: Item) => String(p.texto ?? "").trim();
+  // Estado por seção: "pontos-negativos" virou o 6.2 (plano-atual-completo) e "pontos-fortes" o 6.4.
+  const notas = { ...(c.notas ?? {}) };
+  const ocultos = { ...(c.ocultos ?? {}) };
+  const naoAplica = { ...(c.naoAplica ?? {}) };
+  const roteiroFeito = { ...(c.roteiroFeito ?? {}) };
+  const juntarNotas = (destino: string, origem: string) => {
+    const texto = [notas[destino], notas[origem]].filter((x) => x && x.trim()).join("\n");
+    if (texto) notas[destino] = texto;
+  };
+  juntarNotas("plano-atual-completo", "pontos-negativos");
+  juntarNotas("plano-otimizacao", "pontos-fortes");
+  if (ocultos["pontos-fortes"] !== undefined) ocultos["plano-otimizacao"] = ocultos["pontos-fortes"];
+  if (ocultos["pontos-negativos"] !== undefined) ocultos["plano-atual-completo"] = ocultos["pontos-negativos"];
+  // As perguntas do roteiro destas seções mudaram: as marcações antigas não valem mais.
+  ["panorama", "plano-atual-completo", "futuro", "oportunidades"].forEach((k) => delete roteiroFeito[k]);
+  ["pontos-fortes", "pontos-negativos"].forEach((k) => {
+    delete notas[k];
+    delete ocultos[k];
+    delete naoAplica[k];
+    delete roteiroFeito[k];
+  });
+
   return {
     ...resto,
     id: c.id,
+    notas,
+    ocultos,
+    naoAplica,
+    roteiroFeito,
     versaoDados: 8,
     planoAtual: [
       ...(c.planoAtual ?? []),

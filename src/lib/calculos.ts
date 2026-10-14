@@ -443,7 +443,8 @@ export function reservaEmergencia(c: Cliente) {
   const custo = despesas(c).total;
   const atual = patrimonio(c).reserva;
   const meta = custo * mesesReserva;
-  return { atual, meta, falta: Math.max(0, meta - atual), meses: custo > 0 ? atual / custo : 0, mesesMeta: mesesReserva };
+  // Falta arredondada: frações de centavos não geram "faltam R$ 0".
+  return { atual, meta, falta: Math.max(0, Math.round(meta - atual)), meses: custo > 0 ? atual / custo : 0, mesesMeta: mesesReserva };
 }
 
 // ---------------------------------------------------------------------
@@ -583,7 +584,8 @@ export function protecao(c: Cliente) {
     necessario,
     atual,
     empresa: n(pr.seguroEmpresa),
-    gap: Math.max(0, necessario - atual),
+    // Arredondado: digitar o capital exibido (sem centavos) zera o gap.
+    gap: Math.max(0, Math.round(necessario - atual)),
     // Sem capital a contratar (recursos cobrem a necessidade), a família está coberta.
     cobertura: necessario > 0 ? Math.min(1, atual / necessario) : 1,
   };
@@ -672,17 +674,19 @@ export function futuro(c: Cliente, simulacao?: SimulacaoFuturo) {
   // Vida inteira: acumula até a aposentadoria e depois retira a renda que falta (desejada − outras rendas).
   const retiradaMensal = Math.max(0, rendaDesejada - outras);
   const idadeFinal = Math.max(IDADE_FINAL_PROJECAO, idadeAposentadoria + 5);
-  const vida: { ano: number; idade: number; patrimonio: number; aportado: number; meta: number }[] = [];
+  const vida: { ano: number; idade: number; patrimonio: number; aportado: number; retirado: number; meta: number }[] = [];
   let saldo = atual;
   let aportado = atual;
+  let retirado = 0;
   let esgotaAos: number | undefined;
   // Vai até a idade final ou, no mínimo, 10 anos (marcos do plano de independência).
   for (let k = 0; idadeAtual + k <= idadeFinal || k <= 10; k++) {
-    vida.push({ ano: anoBase + k, idade: idadeAtual + k, patrimonio: Math.round(Math.max(0, saldo)), aportado, meta: Math.round(alvo) });
+    vida.push({ ano: anoBase + k, idade: idadeAtual + k, patrimonio: Math.round(Math.max(0, saldo)), aportado, retirado: Math.round(retirado), meta: Math.round(alvo) });
     for (let m = 0; m < 12; m++) {
       const aposentado = idadeAtual + k >= idadeAposentadoria;
       saldo = saldo * (1 + i) + (aposentado ? -retiradaMensal : aporteAtual);
       if (!aposentado) aportado += aporteAtual;
+      else if (saldo > 0) retirado += retiradaMensal;
       if (saldo <= 0 && aposentado && esgotaAos === undefined) esgotaAos = idadeAtual + k;
     }
     if (saldo <= 0 && esgotaAos !== undefined) saldo = 0;
@@ -706,7 +710,8 @@ export function futuro(c: Cliente, simulacao?: SimulacaoFuturo) {
     idadeAtingida,
     faltaHoje: Math.max(0, alvo - atual),
     // Se as outras rendas já cobrem a renda desejada, a independência está atingida.
-    independencia: alvo > 0 ? projetado / alvo : rendaDesejada > 0 ? 1 : 0,
+    // Sem patrimônio a formar (outras rendas cobrem a renda desejada), a meta está atingida.
+    independencia: alvo > 0 ? projetado / alvo : 1,
     rendaProjetada: (projetado * TAXA_RETIRADA) / 12 + outras,
     /** Retorno real usado (pode vir da simulação). */
     retornoReal,
@@ -722,7 +727,8 @@ export function futuro(c: Cliente, simulacao?: SimulacaoFuturo) {
         idade: idadeAtual > 0 ? idadeAtual + anosAte : undefined,
         patrimonio: patrimonioMarco,
         aportado: ponto.aportado,
-        percentualMeta: alvo > 0 ? patrimonioMarco / alvo : rendaDesejada > 0 ? 1 : 0,
+        percentualMeta: alvo > 0 ? patrimonioMarco / alvo : 1,
+        retirado: ponto.retirado,
         rendaPassiva: (patrimonioMarco * TAXA_RETIRADA) / 12 + outras,
       };
     }),

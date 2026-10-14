@@ -69,7 +69,7 @@ export const ROTEIRO: Record<string, Roteiro> = {
     atencao: [
       "Escolha a categoria antes de preencher: pais e outros dependentes não têm escolaridade.",
       "Mensalidades, auxílios e custos daqui entram sozinhos nas despesas fixas (bloco Dependentes).",
-      "A escolaridade define o custo educacional no cálculo de proteção (6.2).",
+      "A escolaridade define o custo educacional no cálculo de proteção (6.3 · Plano potencial).",
     ],
   },
   despesas: {
@@ -227,7 +227,7 @@ export const ROTEIRO: Record<string, Roteiro> = {
       "Qual destes caminhos faz mais sentido começar?",
     ],
     atencao: [
-      "Os cartões seguem a ordem de potencial da matriz de oportunidades (seguros e consórcios primeiro).",
+      "Os cartões seguem a ordem de potencial da matriz de oportunidades (seguros e consórcios pesam mais).",
       "Clique no horizonte (1, 5 ou 15 anos) escolhido com o cliente na proteção.",
     ],
   },
