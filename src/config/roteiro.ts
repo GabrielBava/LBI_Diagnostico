@@ -33,20 +33,17 @@ export const ROTEIRO: Record<string, Roteiro> = {
     ],
   },
   institucional: {
-    objetivo: "Apresentar o Grupo Life Brasil e alinhar como o planejamento vai funcionar.",
-    abertura:
-      "Antes de seguirmos, quero te mostrar quem somos e como trabalhamos. O planejamento é um processo: hoje entendemos você, depois entregamos o diagnóstico e o plano.",
-    perguntas: [
-      "O que te motivou a buscar um planejamento agora?",
-      "De 0 a 10, como você se sente hoje em relação ao seu dinheiro? (clique na nota)",
-      "Se daqui a 12 meses estivéssemos comemorando, o que teria acontecido?",
-    ],
-    atencao: ["Anote as palavras exatas do cliente: elas voltam no diagnóstico completo.", "Combine as próximas reuniões."],
+    objetivo: "Apresentar o Grupo Life Brasil com a apresentação institucional (V1).",
+    abertura: "",
+    perguntas: [],
+    atencao: ["Use o botão Apresentar para mostrar em tela cheia; as setas do teclado passam as páginas."],
   },
   objetivos: {
     objetivo: "Dar propósito ao plano, separando o que é essencial, o que é desejo e o que é sonho.",
     abertura: "Imagine a sua vida daqui a 1, 5 e 10 anos. O que não pode faltar? O que você gostaria de ter? E o que seria um sonho?",
     perguntas: [
+      "O que te motivou a buscar um planejamento agora?",
+      "De 0 a 10, como você se sente hoje em relação ao seu dinheiro? (clique na nota)",
       "O que é essencial para você e sua família nos próximos anos?",
       "Quanto custa cada objetivo e em quanto tempo quer realizá-lo?",
       "De 0 a 10, quanto esse objetivo muda a sua vida?",
@@ -54,6 +51,7 @@ export const ROTEIRO: Record<string, Roteiro> = {
       "Por que isso é importante para você?",
     ],
     atencao: [
+      "Anote as palavras exatas do cliente no ponto de partida: elas voltam no diagnóstico completo.",
       "Valor futuro: o valor na data do objetivo (o sistema calcula o aporte com o retorno nominal).",
       "A probabilidade sugerida considera a sobra mensal distribuída do essencial para o sonho.",
     ],
@@ -208,7 +206,7 @@ export const ROTEIRO: Record<string, Roteiro> = {
     objetivo: "Abrir a apresentação com o perfil do cliente, o perfil financeiro, a nota LIFE e os pilares.",
     abertura: "Vamos começar pelo panorama geral: quem você é hoje, como o dinheiro entra e sai e onde você está bem.",
     perguntas: ["Você se reconhece nesse perfil?", "Alguma categoria de gasto te surpreendeu?"],
-    atencao: ["Comece pelo que o cliente já faz bem.", "Use as palavras do cliente (Institucional e Objetivos)."],
+    atencao: ["Comece pelo que o cliente já faz bem.", "Use as palavras do cliente (ponto de partida e motivos dos objetivos)."],
   },
   "plano-atual-completo": {
     objetivo: "Mostrar o que precisa mudar: diagnóstico, motivo e o risco de não agir.",

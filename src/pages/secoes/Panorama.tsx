@@ -174,7 +174,7 @@ export default function Panorama() {
               ))}
             </div>
           ) : (
-            <p className="mt-2 text-sm text-muted-foreground">Registre a motivação no Institucional e o “porquê” de cada objetivo.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Registre a motivação no ponto de partida (3 · Objetivos) e o “porquê” de cada objetivo.</p>
           )}
           {s(cliente.cadastro.satisfacao) !== "" && (
             <p className="mt-2 text-xs text-muted-foreground">Satisfação financeira declarada: {n(cliente.cadastro.satisfacao)}/10</p>

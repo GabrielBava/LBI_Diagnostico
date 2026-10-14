@@ -11,4 +11,8 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },
   },
+  build: {
+    // As páginas do V1 · Institucional (src/assets/v1) vão embutidas no código: o HTML único abre sem arquivos ao lado.
+    assetsInlineLimit: (arquivo) => (arquivo.includes("/assets/v1/") ? true : undefined),
+  },
 });

@@ -1,6 +1,8 @@
-// 3 · Objetivos: agrupados em Essencial, Desejo e Sonho.
+// 3 · Objetivos: ponto de partida (motivação e satisfação) e os objetivos em Essencial, Desejo e Sonho.
 // O aporte necessário de cada objetivo aparece só na versão consultor.
-import { CAMPOS_OBJETIVO, ICONES_OBJETIVO, TIPOS_OBJETIVO } from "@/config/campos";
+import { HeartHandshake } from "lucide-react";
+import { CAMPOS_OBJETIVO, CAMPOS_PONTO_PARTIDA, ICONES_OBJETIVO, TIPOS_OBJETIVO } from "@/config/campos";
+import { Formulario } from "@/components/campos";
 import { ListaItens } from "@/components/ListaEditor";
 import { SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
@@ -33,13 +35,23 @@ function TituloObjetivo({ o }: { o: Item }) {
 }
 
 export default function Objetivos() {
-  const { cliente, setLista } = useCliente();
+  const { cliente, setLista, setCampo } = useCliente();
   const { apresentacao } = usePreferencias();
   const ob = objetivos(cliente);
   const f = fluxo(cliente);
 
   return (
     <div className="space-y-4">
+      {/* Ponto de partida (antes no V1): fica no cadastro do cliente e volta no Panorama e no PDF. */}
+      <SubBloco
+        titulo={
+          <span className="flex items-center gap-2">
+            <HeartHandshake className="h-3.5 w-3.5 text-primary" /> Ponto de partida
+          </span>
+        }
+      >
+        <Formulario campos={CAMPOS_PONTO_PARTIDA} dados={cliente.cadastro} cliente={cliente} onChange={(k, v) => setCampo("cadastro", k, v)} />
+      </SubBloco>
       {TIPOS_OBJETIVO.map((t) => {
         const doTipo = ob.porTipo[t.id] ?? [];
         return (

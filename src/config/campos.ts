@@ -230,7 +230,7 @@ export const CAMPOS_PARAMETROS: CampoDef[] = [
   { key: "retornoReal", label: "Retorno real (% a.a.)", tipo: "percentual", padrao: 4, somenteConsultor: true, ajuda: "Acima da inflação (objetivos e futuro)." },
 ];
 
-/** Ponto de partida registrado no V1 Institucional. */
+/** Ponto de partida (3 · Objetivos): motivação e satisfação financeira, guardados no cadastro. */
 export const CAMPOS_PONTO_PARTIDA: CampoDef[] = [
   {
     key: "motivacao",

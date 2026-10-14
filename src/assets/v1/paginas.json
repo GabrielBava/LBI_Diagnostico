@@ -1,0 +1,199 @@
+{
+  "titulo": "v1 - Planejamento Financeiro",
+  "origem": "5043ef22-V1_apresentacao-life-v2.pdf",
+  "paginas": [
+    {
+      "arquivo": "pagina-01.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-02.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-03.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-04.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-05.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-06.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-07.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-08.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-09.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-10.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-11.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-12.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-13.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-14.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-15.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-16.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    },
+    {
+      "arquivo": "pagina-17.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": [
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 38.838,
+          "y": 9.736,
+          "w": 61.162,
+          "h": 71.296
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 7.003,
+          "y": 64.326,
+          "w": 19.687,
+          "h": 2.5
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 7.003,
+          "y": 66.734,
+          "w": 16.823,
+          "h": 2.5
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 7.003,
+          "y": 69.141,
+          "w": 6.823,
+          "h": 2.5
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 13.826,
+          "y": 69.141,
+          "w": 0.312,
+          "h": 2.5
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 6.924,
+          "y": 80.213,
+          "w": 15.833,
+          "h": 2.5
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 6.924,
+          "y": 82.621,
+          "w": 18.021,
+          "h": 2.5
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 6.924,
+          "y": 85.028,
+          "w": 4.531,
+          "h": 2.5
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 7.003,
+          "y": 48.625,
+          "w": 19.219,
+          "h": 2.5
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 7.003,
+          "y": 51.032,
+          "w": 20.417,
+          "h": 2.5
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 7.003,
+          "y": 53.439,
+          "w": 4.792,
+          "h": 2.5
+        },
+        {
+          "url": "https://navigator.dashycrm.com.br/clientes/98f00c53-b1fd-45f2-8dde-96f4ec198739",
+          "x": 56.028,
+          "y": 85.173,
+          "w": 32.96,
+          "h": 4.652
+        }
+      ]
+    },
+    {
+      "arquivo": "pagina-18.webp",
+      "largura": 1920,
+      "altura": 1080,
+      "links": []
+    }
+  ]
+}

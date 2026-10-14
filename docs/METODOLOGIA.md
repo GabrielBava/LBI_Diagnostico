@@ -10,7 +10,7 @@ Tudo corresponde a arquivos editáveis:
 | Blocos e subcategorias de despesas (e a parte de cada bloco no 50-30-20) | `src/config/despesas.ts` |
 | Tabelas de INSS/IR para estimar bruta ↔ líquida | `src/config/tributos.ts` |
 | Roteiro da conversa e frases de abertura das etapas | `src/config/roteiro.ts` |
-| Textos do V1 · Institucional (Grupo Life Brasil) | `src/config/institucional.ts` |
+| Apresentação do V1 · Institucional (páginas do PDF) | `src/assets/v1/` — gerar com `python3 scripts/gerar-v1.py <arquivo.pdf>` |
 | Fórmulas de cálculo | `src/lib/calculos.ts` |
 | Pilares e sugestões do plano de ação | `src/lib/diagnostico.ts` |
 | Cartões do plano atual, potencial e otimização, perfil financeiro e bússola | `src/lib/plano.ts` |

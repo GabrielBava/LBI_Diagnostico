@@ -58,7 +58,6 @@ src/
     despesas.ts      ← BLOCOS e SUBCATEGORIAS de despesas
     tributos.ts      ← tabelas de INSS/IR para estimar renda bruta ↔ líquida
     roteiro.ts       ← ROTEIRO da conversa e frases de abertura das etapas
-    institucional.ts ← textos do V1 · Institucional
     defaults.ts      ← nome do app, versão, consultor padrão
   lib/
     calculos.ts      ← FÓRMULAS (fluxo, balanço, objetivos, proteção, futuro)
@@ -67,12 +66,22 @@ src/
     oportunidades.ts ← matriz de oportunidades (6 áreas, potencial, peso de cada produto)
     storage.ts       ← onde os dados são salvos (hoje: navegador)
     migracao.ts      ← conversão de clientes da versão anterior
-  components/        ← campos, listas, seção, menu, gráficos
+  assets/v1/         ← páginas da apresentação do V1 (geradas por scripts/gerar-v1.py)
+  components/        ← campos, listas, seção, menu, gráficos, visualizador da apresentação
   pages/
     Clientes.tsx         ← lista de clientes
     ClienteDetalhe.tsx   ← página contínua do diagnóstico
     Relatorio.tsx        ← relatório para PDF
     secoes/              ← uma tela por seção
+```
+
+## Como trocar a apresentação do V1 · Institucional
+
+O V1 mostra as páginas do PDF da apresentação (viram imagens embutidas no HTML, com navegação, tela cheia e os links do PDF clicáveis). Para trocar o PDF:
+
+```bash
+python3 scripts/gerar-v1.py caminho/da/nova-apresentacao.pdf   # precisa de pdftoppm, Pillow e pypdf
+npm run html
 ```
 
 ## Como incluir um campo

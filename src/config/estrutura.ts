@@ -89,7 +89,7 @@ export const SECOES: SecaoDef[] = [
     etapa: "conexao",
     numero: "2",
     titulo: "V1 · Institucional",
-    subtitulo: "Grupo Life Brasil",
+    subtitulo: "Apresentação do Grupo Life Brasil",
     icone: Presentation,
   },
   {
