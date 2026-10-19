@@ -199,8 +199,25 @@ export const ROTEIRO: Record<string, Roteiro> = {
     perguntas: ["Isso faz sentido com o que você sente no dia a dia?", "O que mais te surpreendeu?", "Onde você acha que dá para ajustar?"],
     atencao: [
       "Aparece só depois de “Finalizar coleta”.",
-      "É uma visão breve: não entre em recomendações ainda.",
+      "É uma visão breve: não entre em soluções ainda.",
       "Agende a reunião do diagnóstico completo.",
+      "Depois do 5.1, use “Gerar recomendações” (5.2) para pedir indicações.",
+    ],
+  },
+  recomendacoes: {
+    objetivo: "Pedir ao cliente indicações de pessoas que também podem se beneficiar do planejamento.",
+    abertura:
+      "Você viu como fica mais claro olhar o dinheiro desse jeito. Quem você conhece que também gostaria de organizar a vida financeira assim?",
+    perguntas: [
+      "Alguém da sua família poderia se beneficiar de um planejamento como este?",
+      "E do seu trabalho ou da sua empresa?",
+      "Algum amigo vivendo um momento de decisão (casamento, filhos, imóvel, aposentadoria)?",
+      "Posso dizer que fui indicado por você?",
+    ],
+    atencao: [
+      "Peça as indicações depois de mostrar o valor do pré-diagnóstico.",
+      "Anote o melhor contato (WhatsApp, telefone ou e-mail); como a pessoa conhece o cliente vai nas anotações.",
+      "Começa com três blocos; use “Adicionar recomendação” para mais.",
     ],
   },
   panorama: {

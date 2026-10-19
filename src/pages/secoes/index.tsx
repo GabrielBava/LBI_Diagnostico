@@ -15,6 +15,7 @@ import Protecao from "./Protecao";
 import Aposentadoria from "./Aposentadoria";
 import Investimentos from "./Investimentos";
 import PlanoAtual from "./PlanoAtual";
+import Recomendacoes from "./Recomendacoes";
 import Panorama from "./Panorama";
 import { PlanoAtualCards, PlanoOtimizacao, PlanoPotencial } from "./Planos";
 import Futuro from "./Futuro";
@@ -38,6 +39,7 @@ export const TELAS: Record<string, ComponentType> = {
   aposentadoria: Aposentadoria,
   investimentos: Investimentos,
   "plano-atual": PlanoAtual,
+  recomendacoes: Recomendacoes,
   panorama: Panorama,
   "plano-atual-completo": PlanoAtualCards,
   "plano-potencial": PlanoPotencial,

@@ -32,6 +32,7 @@ import {
   TrendingUp,
   TriangleAlert,
   User,
+  UserPlus,
   Wallet,
 } from "lucide-react";
 import type { Cliente } from "@/types";
@@ -69,6 +70,8 @@ export interface SecaoDef {
   /** Começa oculta na versão apresentação (o consultor pode mudar). */
   ocultaNaApresentacao?: boolean;
   concluida?: (c: Cliente) => boolean;
+  /** Só aparece quando esta condição vale (além da regra das etapas liberadas após a coleta). */
+  liberada?: (c: Cliente) => boolean;
 }
 
 const temValor = (itens: { [k: string]: unknown }[], campo: string) => itens.some((i) => n(i[campo] as never) > 0);
@@ -219,6 +222,16 @@ export const SECOES: SecaoDef[] = [
 
   // Etapa 5 · Pré-diagnóstico
   { id: "plano-atual", etapa: "pre", numero: "5.1", titulo: "Plano atual", subtitulo: "Renda total, despesas atuais e modelo 50-30-20", icone: Gauge },
+  // Aparece depois do botão "Gerar recomendações" (logo abaixo do 5.1).
+  {
+    id: "recomendacoes",
+    etapa: "pre",
+    numero: "5.2",
+    titulo: "Recomendações",
+    subtitulo: "Indicações do cliente: nome e contato",
+    icone: UserPlus,
+    liberada: (c) => !!c.recomendacoesAbertas,
+  },
 
   // Etapa 6 · Diagnóstico completo
   { id: "panorama", etapa: "completo", numero: "6.1", titulo: "Panorama geral", subtitulo: "Perfil e perfil financeiro", icone: ChartPie },
@@ -271,8 +284,13 @@ export const ETAPAS_APOS_COLETA = ["pre", "completo"];
 /** Etapas de coleta (o botão "Finalizar coleta" fica depois da última delas). */
 export const ETAPAS_COLETA = ["conexao", "raio-x", "protecao", "investimentos"];
 export const coletaFinalizada = (c: Cliente) => !!c.coletaFinalizada;
-/** A seção aparece agora? (pré-diagnóstico e diagnóstico esperam a coleta ser finalizada) */
-export const secaoLiberada = (c: Cliente, x: SecaoDef) => coletaFinalizada(c) || !ETAPAS_APOS_COLETA.includes(x.etapa);
+/** A seção aparece agora? (pré-diagnóstico e diagnóstico esperam a coleta ser finalizada; 5.2 espera "Gerar recomendações") */
+export const secaoLiberada = (c: Cliente, x: SecaoDef) =>
+  (coletaFinalizada(c) || !ETAPAS_APOS_COLETA.includes(x.etapa)) && (x.liberada?.(c) ?? true);
+/** O botão "Gerar recomendações" aparece depois do 5.1 até ser clicado. */
+export const podeGerarRecomendacoes = (c: Cliente) => coletaFinalizada(c) && !c.recomendacoesAbertas;
+/** Quantidade de recomendações com nome ou contato preenchido. */
+export const recomendacoesPreenchidas = (c: Cliente) => c.recomendacoes.filter((r) => !!s(r.nome) || !!s(r.contato)).length;
 export const etapaPorId = (id: string) => ETAPAS.find((e) => e.id === id)!;
 
 export const secaoConcluida = (c: Cliente, x: SecaoDef) => !!c.naoAplica[x.id] || !!x.concluida?.(c);

@@ -56,6 +56,12 @@ export interface Cliente {
   mudancas: Item[];
   investimentos: Secao;
 
+  // Etapa 5 · Pré-diagnóstico
+  /** Data em que o consultor clicou em "Gerar recomendações" (a 5.2 · Recomendações aparece a partir daí). */
+  recomendacoesAbertas?: string;
+  /** Indicações do cliente em 5.2 · Recomendações (nome e contato). */
+  recomendacoes: Item[];
+
   // Etapa 6 · Diagnóstico completo
   /** Cartões do consultor no Plano atual (diagnóstico, motivo, risco da inação). */
   planoAtual: Item[];
@@ -96,6 +102,7 @@ export type ListaId =
   | "consorcios"
   | "emprestimos"
   | "projetos"
+  | "recomendacoes"
   | "planoAtual"
   | "planoPotencial"
   | "planoOtimizacao"

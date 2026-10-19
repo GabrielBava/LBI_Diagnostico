@@ -1,7 +1,7 @@
 // Menu lateral que acompanha a rolagem (scrollspy). Clique leva à seção.
 import { useEffect, useRef, useState } from "react";
-import { Check, ClipboardCheck, EyeOff } from "lucide-react";
-import { ETAPAS, ETAPAS_COLETA, SECOES, progresso, secaoConcluida, secaoLiberada, secaoOculta } from "@/config/estrutura";
+import { Check, ClipboardCheck, EyeOff, UserPlus } from "lucide-react";
+import { ETAPAS, ETAPAS_COLETA, SECOES, podeGerarRecomendacoes, progresso, secaoConcluida, secaoLiberada, secaoOculta } from "@/config/estrutura";
 import type { Cliente } from "@/types";
 import { usePreferencias } from "@/lib/preferencias";
 import { BarraProgresso } from "./ui";
@@ -89,6 +89,18 @@ export function Navegacao({ cliente, ativa, irPara }: { cliente: Cliente; ativa:
                 <span className="min-w-0 flex-1">Finalizar coleta</span>
               </button>
             ) : null;
+          // No pré-diagnóstico, enquanto a 5.2 não foi aberta: atalho para o botão "Gerar recomendações".
+          const atalhoRecomendacoes =
+            etapa.id === "pre" && secoes.length > 0 && podeGerarRecomendacoes(cliente) ? (
+              <button
+                type="button"
+                onClick={() => irPara("gerar-recomendacoes")}
+                className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-dashed border-primary/50 px-2.5 py-1.5 text-left text-xs font-semibold text-primary transition hover:bg-primary/10 md:mt-1 md:whitespace-normal"
+              >
+                <UserPlus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span className="min-w-0 flex-1">Gerar recomendações</span>
+              </button>
+            ) : null;
           if (!secoes.length) return atalhoFinalizar;
           return (
             <div key={etapa.id} className="flex shrink-0 flex-row gap-1 md:flex-col">
@@ -122,6 +134,7 @@ export function Navegacao({ cliente, ativa, irPara }: { cliente: Cliente; ativa:
                 );
               })}
               {atalhoFinalizar}
+              {atalhoRecomendacoes}
             </div>
           );
         })}

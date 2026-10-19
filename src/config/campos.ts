@@ -711,3 +711,14 @@ export const JORNADA_PADRAO = [
 /** Valores padrão de um conjunto de campos (usado ao criar cliente / item). */
 export const padroes = (campos: CampoDef[]) =>
   Object.fromEntries(campos.filter((c) => c.padrao !== undefined).map((c) => [c.key, c.padrao]));
+
+// ---------------------------------------------------------------------
+//  5.2 · Recomendações (indicações do cliente)
+// ---------------------------------------------------------------------
+/** 5.2 · Recomendações: cada indicação do cliente (nome e contato). */
+export const CAMPOS_RECOMENDACAO: CampoDef[] = [
+  { key: "nome", label: "Nome", tipo: "texto", largura: 2, placeholder: "Nome da pessoa indicada" },
+  { key: "contato", label: "Contato", tipo: "texto", largura: 2, placeholder: "WhatsApp, telefone ou e-mail" },
+];
+/** Blocos abertos ao clicar em "Gerar recomendações" (dá para adicionar mais). */
+export const RECOMENDACOES_INICIAIS = 3;
