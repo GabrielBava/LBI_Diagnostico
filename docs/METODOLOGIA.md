@@ -1,4 +1,4 @@
-# Metodologia do Diagnóstico LIFE (versão 9)
+# Metodologia do Diagnóstico LIFE (versão 10)
 
 Este documento descreve **o processo com o cliente** e **as fórmulas** de cada seção.
 Tudo corresponde a arquivos editáveis:
@@ -40,7 +40,7 @@ Tudo corresponde a arquivos editáveis:
 | **2 · Raio-X financeiro** | 5 Despesas · 6 Renda · 7 Patrimônio · 8 Financiamento e crédito · 9 Projetos · 10 Corporativo |
 | **3 · Proteção e futuro** | 11 Proteção · 12 Futuro (aposentadoria) |
 | **4 · Investimentos** | 13 Investimentos |
-| **5 · Pré-diagnóstico** | 5.1 Plano atual: renda total, despesas atuais e modelo 50-30-20 (liberado por "Finalizar coleta") |
+| **5 · Pré-diagnóstico** | 5.1 Plano atual: renda total, despesas atuais e modelo 50-30-20 (liberado por "Finalizar coleta") · 5.2 Recomendações: indicações do cliente (liberada por "Gerar recomendações") |
 | **6 · Diagnóstico completo** | 6.1 Panorama geral · 6.2 Plano atual · 6.3 Plano potencial · 6.4 Plano otimização · 6.5 Futuro (simulação) · 6.6 Matriz de oportunidades · 6.7 Bússola financeira · 6.8 Plano de ação |
 | **7 · Jornada** | 7.1 Jornada do cliente · 7.2 Cronograma de implementação |
 
@@ -94,6 +94,13 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 - Aportes declarados acima da sobra: o topo, as despesas atuais, o gráfico e a lista de categorias mostram o mesmo déficit (despesas + aportes − renda), com o alerta em amarelo; no 6.2 aparece o cartão "Aportes em projetos acima da sobra".
 - Com a poupança declarada (12 · Futuro), o resumo compara o mínimo e o máximo que o cliente diz conseguir poupar com o ideal de 20%.
 - A parte de cada bloco fica no campo `modelo` de `src/config/despesas.ts`; os nomes, em `MODELO_50_30_20`.
+
+### 5.2 · Recomendações (indicações do cliente)
+- Logo depois do 5.1 fica o botão **Gerar recomendações** (com atalho no menu, na etapa 5). Ele só aparece depois de "Finalizar coleta" e some depois do clique.
+- Ao clicar, a etapa **5.2 · Recomendações** entra no diagnóstico e no menu, com **três blocos** de indicação e a página rola até ela. Cada bloco tem **Nome** e **Contato** (WhatsApp, telefone ou e-mail, texto livre).
+- **Adicionar recomendação** cria mais blocos; a lixeira remove um bloco. O topo conta as recomendações preenchidas (nome ou contato).
+- Enquanto nada estiver preenchido, a versão consultor mostra **Fechar recomendações**: a 5.2 sai do diagnóstico e o botão volta.
+- As recomendações ficam salvas com o cliente (`recomendacoes`, e a data do clique em `recomendacoesAbertas`), entram no backup JSON e não vão para o PDF do diagnóstico. "Reabrir coleta" esconde a 5.2 junto com as etapas 5 e 6, sem apagar nada.
 
 ### Balanço patrimonial
 - **Ativos** = imóveis + móveis + reserva + investimentos + previdência + participação em empresa.
