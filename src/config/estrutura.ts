@@ -241,7 +241,7 @@ export const SECOES: SecaoDef[] = [
   },
 
   // Etapa 6 · Diagnóstico completo
-  { id: "panorama", etapa: "completo", numero: "6.1", titulo: "Panorama geral", subtitulo: "Perfil e perfil financeiro", icone: ChartPie },
+  { id: "panorama", etapa: "completo", numero: "6.1", titulo: "Panorama geral", subtitulo: "Perfil, perfil financeiro e Estrela LIFE", icone: ChartPie },
   {
     id: "plano-atual-completo",
     etapa: "completo",

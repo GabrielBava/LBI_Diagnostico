@@ -254,7 +254,8 @@ export function dadosRelatorio(c: Cliente) {
 
   // ------------------------------------------------- 05 · Patrimônio e reserva
   const classes = p.linhasAtivo.filter((l) => l.valor > 0);
-  const liquidez = { alta: p.reserva, media: p.investimentos + p.previdencia, baixa: p.imoveis + p.moveis + p.empresa };
+  // FGTS só sai em situações previstas em lei: liquidez baixa.
+  const liquidez = { alta: p.reserva, media: p.investimentos + p.previdencia, baixa: p.imoveis + p.moveis + p.empresa + p.fgts };
   const mesesParaReserva = r.falta > 0 && sobraLivre > 0 ? Math.ceil(r.falta / sobraLivre) : null;
   const blocoReserva = {
     realidade:

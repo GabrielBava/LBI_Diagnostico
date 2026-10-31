@@ -169,7 +169,7 @@ export const RELATORIO = {
     graficoSub: "Concentração ideal: nenhuma classe acima de 40%",
     liquidezTitulo: "Distribuição por Liquidez",
     liquidezGrafico: "Distribuição por liquidez",
-    liquidezSub: "Alta = reserva de emergência (D+0/D+1) · Média = investimentos e previdência · Baixa = imóveis, veículos e empresa",
+    liquidezSub: "Alta = reserva de emergência (D+0/D+1) · Média = investimentos e previdência · Baixa = imóveis, veículos, empresa e FGTS",
     reservaTitulo: "Reserva de Emergência — Blindagem de Curto Prazo",
     reservaSubtitulo: "Padrão LFP™ Brasil: {meses} meses de despesas em liquidez D+0/D+1 (Tesouro Selic, CDB 100% CDI liquidez diária).",
     reservaGrafico: "Atual x Necessário",

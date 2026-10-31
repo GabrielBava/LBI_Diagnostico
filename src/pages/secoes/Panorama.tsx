@@ -212,7 +212,7 @@ function EstrelaLife({ dados }: { dados: DadosEstrela }) {
   const [aberto, setAberto] = useState<string>();
   const alternar = (id: string) => setAberto((a) => (a === id ? undefined : id));
   return (
-    <section className="rounded-xl border border-border bg-secondary/20 p-4">
+    <section className="rounded-xl border border-border bg-secondary/20 p-3 sm:p-4">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
@@ -229,7 +229,10 @@ function EstrelaLife({ dados }: { dados: DadosEstrela }) {
         <div className="min-w-0">
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Resumo do diagnóstico</h3>
-            <span className="text-right text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Nota conquistada / máxima</span>
+            <span className="text-right text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              <span className="hidden sm:inline">Nota conquistada / máxima</span>
+              <span className="sm:hidden">Nota / máxima</span>
+            </span>
           </div>
           <ul className="space-y-2">
             {porEstado(dados.pilares).map((x) => (

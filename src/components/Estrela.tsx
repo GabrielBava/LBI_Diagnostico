@@ -9,7 +9,8 @@ import type { Estrela as DadosEstrela, PilarEstrela } from "@/lib/estrela";
 const SERIE = "var(--serie-1)";
 const TEXTO = "rgb(var(--foreground))";
 const MUDO = "rgb(var(--muted-foreground))";
-const GRADE = "rgb(var(--border))";
+// Grade em cinza translúcido: aparece no fundo escuro e no claro.
+const GRADE = "rgb(var(--muted-foreground) / 0.32)";
 const DESTAQUE = "rgb(var(--primary))";
 const FUNDO = "rgb(var(--card))";
 const ANEIS = [20, 40, 60, 80, 100];
@@ -307,9 +308,12 @@ export function Estrela({
             );
           })}
           {!dados.temDados && (
-            <text x={cx} y={cy + 4} textAnchor="middle" fontSize={12} fill={MUDO}>
-              Sem dados
-            </text>
+            <g>
+              <rect x={cx - 38} y={cy - 11} width={76} height={22} rx={11} fill={FUNDO} stroke={GRADE} />
+              <text x={cx} y={cy + 4} textAnchor="middle" fontSize={12} fill={MUDO}>
+                Sem dados
+              </text>
+            </g>
           )}
         </svg>
       )}
