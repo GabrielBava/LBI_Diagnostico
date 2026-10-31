@@ -74,6 +74,8 @@ export interface CampoDef {
   meioLinha?: boolean;
   /** Chips: clicar na opção marcada não desmarca (sempre há uma escolha). */
   obrigatorio?: boolean;
+  /** Régua (slider) com o valor em reais. */
+  moeda?: boolean;
 }
 
 const sim = (v: Valor) => v === "Sim" || v === true;
@@ -167,7 +169,6 @@ export const OPCOES = {
   prazoPlano: ["Curto", "Médio", "Longo"],
   responsavel: ["Cliente", "Consultor", "Ambos"],
   status: ["Pendente", "Em andamento", "Concluída"],
-  statusReuniao: ["Pendente", "Agendada", "Realizada"],
 };
 
 // ---------------------------------------------------------------------
@@ -181,7 +182,6 @@ export const CAMPOS_CADASTRO: CampoDef[] = [
   { key: "sexo", label: "Sexo", tipo: "chips", opcoes: OPCOES.sexo },
   { key: "ocupacao", label: "Ocupação", tipo: "texto", placeholder: "Ex.: Engenheiro" },
   { key: "regimeTrabalho", label: "Regime de trabalho", tipo: "select", opcoes: OPCOES.regimeTrabalho },
-  { key: "perfil", label: "Perfil", tipo: "texto", placeholder: "Ex.: Cliente Private" },
   { key: "estadoCivil", label: "Estado civil", tipo: "chips", opcoes: OPCOES.estadoCivil, largura: 4 },
   {
     key: "conjuge",
@@ -232,7 +232,10 @@ export const CAMPOS_PARAMETROS: CampoDef[] = [
   { key: "retornoReal", label: "Retorno real (% a.a.)", tipo: "percentual", padrao: 4, somenteConsultor: true, ajuda: "Acima da inflação (objetivos e futuro)." },
 ];
 
-/** Ponto de partida (3 · Objetivos): motivação e satisfação financeira, guardados no cadastro. */
+/** Teto da régua "Quanto consegue poupar todos os meses?" (ponto de partida). */
+export const POUPANCA_MENSAL_MAX = 5000;
+
+/** Ponto de partida (3 · Objetivos): motivação, satisfação com a organização do dinheiro e quanto consegue poupar, guardados no cadastro. */
 export const CAMPOS_PONTO_PARTIDA: CampoDef[] = [
   {
     key: "motivacao",
@@ -243,13 +246,24 @@ export const CAMPOS_PONTO_PARTIDA: CampoDef[] = [
   },
   {
     key: "satisfacao",
-    label: "De 0 a 10, como você se sente hoje em relação ao seu dinheiro?",
+    label: "De 0 a 10, como você se sente hoje em relação à organização do seu dinheiro?",
     tipo: "escala",
     min: 0,
     max: 10,
     largura: 4,
     rotulosEscala: ["Muito insatisfeito", "Muito satisfeito"],
     ajuda: "Repita a pergunta nas revisões para medir a evolução.",
+  },
+  {
+    key: "poupancaMensal",
+    label: "Quanto consegue poupar todos os meses?",
+    tipo: "slider",
+    min: 0,
+    max: POUPANCA_MENSAL_MAX,
+    passo: 100,
+    moeda: true,
+    largura: 4,
+    ajuda: "Na palavra do cliente. Entra no 5.1, no futuro (6.5) e no plano.",
   },
 ];
 
@@ -276,8 +290,6 @@ export const CAMPOS_OBJETIVO: CampoDef[] = [
   { key: "prioridade", label: "Prioridade", tipo: "chips", opcoes: OPCOES.prioridade, padrao: "Média", largura: 2 },
   { key: "valorFuturo", label: "Valor futuro", tipo: "moeda", largura: 2 },
   { key: "prazoMeses", label: "Prazo (meses)", tipo: "numero", padrao: 12, min: 1, largura: 2 },
-  { key: "probAtual", label: "Probabilidade atual", tipo: "slider", min: 0, max: 100, passo: 5, sufixo: "%", largura: 2 },
-  { key: "probPlano", label: "Probabilidade com plano", tipo: "slider", min: 0, max: 100, passo: 5, sufixo: "%", largura: 2 },
   { key: "impacto", label: "Impacto na vida (0 a 10)", tipo: "escala", min: 0, max: 10, largura: 4, rotulosEscala: ["Pouco impacto", "Transforma a vida"] },
   { key: "motivo", label: "Por que é importante?", tipo: "texto", largura: 4, placeholder: "Nas palavras do cliente" },
 ];
@@ -328,10 +340,20 @@ export const CAMPOS_DESPESA_EXTRA: CampoDef[] = [
 const casado = (c: Cliente) => OPCOES.comConjuge.includes(String(c.cadastro.estadoCivil ?? ""));
 export const temConjugeCadastro = casado;
 
-/** Renda do cliente: preencha a bruta, a líquida ou as duas. */
+/** Regime de trabalho da renda principal (botão CLT | PJ no canto do cartão de renda). */
+export const REGIMES_RENDA = ["CLT", "PJ"] as const;
+export type RegimeRenda = (typeof REGIMES_RENDA)[number];
+
+/** Renda do cliente: preencha a bruta, a líquida ou as duas (meio a meio, Formulario de 2 colunas). */
 export const CAMPOS_RENDA_CLIENTE: CampoDef[] = [
-  { key: "brutaCliente", label: "Renda bruta mensal", tipo: "moeda", largura: 2 },
-  { key: "liquidaCliente", label: "Renda líquida mensal", tipo: "moeda", largura: 2 },
+  { key: "brutaCliente", label: "Renda bruta mensal", tipo: "moeda" },
+  { key: "liquidaCliente", label: "Renda líquida mensal", tipo: "moeda" },
+];
+
+/** Benefícios do CLT (só com o regime CLT): entram na renda total como "Benefícios (VR/VA e VT)". */
+export const CAMPOS_BENEFICIOS_CLIENTE: CampoDef[] = [
+  { key: "valeRefeicao", label: "Vale-refeição/alimentação (opcional)", tipo: "moeda", ajuda: "Valor mensal recebido no cartão." },
+  { key: "valeTransporte", label: "Vale-transporte (opcional)", tipo: "moeda", ajuda: "Valor mensal recebido." },
 ];
 
 /** Renda extra do cliente (campo único, abaixo da estimativa bruta ↔ líquida). */
@@ -353,8 +375,12 @@ export const CAMPOS_RENDA_ANUAL: CampoDef[] = [
 
 /** Renda do cônjuge (só para casado(a) ou união estável). */
 export const CAMPOS_RENDA_CONJUGE: CampoDef[] = [
-  { key: "brutaConjuge", label: "Renda bruta mensal", tipo: "moeda", largura: 2, mostrarSe: (_d, c) => casado(c) },
-  { key: "liquidaConjuge", label: "Renda líquida mensal", tipo: "moeda", largura: 2, mostrarSe: (_d, c) => casado(c) },
+  { key: "brutaConjuge", label: "Renda bruta mensal", tipo: "moeda", mostrarSe: (_d, c) => casado(c) },
+  { key: "liquidaConjuge", label: "Renda líquida mensal", tipo: "moeda", mostrarSe: (_d, c) => casado(c) },
+];
+export const CAMPOS_BENEFICIOS_CONJUGE: CampoDef[] = [
+  { key: "valeRefeicaoConjuge", label: "Vale-refeição/alimentação (opcional)", tipo: "moeda", ajuda: "Valor mensal recebido no cartão." },
+  { key: "valeTransporteConjuge", label: "Vale-transporte (opcional)", tipo: "moeda", ajuda: "Valor mensal recebido." },
 ];
 
 export const CAMPOS_OUTRA_RENDA: CampoDef[] = [
@@ -381,7 +407,20 @@ export const CAMPOS_RENDA_IR: CampoDef[] = [
 ];
 
 /** Pergunta que abre a lista de cartões (fica na seção Renda). */
-export const CAMPOS_RENDA_CARTAO: CampoDef[] = [{ key: "temCartao", label: "Tem cartão de crédito?", tipo: "simnao", largura: 2 }];
+export const CAMPOS_RENDA_CARTAO: CampoDef[] = [
+  { key: "temCartao", label: "Tem cartão de crédito?", tipo: "simnao", largura: 2 },
+  {
+    key: "qtdCartoes",
+    label: "Quantos cartões?",
+    tipo: "contador",
+    min: 1,
+    max: 10,
+    padrao: 1,
+    largura: 2,
+    ajuda: "Abre um cartão para cada um, logo abaixo.",
+    mostrarSe: (d) => sim(d.temCartao),
+  },
+];
 
 export const CAMPOS_CARTAO: CampoDef[] = [
   { key: "cartao", label: "Qual cartão", tipo: "texto", largura: 2, placeholder: "Banco / bandeira / categoria" },
@@ -445,6 +484,15 @@ export const CAMPOS_MOVEL: CampoDef[] = [
     tipo: "texto",
     placeholder: "Ex.: SUV híbrido",
     largura: 2,
+    novaLinha: true,
+    mostrarSe: (d) => d.pensaAmpliacao === true,
+  },
+  {
+    key: "valorCompra",
+    label: "Valor de compra",
+    tipo: "moeda",
+    largura: 2,
+    ajuda: "Estimativa do valor do modelo de desejo.",
     mostrarSe: (d) => d.pensaAmpliacao === true,
   },
 ];
@@ -499,6 +547,19 @@ export const CAMPOS_EMPRESTIMO: CampoDef[] = [
   { key: "instituicao", label: "Instituição", tipo: "texto", placeholder: "Banco / financeira" },
   { key: "parcela", label: "Parcela", tipo: "moeda" },
   { key: "prazo", label: "Prazo restante (meses)", tipo: "numero" },
+];
+
+/** FGTS (8 · Financiamento, consórcio e FGTS). */
+export const CAMPOS_FGTS: CampoDef[] = [
+  { key: "temFgts", label: "Tem saldo de FGTS?", tipo: "simnao", largura: 2 },
+  { key: "saldoFgts", label: "Saldo de FGTS", tipo: "moeda", mostrarSe: (d) => sim(d.temFgts), novaLinha: true },
+  {
+    key: "fgtsMais2Anos",
+    label: "Contribui há mais de 2 anos?",
+    tipo: "simnao",
+    mostrarSe: (d) => sim(d.temFgts),
+    ajuda: "Tempo de contribuição para usar o FGTS na casa própria.",
+  },
 ];
 
 // ---------------------------------------------------------------------
@@ -610,15 +671,6 @@ export const ESTILOS_VIDA: { id: string; fator: number; descricao: string }[] = 
 /** O estilo de vida é escolhido nos cartões da seção 12 (campo "estiloVida"). */
 export const CAMPOS_FUTURO: CampoDef[] = [
   { key: "idadeAposentadoria", label: "Idade de aposentadoria", tipo: "numero", padrao: 60, sufixo: "anos", largura: 2 },
-  {
-    key: "investimentoMensal",
-    label: "Investimento mensal",
-    tipo: "moeda",
-    largura: 2,
-    ajuda: "Quanto investe por mês hoje. Em branco, o diagnóstico usa a sobra livre do mês.",
-  },
-  { key: "poupancaMinima", label: "Valor mínimo que pode poupar /mês", tipo: "moeda", largura: 2, ajuda: "O mínimo que o cliente garante guardar todo mês." },
-  { key: "poupancaMaxima", label: "Valor máximo que consegue poupar /mês", tipo: "moeda", largura: 2, ajuda: "O máximo que caberia no orçamento com esforço." },
   { key: "rendaDesejada", label: "Renda desejada /mês", tipo: "moeda", largura: 2, ajuda: "Em valores de hoje. Em branco, o diagnóstico usa o estilo de vida." },
   { key: "outrasRendas", label: "Outras fontes de renda /mês", tipo: "moeda", largura: 2, ajuda: "INSS, aluguéis, previdência. Em branco = aluguéis e aposentadorias atuais (juros e dividendos já vêm dos investimentos)." },
 ];
@@ -690,23 +742,6 @@ export const PRAZOS_PLANO: Record<string, { titulo: string; meses: [number, numb
   Médio: { titulo: "Médio prazo", meses: [3, 12] },
   Longo: { titulo: "Longo prazo", meses: [12, null] },
 };
-
-// ---------------------------------------------------------------------
-//  7.1 · Jornada do cliente (reuniões)
-// ---------------------------------------------------------------------
-export const CAMPOS_REUNIAO: CampoDef[] = [
-  { key: "titulo", label: "Encontro", tipo: "texto", largura: 2 },
-  { key: "data", label: "Data", tipo: "data" },
-  { key: "status", label: "Status", tipo: "chips", opcoes: OPCOES.statusReuniao, padrao: "Pendente" },
-];
-
-export const JORNADA_PADRAO = [
-  { titulo: "Reunião 1 · Conexão e cadastro", descricao: "Cadastro, institucional, objetivos e sucessão" },
-  { titulo: "Reunião 2 · Raio-X financeiro", descricao: "Despesas, renda, patrimônio, financiamento e crédito, proteção e investimentos" },
-  { titulo: "Reunião 3 · Diagnóstico completo", descricao: "Panorama, planos atual, potencial e de otimização, futuro e bússola financeira" },
-  { titulo: "Reunião 4 · Fechamento do planejamento", descricao: "Plano de ação e cronograma de implementação" },
-  { titulo: "Acompanhamento trimestral", descricao: "Revisão dos indicadores e ajustes no plano" },
-];
 
 /** Valores padrão de um conjunto de campos (usado ao criar cliente / item). */
 export const padroes = (campos: CampoDef[]) =>

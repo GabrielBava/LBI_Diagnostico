@@ -105,7 +105,7 @@ export default function Clientes() {
                     <div className="min-w-0">
                       <div className="truncate text-sm font-semibold">{s(c.cadastro.nome) || "Sem nome"}</div>
                       <div className="truncate text-xs text-muted-foreground">
-                        {[s(c.cadastro.perfil), s(c.cadastro.ocupacao)].filter(Boolean).join(" · ") || "—"}
+                        {s(c.cadastro.ocupacao) || "—"}
                       </div>
                     </div>
                     <div className="text-right">

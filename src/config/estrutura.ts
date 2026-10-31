@@ -10,21 +10,24 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Baby,
+  BadgeDollarSign,
+  BrainCircuit,
   Briefcase,
-  CalendarRange,
   ChartPie,
   CircleCheckBig,
   Compass,
   CreditCard,
+  FileText,
+  Flame,
   Gauge,
   Handshake,
   Landmark,
   Lightbulb,
   ListChecks,
+  NotebookPen,
   Presentation,
   Radar,
   ReceiptText,
-  Route,
   Shield,
   Sunrise,
   Sunset,
@@ -53,7 +56,8 @@ export const ETAPAS: Etapa[] = [
   { id: "investimentos", numero: 4, nome: "Investimentos", subtitulo: "Como o cliente investe hoje" },
   { id: "pre", numero: 5, nome: "Pré-diagnóstico", subtitulo: "Visão breve, gerada com o que foi preenchido" },
   { id: "completo", numero: 6, nome: "Diagnóstico completo", subtitulo: "A leitura completa e o plano de ação" },
-  { id: "jornada", numero: 7, nome: "Jornada", subtitulo: "Fechamento do planejamento" },
+  { id: "especificacao", numero: 7, nome: "Especificação", subtitulo: "Especificação do planejamento financeiro" },
+  { id: "analitico", numero: 8, nome: "Analítico do Planejador", subtitulo: "Transcrições, perfil do cliente e preparação da V2" },
 ];
 
 export interface SecaoDef {
@@ -158,13 +162,13 @@ export const SECOES: SecaoDef[] = [
     id: "dividas",
     etapa: "raio-x",
     numero: "8",
-    titulo: "Financiamento e crédito",
-    subtitulo: "Financiamentos, consórcios e dívidas",
+    titulo: "Financiamento, consórcio e FGTS",
+    subtitulo: "Financiamentos, consórcios, dívidas e fundo de garantia",
     icone: ReceiptText,
     coleta: true,
     opcional: true,
     concluida: (c) =>
-      c.financiamentos.length + c.consorcios.length + c.emprestimos.length + financiamentosDoPatrimonio(c).length > 0,
+      c.financiamentos.length + c.consorcios.length + c.emprestimos.length + financiamentosDoPatrimonio(c).length > 0 || !!s(c.fgts.temFgts),
   },
   {
     id: "projetos",
@@ -272,21 +276,40 @@ export const SECOES: SecaoDef[] = [
   { id: "bussola", etapa: "completo", numero: "6.7", titulo: "Bússola financeira", subtitulo: "Saúde financeira e o norte das ações", icone: Compass },
   { id: "plano-acao", etapa: "completo", numero: "6.8", titulo: "Plano de ação", icone: ListChecks },
 
-  // Etapa 7 · Jornada
-  { id: "jornada-cliente", etapa: "jornada", numero: "7.1", titulo: "Jornada do cliente", icone: Route },
-  { id: "cronograma", etapa: "jornada", numero: "7.2", titulo: "Cronograma de implementação", icone: CalendarRange },
+  // Etapa 7 · Especificação (só na versão consultor)
+  {
+    id: "especificacao",
+    etapa: "especificacao",
+    numero: "7.1",
+    titulo: "Especificação do planejamento",
+    subtitulo: "Valor do plano e condições de pagamento",
+    icone: BadgeDollarSign,
+  },
+
+  // Etapa 8 · Analítico do Planejador (só na versão consultor)
+  { id: "transcricoes", etapa: "analitico", numero: "8.1", titulo: "Transcrições da reunião", subtitulo: "Parte 1, parte 2…", icone: FileText },
+  { id: "dores-gatilhos", etapa: "analitico", numero: "8.2", titulo: "Dores, preocupações e gatilhos", icone: Flame },
+  { id: "notas-planejador", etapa: "analitico", numero: "8.3", titulo: "Notas do Planejador", subtitulo: "Objeções, lacunas, perguntas para a V2, riscos e oportunidades", icone: NotebookPen },
+  { id: "analitico-ia", etapa: "analitico", numero: "8.4", titulo: "Analítico IA", subtitulo: "Perfil comportamental e como falar a língua do cliente na V2", icone: BrainCircuit },
 ];
 
 export const secaoPorId = (id: string) => SECOES.find((x) => x.id === id);
 
 /** Etapas liberadas só depois do botão "Finalizar coleta". */
-export const ETAPAS_APOS_COLETA = ["pre", "completo"];
+export const ETAPAS_APOS_COLETA = ["pre", "completo", "especificacao", "analitico"];
+/** Etapas que só aparecem na versão consultor (a apresentação vai até o pré-diagnóstico). */
+export const ETAPAS_SO_CONSULTOR = ["completo", "especificacao", "analitico"];
 /** Etapas de coleta (o botão "Finalizar coleta" fica depois da última delas). */
 export const ETAPAS_COLETA = ["conexao", "raio-x", "protecao", "investimentos"];
 export const coletaFinalizada = (c: Cliente) => !!c.coletaFinalizada;
-/** A seção aparece agora? (pré-diagnóstico e diagnóstico esperam a coleta ser finalizada; 5.2 espera "Gerar recomendações") */
-export const secaoLiberada = (c: Cliente, x: SecaoDef) =>
-  (coletaFinalizada(c) || !ETAPAS_APOS_COLETA.includes(x.etapa)) && (x.liberada?.(c) ?? true);
+/**
+ * A seção aparece agora? Pré-diagnóstico e etapas 6–8 esperam a coleta ser finalizada; 5.2 espera
+ * "Gerar recomendações"; as etapas 6–8 só aparecem na versão consultor.
+ */
+export const secaoLiberada = (c: Cliente, x: SecaoDef, apresentacao = false) =>
+  (coletaFinalizada(c) || !ETAPAS_APOS_COLETA.includes(x.etapa)) &&
+  !(apresentacao && ETAPAS_SO_CONSULTOR.includes(x.etapa)) &&
+  (x.liberada?.(c) ?? true);
 /** O botão "Gerar recomendações" aparece depois do 5.1 até ser clicado. */
 export const podeGerarRecomendacoes = (c: Cliente) => coletaFinalizada(c) && !c.recomendacoesAbertas;
 /** Quantidade de recomendações com nome ou contato preenchido. */

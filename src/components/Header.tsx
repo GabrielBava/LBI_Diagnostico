@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, Moon, Settings, Sun, X } from "lucide-react";
+import { Moon, Settings, Sun, X } from "lucide-react";
 import { APP } from "@/config/defaults";
 import { usePreferencias } from "@/lib/preferencias";
-import { lerConfig, salvarConfig, useClientes } from "@/lib/storage";
-import { fmtData } from "@/lib/format";
-import { s } from "@/lib/calculos";
+import { lerConfig, salvarConfig } from "@/lib/storage";
 
 export function Logo() {
   return (
@@ -27,17 +25,8 @@ const botaoIcone =
 export function Header() {
   const { tema, alternarTema } = usePreferencias();
   const [config, setConfig] = useState(lerConfig());
-  const [painel, setPainel] = useState<"notificacoes" | "config" | null>(null);
-  const clientes = useClientes();
+  const [painel, setPainel] = useState<"config" | null>(null);
 
-  // Notificações: encontros da jornada não realizados, atrasados ou nos próximos 7 dias.
-  const hoje = new Date().toISOString().slice(0, 10);
-  const limite = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
-  const alertas = clientes.flatMap((c) =>
-    c.jornada
-      .filter((r) => s(r.status) !== "Realizada" && s(r.data) && s(r.data) <= limite)
-      .map((r) => ({ cliente: c, acao: r, vencida: s(r.data) < hoje })),
-  );
 
   return (
     <header className="no-print sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-background/85 px-4 backdrop-blur md:px-8">
@@ -49,34 +38,6 @@ export function Header() {
         {APP.versao}
       </span>
       <div className="ml-auto flex items-center gap-1 sm:gap-2">
-        <div className="relative">
-          <button type="button" aria-label="Notificações" className={botaoIcone} onClick={() => setPainel(painel === "notificacoes" ? null : "notificacoes")}>
-            <Bell className="h-4 w-4" />
-            {alertas.length > 0 && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />}
-          </button>
-          {painel === "notificacoes" && (
-            <div className="absolute right-0 top-10 w-80 rounded-xl border border-border bg-popover p-3 shadow-xl">
-              <div className="mb-2 text-xs font-semibold">Próximos encontros</div>
-              {alertas.length === 0 && <p className="text-xs text-muted-foreground">Nenhum encontro atrasado ou nos próximos 7 dias.</p>}
-              <ul className="max-h-72 space-y-1 overflow-auto">
-                {alertas.map(({ cliente, acao, vencida }) => (
-                  <li key={acao.id}>
-                    <Link
-                      to={`/clientes/${cliente.id}?secao=jornada-cliente`}
-                      onClick={() => setPainel(null)}
-                      className="block rounded-md px-2 py-1.5 text-xs hover:bg-muted"
-                    >
-                      <div className="font-medium">{s(acao.titulo) || "Encontro"}</div>
-                      <div className={vencida ? "text-destructive" : "text-muted-foreground"}>
-                        {s(cliente.cadastro.nome)} · {vencida ? "atrasado desde" : "em"} {fmtData(s(acao.data))}
-                      </div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
         <button type="button" aria-label={tema === "dark" ? "Ativar fundo claro" : "Ativar fundo escuro"} className={botaoIcone} onClick={alternarTema}>
           {tema === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>

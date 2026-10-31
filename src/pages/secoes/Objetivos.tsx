@@ -82,7 +82,6 @@ export default function Objetivos() {
                   .filter(Boolean)
                   .join(" · ") || "Sem valores preenchidos"
               }
-              sugestoes={(o) => ({ probAtual: f.renda > 0 ? ob.sugestao[o.id] : undefined })}
               rodapeItem={
                 apresentacao
                   ? undefined

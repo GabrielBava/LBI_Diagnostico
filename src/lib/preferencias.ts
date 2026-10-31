@@ -1,4 +1,5 @@
-// Preferências da interface guardadas no navegador: tema e modo apresentação.
+// Preferências da interface: o tema fica guardado no navegador; o diagnóstico sempre
+// abre na versão apresentação (vai até o pré-diagnóstico) e o consultor alterna para a versão consultor.
 import { useSyncExternalStore } from "react";
 
 type Prefs = { tema: "dark" | "light"; apresentacao: boolean };
@@ -7,10 +8,10 @@ const ler = (): Prefs => {
   try {
     return {
       tema: localStorage.getItem("life-theme") === "light" ? "light" : "dark",
-      apresentacao: localStorage.getItem("life-modo-apresentacao") === "1",
+      apresentacao: true,
     };
   } catch {
-    return { tema: "dark", apresentacao: false };
+    return { tema: "dark", apresentacao: true };
   }
 };
 
@@ -28,7 +29,6 @@ function definir(p: Partial<Prefs>) {
   atual = { ...atual, ...p };
   try {
     localStorage.setItem("life-theme", atual.tema);
-    localStorage.setItem("life-modo-apresentacao", atual.apresentacao ? "1" : "0");
   } catch {
     /* ignora */
   }

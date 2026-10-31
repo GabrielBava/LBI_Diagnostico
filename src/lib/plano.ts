@@ -347,17 +347,6 @@ export function planoAtual(c: Cliente): CardPlano[] {
       `${plural(comPrazo.length, "objetivo", "objetivos")} com prazo, somando ${fmtBRL(comPrazo.reduce((t, o) => t + n(o.valorFuturo), 0))}.`,
       "Sem priorizar, os objetivos competem entre si e nenhum é cumprido no prazo.",
     );
-  const baixas = c.objetivos.filter((o) => s(o.probAtual) !== "" && n(o.probAtual) < 50);
-  if (baixas.length)
-    add(
-      "objetivos-chance",
-      "Objetivos",
-      "Objetivos em risco",
-      "Média",
-      `${plural(baixas.length, "objetivo", "objetivos")} com menos de 50% de chance no cenário atual: ${juntar(baixas.map((o) => s(o.titulo) || s(o.categoria) || "objetivo"))}.`,
-      "Chance avaliada com o cliente na seção Objetivos.",
-      "Frustração e decisões por impulso (crédito, resgates) para tentar cumprir os prazos.",
-    );
   mudancasVida(c).forEach((m) => {
     const quando = m.temData ? `em ${m.quando}` : "sem data definida";
     if (m.impacto === "Gasto único" && m.valor > 0)
@@ -1002,7 +991,6 @@ export function dadosPerfil(c: Cliente) {
     .map(([t, q]) => `${q} ${q > 1 ? PLURAL_TIPO[t] : t.toLowerCase()}`);
   return {
     nome: s(c.cadastro.nome) || "Cliente",
-    rotulo: s(c.cadastro.perfil),
     /** "34 anos · Casado(a) com Ana · Engenheiro · CLT" */
     linha: [idade !== undefined ? `${idade} anos` : "", s(c.cadastro.sexo), estado ? `${estado}${conjuge}` : "", ocupacao].filter(Boolean),
     dados: [

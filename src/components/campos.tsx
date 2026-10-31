@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Check, Minus, Plus, type LucideIcon } from "lucide-react";
 import type { CampoDef } from "@/config/campos";
 import type { Cliente, Secao, Valor } from "@/types";
-import { mascaraMoeda, moedaCampo, numeroDaMascara, textoParaNumero } from "@/lib/format";
+import { fmtBRL, mascaraMoeda, moedaCampo, numeroDaMascara, textoParaNumero } from "@/lib/format";
 import { usePreferencias } from "@/lib/preferencias";
 
 export function Rotulo({ children }: { children: React.ReactNode }) {
@@ -227,6 +227,7 @@ export function Regua({
   sufixo = "",
   ariaLabel,
   sugestao,
+  moeda = false,
 }: {
   valor: Valor;
   onChange: (v: number) => void;
@@ -236,9 +237,13 @@ export function Regua({
   sufixo?: string;
   ariaLabel?: string;
   sugestao?: number;
+  /** Mostra o valor em reais (ex.: "R$ 2.500"). */
+  moeda?: boolean;
 }) {
   const definido = valor !== undefined && valor !== null && valor !== "";
-  const v = definido ? Number(valor) : min;
+  // Valor salvo acima do teto (ex.: dado antigo) fica no fim da régua, mas o número mostra o valor real.
+  const v = definido ? Math.min(max, Number(valor)) : min;
+  const texto = definido ? (moeda ? fmtBRL(Number(valor)) : `${v}${sufixo}`) : "—";
   const pct = ((v - min) / (max - min)) * 100;
   return (
     <div className="flex h-10 items-center gap-3">
@@ -249,12 +254,13 @@ export function Regua({
         step={passo}
         value={v}
         aria-label={ariaLabel}
+        aria-valuetext={definido ? texto : undefined}
         onChange={(e) => onChange(Number(e.target.value))}
         className="regua w-full"
         style={{ ["--pct" as string]: `${definido ? pct : 0}%` }}
       />
-      <span className={`w-12 shrink-0 text-right text-sm font-semibold tabular-nums ${definido ? "" : "text-muted-foreground/50"}`}>
-        {definido ? `${v}${sufixo}` : "—"}
+      <span className={`${moeda ? "w-24" : "w-12"} shrink-0 text-right text-sm font-semibold tabular-nums ${definido ? "" : "text-muted-foreground/50"}`}>
+        {texto}
       </span>
       {sugestao !== undefined && (
         <button
@@ -503,6 +509,7 @@ export function Controle({
           sufixo={campo.sufixo}
           ariaLabel={campo.label}
           sugestao={sugestao}
+          moeda={campo.moeda}
         />
       );
     case "contador":

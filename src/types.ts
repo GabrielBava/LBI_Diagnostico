@@ -1,4 +1,5 @@
 // Modelo de dados de um cliente (versão 2 do diagnóstico).
+import type { AnaliticoPlanejador } from "@/lib/analitico-tipos";
 // Seções de formulário e listas usam objetos flexíveis (Secao / Item) para que
 // novos campos possam ser incluídos apenas editando src/config/campos.ts.
 
@@ -45,6 +46,8 @@ export interface Cliente {
   financiamentos: Item[];
   consorcios: Item[];
   emprestimos: Item[];
+  /** FGTS (8 · Financiamento, consórcio e FGTS): tem saldo, valor e se contribui há mais de 2 anos. */
+  fgts: Secao;
   projetos: Item[];
   corporativo: Secao;
 
@@ -59,6 +62,8 @@ export interface Cliente {
   // Etapa 5 · Pré-diagnóstico
   /** Data em que o consultor clicou em "Gerar recomendações" (a 5.2 · Recomendações aparece a partir daí). */
   recomendacoesAbertas?: string;
+  /** Data em que o consultor clicou em "Finalizar recomendações" (5.2). */
+  recomendacoesFinalizadas?: string;
   /** Indicações do cliente em 5.2 · Recomendações (nome e contato). */
   recomendacoes: Item[];
 
@@ -75,7 +80,13 @@ export interface Cliente {
   simulacao: Secao;
   plano: Item[];
 
-  // Etapa 7 · Jornada
+  // Etapa 7 · Especificação (proposta do planejamento: percentual, desconto, forma de pagamento)
+  especificacao: Secao;
+
+  // Etapa 8 · Analítico do Planejador (transcrições e análise da reunião)
+  analitico: AnaliticoPlanejador;
+
+  /** Encontros da antiga etapa Jornada (removida na v11); guardados só para não perder dados. */
   jornada: Item[];
 
   /** Anotações do consultor por seção. */
@@ -118,4 +129,6 @@ export type SecaoId =
   | "protecao"
   | "investimentos"
   | "futuro"
-  | "simulacao";
+  | "simulacao"
+  | "fgts"
+  | "especificacao";

@@ -28,7 +28,7 @@ export default function ClienteDetalhe() {
   const { apresentacao, alternarApresentacao } = usePreferencias();
   const cliente = useClientes().find((c) => c.id === id);
   // Pré-diagnóstico e diagnóstico só aparecem depois de "Finalizar coleta".
-  const secoes = cliente ? SECOES.filter((x) => !(apresentacao && secaoOculta(cliente, x)) && secaoLiberada(cliente, x)) : [];
+  const secoes = cliente ? SECOES.filter((x) => !(apresentacao && secaoOculta(cliente, x)) && secaoLiberada(cliente, x, apresentacao)) : [];
   // O botão "Finalizar coleta" fica logo depois da última seção de coleta.
   const ultimaColeta = secoes.reduce((ultima, x, i) => (ETAPAS_COLETA.includes(x.etapa) ? i : ultima), -1);
   // O botão "Gerar recomendações" fica logo depois do pré-diagnóstico, até ser clicado (aí vira a 5.2).

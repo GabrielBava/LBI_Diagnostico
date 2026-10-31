@@ -86,7 +86,7 @@ export default function PlanoAtual() {
     { nome: "Outras rendas do cônjuge", valor: outrasPessoa("Cônjuge") },
     { nome: "Rendas de outras pessoas", valor: outrasPessoa("Outra pessoa") },
   ].filter((x) => x.valor > 0);
-  const { minima, maxima } = m.poupancaDeclarada;
+  const poupanca = m.poupancaDeclarada;
 
   return (
     <div className="space-y-4">
@@ -239,22 +239,10 @@ export default function PlanoAtual() {
                     .
                   </p>
                 )}
-                {(minima !== undefined || maxima !== undefined) && (
+                {poupanca !== undefined && (
                   <p className="text-muted-foreground">
-                    O cliente diz que consegue poupar{" "}
-                    <strong className="text-foreground">
-                      {minima !== undefined && maxima !== undefined
-                        ? `de ${fmtBRL(minima)} a ${fmtBRL(maxima)}`
-                        : minima !== undefined
-                          ? `ao menos ${fmtBRL(minima)}`
-                          : `até ${fmtBRL(maxima!)}`}
-                    </strong>{" "}
-                    por mês
-                    {maxima !== undefined && maxima < pou.ideal
-                      ? `: abaixo dos ${fmtBRL(pou.ideal)} do modelo.`
-                      : minima !== undefined && minima >= pou.ideal
-                        ? `: já cobre os ${fmtBRL(pou.ideal)} do modelo.`
-                        : `; o modelo pede ${fmtBRL(pou.ideal)}.`}
+                    O cliente diz que consegue poupar <strong className="text-foreground">{fmtBRL(poupanca)}</strong> por mês
+                    {poupanca < pou.ideal ? `: abaixo dos ${fmtBRL(pou.ideal)} do modelo.` : `: já cobre os ${fmtBRL(pou.ideal)} do modelo.`}
                   </p>
                 )}
               </div>

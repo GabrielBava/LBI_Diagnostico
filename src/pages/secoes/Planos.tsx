@@ -15,10 +15,8 @@ import {
 } from "lucide-react";
 import { CAMPOS_CARD_ATUAL, CAMPOS_CARD_OTIMIZACAO, CAMPOS_CARD_POTENCIAL } from "@/config/campos";
 import { BotaoLevarAoPlano, CardsPlano, selosVisiveis } from "@/components/CardsPlano";
-import { BarrasDuplas } from "@/components/graficos";
-import { Selo, SubBloco } from "@/components/ui";
+import { Selo } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
-import { n, s } from "@/lib/calculos";
 import { uid } from "@/lib/format";
 import { origensNoPlano, textoAcao } from "@/lib/diagnostico";
 import { planoAtual, planoOtimizacao, planoPotencial } from "@/lib/plano";
@@ -48,7 +46,6 @@ export function PlanoAtualCards() {
   const cards = planoAtual(cliente);
   const selos = selosVisiveis(cliente, "planoAtual", cards);
   const conta = (g: string) => selos.filter((x) => x === g).length;
-  const comProb = cliente.objetivos.filter((o) => s(o.probAtual) !== "" || s(o.probPlano) !== "");
   return (
     <div className="space-y-4">
       <Resumo
@@ -72,14 +69,6 @@ export function PlanoAtualCards() {
         textoAdicionar="Adicionar diagnóstico"
         vazio="Nenhum ponto de atenção identificado com os dados preenchidos."
       />
-      {comProb.length > 0 && (
-        <SubBloco titulo="Probabilidade de os objetivos acontecerem">
-          <BarrasDuplas
-            rotulos={["Cenário atual", "Com o plano"]}
-            itens={comProb.map((o) => ({ nome: s(o.titulo) || s(o.categoria) || "Objetivo", a: n(o.probAtual), b: n(o.probPlano) }))}
-          />
-        </SubBloco>
-      )}
     </div>
   );
 }

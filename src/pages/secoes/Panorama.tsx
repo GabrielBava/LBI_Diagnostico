@@ -64,7 +64,6 @@ function Perfil() {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-lg font-semibold leading-tight [overflow-wrap:anywhere]">{pf.nome}</span>
-            {pf.rotulo && <Selo className="border-primary/30 bg-primary/10 text-primary">{pf.rotulo}</Selo>}
           </div>
           {pf.linha.length > 0 && <p className="mt-0.5 text-sm text-muted-foreground">{pf.linha.join(" · ")}</p>}
         </div>

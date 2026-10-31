@@ -122,9 +122,9 @@ export default function Futuro() {
   const retornoBase = base.retornoReal * 100;
 
   // Faixas dos sliders: cobrem o valor atual, o necessário e uma folga.
-  // Quanto o cliente diz que consegue poupar (12 · Futuro): atalhos na régua do investimento mensal.
-  const { minima: poupancaMin, maxima: poupancaMax } = poupancaDeclarada(cliente);
-  const maxAporte = teto(Math.max(10_000, base.aporteAtual * 2, base.aporte * 1.5, sim.aporteAtual, poupancaMax ?? 0), 1000);
+  // Quanto o cliente diz que consegue poupar (ponto de partida, 3 · Objetivos): atalho na régua do investimento mensal.
+  const poupanca = poupancaDeclarada(cliente);
+  const maxAporte = teto(Math.max(10_000, base.aporteAtual * 2, base.aporte * 1.5, sim.aporteAtual, poupanca ?? 0), 1000);
   const maxRenda = teto(Math.max(20_000, base.rendaDesejada * 2, sim.rendaDesejada), 5000);
   const minIdade = Math.max(30, (base.idadeAtual || 29) + 1);
   const maxIdade = Math.max(80, minIdade + 5);
@@ -145,7 +145,7 @@ export default function Futuro() {
           <span aria-hidden="true"> · </span>
           <span>
             investindo <strong className="tabular-nums text-foreground">{fmtBRL(base.aporteAtual)}/mês</strong>
-            {!base.aporteInformado && " (sobra livre)"}
+            {base.aporteInformado ? " (quanto consegue poupar)" : " (sobra livre)"}
           </span>
           {base.outras > 0 && (
             <>
@@ -197,25 +197,17 @@ export default function Futuro() {
                   formatar={(v) => fmtBRL(v)}
                   onChange={(v) => set("aporte", v)}
                 />
-                {(poupancaMin !== undefined || poupancaMax !== undefined) && (
+                {poupanca !== undefined && (
                   <div className="-mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
                     <span className="text-muted-foreground">Consegue poupar:</span>
-                    {[
-                      { rotulo: "mínimo", valor: poupancaMin },
-                      { rotulo: "máximo", valor: poupancaMax },
-                    ]
-                      .filter((x) => x.valor !== undefined)
-                      .map((x) => (
-                        <button
-                          key={x.rotulo}
-                          type="button"
-                          onClick={() => set("aporte", x.valor!)}
-                          aria-pressed={Math.abs(sim.aporteAtual - x.valor!) < 1}
-                          className="rounded-full border border-primary/40 px-2 py-0.5 font-semibold text-primary hover:bg-primary/10 aria-pressed:bg-primary/15"
-                        >
-                          {x.rotulo} {fmtBRL(x.valor!)}
-                        </button>
-                      ))}
+                    <button
+                      type="button"
+                      onClick={() => set("aporte", poupanca)}
+                      aria-pressed={Math.abs(sim.aporteAtual - poupanca) < 1}
+                      className="rounded-full border border-primary/40 px-2 py-0.5 font-semibold text-primary hover:bg-primary/10 aria-pressed:bg-primary/15"
+                    >
+                      {fmtBRL(poupanca)}/mês
+                    </button>
                   </div>
                 )}
                 <Slider

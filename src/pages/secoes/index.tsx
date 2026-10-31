@@ -22,7 +22,8 @@ import Futuro from "./Futuro";
 import Oportunidades from "./Oportunidades";
 import Bussola from "./Bussola";
 import PlanoAcao from "./PlanoAcao";
-import { Cronograma, JornadaCliente } from "./Jornada";
+import Especificacao from "./Especificacao";
+import { AnaliticoIA, DoresGatilhos, NotasPlanejador, Transcricoes } from "./Analitico";
 
 export const TELAS: Record<string, ComponentType> = {
   cadastro: Cadastro,
@@ -48,6 +49,9 @@ export const TELAS: Record<string, ComponentType> = {
   oportunidades: Oportunidades,
   bussola: Bussola,
   "plano-acao": PlanoAcao,
-  "jornada-cliente": JornadaCliente,
-  cronograma: Cronograma,
+  especificacao: Especificacao,
+  transcricoes: Transcricoes,
+  "dores-gatilhos": DoresGatilhos,
+  "notas-planejador": NotasPlanejador,
+  "analitico-ia": AnaliticoIA,
 };

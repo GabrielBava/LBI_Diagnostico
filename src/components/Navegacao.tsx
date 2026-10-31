@@ -75,7 +75,7 @@ export function Navegacao({ cliente, ativa, irPara }: { cliente: Cliente; ativa:
         )}
         {ETAPAS.map((etapa) => {
           const secoes = SECOES.filter(
-            (x) => x.etapa === etapa.id && !(apresentacao && secaoOculta(cliente, x)) && secaoLiberada(cliente, x),
+            (x) => x.etapa === etapa.id && !(apresentacao && secaoOculta(cliente, x)) && secaoLiberada(cliente, x, apresentacao),
           );
           // Depois da última etapa de coleta, enquanto não finalizada: atalho para o botão "Finalizar coleta".
           const atalhoFinalizar =

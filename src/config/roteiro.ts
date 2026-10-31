@@ -47,13 +47,13 @@ export const ROTEIRO: Record<string, Roteiro> = {
       "O que é essencial para você e sua família nos próximos anos?",
       "Quanto custa cada objetivo e em quanto tempo quer realizá-lo?",
       "De 0 a 10, quanto esse objetivo muda a sua vida?",
-      "Hoje, qual a chance de isso acontecer? E com um plano?",
+      "Isso cabe no orçamento de hoje? O que precisaria mudar?",
       "Por que isso é importante para você?",
     ],
     atencao: [
       "Anote as palavras exatas do cliente no ponto de partida: elas voltam no diagnóstico completo.",
       "Valor futuro: o valor na data do objetivo (o sistema calcula o aporte com o retorno nominal).",
-      "A probabilidade sugerida considera a sobra livre (depois dos aportes em projetos) distribuída do essencial para o sonho.",
+      "Arraste a categoria para Essencial, Desejo ou Sonho e depois preencha os dados do objetivo.",
     ],
   },
   sucessao: {
@@ -284,16 +284,10 @@ export const ROTEIRO: Record<string, Roteiro> = {
     perguntas: ["Qual destas ações você consegue começar esta semana?", "O que pode te impedir de cumprir o plano?"],
     atencao: ["Comece com 3 a 5 ações de curto prazo."],
   },
-  "jornada-cliente": {
-    objetivo: "Mostrar ao cliente a jornada completa e onde ele está.",
-    abertura: "Esta é a nossa jornada juntos. Vamos marcar as próximas datas.",
-    perguntas: ["Qual a melhor data para a próxima reunião?"],
-    atencao: ["Saia da reunião com a próxima data marcada."],
-  },
-  cronograma: {
-    objetivo: "Distribuir as ações do plano no tempo.",
-    abertura: "Assim fica a implementação ao longo dos próximos meses.",
-    perguntas: ["Esse ritmo é viável para você?"],
-    atencao: ["Curto: até 3 meses · Médio: 3 a 12 meses · Longo: acima de 12 meses."],
+  especificacao: {
+    objetivo: "Apresentar o valor do planejamento e fechar a condição de pagamento.",
+    abertura: "Para te acompanhar ao longo do ano, o investimento no planejamento é calculado sobre a renda bruta anual da família.",
+    perguntas: ["Faz sentido para você começarmos agora?", "Prefere Pix/boleto (com 5% de desconto) ou parcelar no cartão?", "Qual a melhor data para a primeira reunião do plano?"],
+    atencao: ["O percentual padrão é 3% da renda bruta anual; você pode ajustar ou dar desconto.", "Pix ou boleto: 5% de desconto. Cartão: taxas da maquininha conforme o número de parcelas."],
   },
 };

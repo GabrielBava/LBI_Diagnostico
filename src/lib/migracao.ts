@@ -360,3 +360,19 @@ export function atualizarV9(c: Partial<Cliente> & { id: string }): Partial<Clien
     versaoDados: 9,
   };
 }
+
+/**
+ * Versão 10 (v11 da plataforma): "Investimento mensal" e "poupança mínima/máxima" saíram de
+ * 12 · Futuro; o quanto o cliente consegue poupar passou para o ponto de partida (3 · Objetivos).
+ * O valor informado antes (investimento mensal ou, sem ele, a poupança mínima) vira o ponto de partida.
+ * Roda uma vez por cliente (marcador versaoDados).
+ */
+export function atualizarV10(c: Partial<Cliente> & { id: string }): Partial<Cliente> & { id: string } {
+  if ((c.versaoDados ?? 0) >= 10) return c;
+  const cadastro = { ...(c.cadastro ?? {}) };
+  const futuro = c.futuro ?? {};
+  const informado = [futuro.investimentoMensal, futuro.poupancaMinima].find((v) => v !== undefined && v !== null && v !== "" && Number(v) >= 0);
+  if ((cadastro.poupancaMensal === undefined || cadastro.poupancaMensal === "") && informado !== undefined) cadastro.poupancaMensal = Number(informado);
+  return { ...c, cadastro, versaoDados: 10 };
+}
+

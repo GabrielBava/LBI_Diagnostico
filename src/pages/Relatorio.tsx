@@ -203,7 +203,6 @@ export default function Relatorio() {
             <div className="mb-4">
               <p className="text-sm">
                 <strong>{perfil.nome}</strong>
-                {perfil.rotulo && ` · ${perfil.rotulo}`}
                 {perfil.linha.length > 0 && <span className="text-muted-foreground"> · {perfil.linha.join(" · ")}</span>}
               </p>
               <dl className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm md:grid-cols-3">

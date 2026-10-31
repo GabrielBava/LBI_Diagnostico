@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import Clientes from "@/pages/Clientes";
 import ClienteDetalhe from "@/pages/ClienteDetalhe";
 import Relatorio from "@/pages/Relatorio";
+import EspecificacaoPdf from "@/pages/EspecificacaoPdf";
 
 function Layout() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/clientes/:id" element={<ClienteDetalhe />} />
         </Route>
         <Route path="/clientes/:id/relatorio" element={<Relatorio />} />
+        <Route path="/clientes/:id/especificacao" element={<EspecificacaoPdf />} />
         <Route path="*" element={<Navigate to="/clientes" replace />} />
       </Routes>
     </HashRouter>

@@ -396,18 +396,12 @@ export function fluxo(c: Cliente) {
 //   despesa está em src/config/despesas.ts (campo `modelo`).
 // ---------------------------------------------------------------------
 /**
- * Quanto o cliente diz que consegue poupar por mês (12 · Futuro). Valores negativos
- * são ignorados; com o mínimo acima do máximo, os dois são trocados (`invertida`).
+ * Quanto o cliente diz que consegue poupar todos os meses (régua do ponto de partida,
+ * em 3 · Objetivos). Em branco ou negativo: undefined.
  */
-export function poupancaDeclarada(c: Cliente) {
-  const ler = (v: Valor) => {
-    const x = nOpt(v);
-    return x !== undefined && x >= 0 ? x : undefined;
-  };
-  const a = ler(c.futuro.poupancaMinima);
-  const b = ler(c.futuro.poupancaMaxima);
-  const invertida = a !== undefined && b !== undefined && a > b;
-  return { minima: invertida ? b : a, maxima: invertida ? a : b, invertida };
+export function poupancaDeclarada(c: Cliente): number | undefined {
+  const x = nOpt(c.cadastro.poupancaMensal);
+  return x !== undefined && x >= 0 ? x : undefined;
 }
 
 export function modelo503020(c: Cliente) {
@@ -718,9 +712,9 @@ export function futuro(c: Cliente, simulacao?: SimulacaoFuturo) {
   const alvo = (Math.max(0, rendaDesejada - outras) * 12) / TAXA_RETIRADA;
   // A reserva de emergência não entra: ela existe para imprevistos.
   const atual = p.investimentos + p.previdencia;
-  // Investimento mensal informado (12 · Futuro); em branco, a sobra livre do mês (depois dos aportes em projetos).
-  const investimentoInformado = nOpt(fu.investimentoMensal);
-  const aporteAtual = Math.max(0, simulacao?.aporte ?? investimentoInformado ?? f.sobraLivre);
+  // Quanto o cliente diz que consegue poupar (ponto de partida); em branco, a sobra livre do mês (depois dos aportes em projetos).
+  const poupancaInformada = poupancaDeclarada(c);
+  const aporteAtual = Math.max(0, simulacao?.aporte ?? poupancaInformada ?? f.sobraLivre);
   const i = taxaMensal(retornoReal);
   const meses = anos * 12;
   const projetado = valorFuturo(atual, aporteAtual, i, meses);
@@ -761,8 +755,8 @@ export function futuro(c: Cliente, simulacao?: SimulacaoFuturo) {
     alvo,
     atual,
     aporteAtual,
-    /** O aporte atual veio do campo "Investimento mensal" (e não da sobra). */
-    aporteInformado: investimentoInformado !== undefined,
+    /** O aporte atual veio do "quanto consegue poupar" do ponto de partida (e não da sobra). */
+    aporteInformado: poupancaInformada !== undefined,
     projetado,
     aporte,
     idadeAtingida,
