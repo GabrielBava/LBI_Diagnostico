@@ -128,6 +128,12 @@ export const RELATORIO = {
       "Riqueza não é apenas o que se ganha: é o que se preserva, protege e transfere com eficiência. Cada capítulo apresenta dados atuais, necessidades calculadas e decisões que pertencem ao cliente.",
   },
 
+  /** Página extra do capítulo 01 (não existe no modelo): Nota LIFE da Estrela LIFE, igual à do Panorama. */
+  estrela: {
+    titulo: "Nota LIFE por Pilar",
+    subtitulo: "A Nota LIFE (0 a 100) soma os 8 pilares da Estrela LIFE — a mesma nota do Panorama do diagnóstico.",
+  },
+
   // ------------------------------------------------- 02 · Sonhos e Objetivos
   objetivos: {
     // Substitui a "Probabilidade atual x Objetivo" do modelo (as probabilidades saíram do sistema).

@@ -33,6 +33,7 @@ import {
   valorPresente,
 } from "@/lib/calculos";
 import { sugestoes } from "@/lib/diagnostico";
+import { estrela } from "@/lib/estrela";
 import { oportunidades } from "@/lib/oportunidades";
 import { COLUNAS_PLANO, mesclarCards, planoAtual } from "@/lib/plano";
 import { fmtBRL, fmtPct, plural } from "@/lib/format";
@@ -359,8 +360,13 @@ export function dadosRelatorio(c: Cliente) {
         .sort((a, b) => ordemPrioridade(a.prioridade) - ordemPrioridade(b.prioridade))
     : sugestoes(c).map((x) => ({ prioridade: x.prioridade, acao: x.acao, prazo: PRAZOS_PLANO[x.prazo]?.titulo ?? x.prazo, area: x.area }));
 
+  // Nota LIFE = total da Estrela LIFE (mesma regra de notaLife(), sem calcular duas vezes).
+  const est = estrela(c);
+
   return {
     nome: s(c.cadastro.nome) || "Cliente",
+    estrela: est,
+    notaLife: est.temDados ? est.total : undefined,
     f,
     d,
     p,
