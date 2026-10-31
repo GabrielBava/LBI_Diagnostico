@@ -11,6 +11,8 @@ Tudo corresponde a arquivos editáveis:
 | Tabelas de INSS/IR (CLT) e Simples Nacional/pró-labore (PJ) para estimar bruta ↔ líquida | `src/config/tributos.ts` |
 | Roteiro da conversa e frases de abertura das etapas | `src/config/roteiro.ts` |
 | Modelos de mensagem da 5.2 (cliente e amigos/familiares) | `src/config/mensagens.ts` |
+| Especificação (percentual, desconto Pix, taxas do cartão, validade, itens inclusos, textos do PDF) | `src/config/especificacao.ts` (contas em `src/lib/especificacao.ts`) |
+| Estrela LIFE (pilares, sub-pilares e regras) | `src/lib/estrela.ts` |
 | Apresentação do V1 · Institucional (páginas do PDF) | `src/assets/v1/` — gerar com `python3 scripts/gerar-v1.py <arquivo.pdf>` |
 | Fórmulas de cálculo | `src/lib/calculos.ts` |
 | Pilares e sugestões do plano de ação | `src/lib/diagnostico.ts` |
@@ -171,19 +173,37 @@ Valores reais (R$ de hoje).
 
 ## 4. Diagnóstico
 
-### Pilares (6.1 Panorama) e nota LIFE
-Nota de 0 a 100 por pilar. Status: Saudável ≥ 75 · Atenção ≥ 45 · Crítico abaixo disso.
+### Estrela LIFE e nota LIFE (6.1 Panorama)
+Regras em `src/lib/estrela.ts`. São **8 pilares** e **20 sub-pilares**; cada sub-pilar vale de **0 a 5 pontos inteiros** (fração × 5, arredondada), cada pilar de 10 tem 2 sub-pilares e cada pilar de 15 tem 3, e o **total vai de 0 a 100**. Estado do pilar sobre nota ÷ máximo: **Saudável ≥ 75% · Atenção ≥ 45% · Crítico** abaixo disso; sem nenhum dado, "Sem dados" (sub-pilar sem dados vale 0).
 
-| Pilar | Régua |
-|---|---|
-| Fluxo de caixa | taxa de poupança ÷ 20% (sobra negativa = crítico) |
-| Reserva de emergência | meses cobertos ÷ meta |
-| Dívidas | 100 − (comprometimento ÷ limite) × 60 |
-| Proteção | capital atual ÷ capital necessário |
-| Independência financeira | projeção ÷ patrimônio necessário |
-| Objetivos | sobra livre ÷ aporte necessário dos objetivos |
+| Pilar (máx.) | Sub-pilar | Régua |
+|---|---|---|
+| Organização Financeira (10) | Fluxo de caixa | taxa de poupança ÷ 20% (déficit = 0) |
+| | Orçamento mensal | 1 − (excesso do essencial acima de 50% + excesso de estilo e desejos acima de 30%) ÷ 30 p.p. |
+| Comportamento (10) | Estratégias complementares | 1/3 cartão a favor (milhas, gasto sem benefício abaixo de R$ 3.000/mês ou sem cartão) + 1/3 renda extra ou passiva + 1/3 tem previdência |
+| | Disciplina de investimentos | 4/5 (quanto consegue poupar ÷ 20% da renda; em branco, a sobra livre) + 1/5 já tem investimentos ou previdência |
+| Proteção Financeira (15) | Gestão de riscos | 70% cobertura do seguro de vida + 30% invalidez/DIT (aposentado não conta) |
+| | Reserva de emergência | meses cobertos ÷ meta |
+| | Proteção patrimonial | parte do valor dos imóveis e veículos com seguro |
+| Objetivos Financeiros (15) | Clareza dos objetivos | 80% objetivos com valor e prazo + 20% com o "porquê" |
+| | Execução | sobra livre ÷ aporte necessário dos objetivos |
+| | Conclusão dos objetivos | objetivos com cobertura de 100% contam 1; parciais, metade da cobertura |
+| Acúmulo de Capital (10) | Independência bancária | metade sem dívidas caras + metade 1 − (comprometimento ÷ limite) × 0,6 |
+| | Diversificação de portfólio | 60% classes ÷ 4 (temas estudados de quem investe, previdência, imóvel de renda) + 40% parte financeira do patrimônio ÷ 20% |
+| Planejamento da Aposentadoria (15) | Investimentos para aposentadoria | % da meta de independência (projeção ÷ patrimônio necessário) |
+| | Projeção e planejamento | 70% aporte atual ÷ necessário + 30% definiu estilo de vida ou renda desejada |
+| | Conhecimento tributário | 0,4 declaração do IR informada + 0,6 previdência coerente (completa + PGBL = 1; completa + VGBL = 0,5; simplificada + VGBL = 1; simplificada + PGBL = 0) |
+| Expansão de Capital (10) | Aquisição de bens | 60% parte do valor dos bens já paga + 40% futuras aquisições por consórcio ou à vista |
+| | Crescimento patrimonial | patrimônio líquido ÷ (idade × renda líquida anual ÷ 10) |
+| Sucessão Patrimonial (15) | Conhecimento sobre sucessão | estudou "Planejamento sucessório" = 1; senão, conhecimento avançado 0,4 e intermediário 0,2 |
+| | Implementação | tem seguro de vida individual, previdência com saldo e, com empresa, acordo de sócios |
+| | Segurança do legado | metade (seguro individual + previdência) ÷ custo do inventário + metade cobertura do seguro de vida (com cônjuge ou dependentes) |
 
-**Nota LIFE** = média dos pilares com dados (sem nenhum pilar com dados, aparece “—”). O pilar Dívidas pede a renda antes de dar nota.
+**Tela:** à esquerda o radar (8 pontas; com **"Exibir sub-pilares"**, 20), à direita o **Resumo do diagnóstico** — cada pilar com o que é, nota / máximo, estado e barra, **do mais crítico ao mais saudável** (sem dados no fim); clicar num pilar mostra os sub-pilares e "o que pesou" com os números do cliente.
+
+**Nota LIFE** = total da estrela (0 a 100; sem nenhum dado, "—"). É a nota do Panorama, da lista de clientes e do PDF.
+
+Os 6 pilares antigos (`pilares()` em `src/lib/diagnostico.ts`) continuam só como apoio interno.
 - Idade de aposentadoria já atingida: não há aporte mensal; o diagnóstico mostra quanto falta hoje para a meta.
 
 ### Panorama geral (6.1)
@@ -265,3 +285,13 @@ Quatro direções, cada uma com nota de 0 a 100 (média ponderada dos indicadore
 - Cada ação tem área, prioridade (Alta, Média, Baixa), prazo (Curto: até 3 meses, Médio: 3 a 12, Longo: acima de 12) e status.
 - Áreas: Fluxo de caixa, Dívidas, Proteção, Futuro, Patrimonial, Investimentos, Sucessão, Fiscal/Tributário e Objetivos (a antiga área "Seguros" virou "Proteção").
 - A antiga etapa Jornada (encontros e cronograma, com o sino de avisos no cabeçalho) saiu na versão 11.
+
+## 5. Especificação (etapa 7, só versão consultor)
+
+- **Base anual** = renda bruta mensal do cliente + do cônjuge (estimada pela líquida quando só ela foi informada, conforme CLT ou PJ) **× 12**. O consultor pode digitar outra renda anual para simular ("Voltar ao calculado" desfaz). Renda de cônjuge sem cônjuge no cadastro não entra.
+- **Valor do plano** = base × **percentual (padrão 3%, editável)** − desconto do consultor (em % ou R$, limitado ao valor; nunca negativo).
+- **Pix ou boleto:** valor × (1 − **5%**).
+- **Cartão de crédito:** 1x = valor + 4,53% + R$ 0,29; 2x a 12x = valor + taxa(n) + R$ 0,29 por parcela, com taxa(n) = 5,15% (2x), 5,65%, 6,35%, 6,96%, 7,57%, 8,56%, 9,18%, 9,81%, 10,44%, 11,07% e 11,71% (12x); parcela = total ÷ n (mesma tabela do slide 11 da proposta comercial).
+- O consultor marca a condição escolhida (Pix/boleto ou cartão com n parcelas) e pode escrever observações. Os valores são sempre recalculados a partir da renda, do percentual e do desconto.
+- **Exportar especificação em PDF** (A4 retrato): cliente e cônjuge, data, consultor, validade (7 dias), o que está incluso, base de cálculo, valor do plano e **só a condição escolhida** (sem escolha, as duas), observações e linhas de aceite. Parâmetros e textos em `src/config/especificacao.ts`.
+

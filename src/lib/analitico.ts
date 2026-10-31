@@ -620,8 +620,9 @@ export function lerRespostaJSON(bruto: string): AnaliseReuniao {
   let candidato = cerca ? cerca[1] : texto;
   const ini = candidato.indexOf("{");
   const fim = candidato.lastIndexOf("}");
-  if (ini < 0 || fim <= ini)
+  if (ini < 0)
     throw new ErroAnalise("resposta", "Não encontrei o JSON", "A resposta deve ter um bloco que começa com { e termina com }. Peça ao Claude para devolver só o JSON.");
+  if (fim <= ini) throw new ErroAnalise("resposta", "JSON incompleto", "A resposta parece cortada no fim. Copie a resposta inteira do Claude.");
   candidato = candidato.slice(ini, fim + 1);
   let json: unknown;
   try {
@@ -816,12 +817,15 @@ const unirTextos = (atual: string[] = [], novos: string[] = []) => {
 export function aplicarAnalise(atual: AnaliseReuniao | undefined, nova: AnaliseReuniao, modo: "substituir" | "juntar"): AnaliseReuniao {
   const livre = atual?.notas.livre ?? "";
   const ajustado = atual?.perfil.predominante && atual.perfil.predominanteIA && atual.perfil.predominante !== atual.perfil.predominanteIA;
-  if (modo === "substituir" || !atual) {
-    return { ...nova, editadaEm: undefined, notas: { ...nova.notas, livre } };
-  }
   const perfilNovo: PerfilComportamental = { ...nova.perfil };
+  if (ajustado) {
+    perfilNovo.predominante = atual.perfil.predominante;
+    if (perfilNovo.secundario === perfilNovo.predominante) perfilNovo.secundario = undefined;
+  }
+  if (modo === "substituir" || !atual) {
+    return { ...nova, perfil: perfilNovo, editadaEm: undefined, notas: { ...nova.notas, livre } };
+  }
   for (const k of LISTAS_PERFIL) perfilNovo[k] = unirTextos(atual.perfil[k], nova.perfil[k]);
-  if (ajustado) perfilNovo.predominante = atual.perfil.predominante;
   return {
     ...nova,
     dores: unir(atual.dores, nova.dores),

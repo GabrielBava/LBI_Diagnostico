@@ -187,7 +187,8 @@ export function FolhaCapa({ cliente, emitido, email, plataforma, assinatura }: {
           <div>Emitido em {emitido}</div>
           {email && <div>{email}</div>}
         </div>
-        <div className="rel-capa-plataforma">{plataforma.toUpperCase()}</div>
+        {/* Só o nome da plataforma em maiúsculas (a versão continua "v10..."). */}
+        <div className="rel-capa-plataforma">{plataforma.replace(RELATORIO.plataforma, RELATORIO.plataforma.toUpperCase())}</div>
         <div className="rel-capa-assina">{assinatura}</div>
       </div>
       <div className="rel-faixa rel-faixa-base" />
