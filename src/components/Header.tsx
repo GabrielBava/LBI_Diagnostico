@@ -97,6 +97,10 @@ export function Header() {
                 <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">Empresa</span>
                 <input className="inp mt-1" value={config.empresa} onChange={(e) => setConfig({ ...config, empresa: e.target.value })} />
               </label>
+              <label className="block">
+                <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">E-mail do consultor</span>
+                <input type="email" className="inp mt-1" value={config.email} onChange={(e) => setConfig({ ...config, email: e.target.value })} />
+              </label>
               <fieldset className="space-y-3 rounded-lg border border-border p-3">
                 <legend className="px-1 text-[10px] font-semibold uppercase tracking-widest text-primary">Análise por IA · 8 Analítico</legend>
                 <label className="block">

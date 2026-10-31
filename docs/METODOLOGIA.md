@@ -14,6 +14,7 @@ Tudo corresponde a arquivos editáveis:
 | Especificação (percentual, desconto Pix, taxas do cartão, validade, itens inclusos, textos do PDF) | `src/config/especificacao.ts` (contas em `src/lib/especificacao.ts`) |
 | Estrela LIFE (pilares, sub-pilares e regras) | `src/lib/estrela.ts` |
 | Analítico do Planejador (prompt, chamada ao Claude, validação; leitura de .txt/.vtt/.srt/.docx) | `src/lib/analitico.ts` · `src/lib/arquivo-texto.ts` |
+| Diagnóstico em PDF ("Plano de Vida Financeira"): textos fixos / números e páginas | `src/config/relatorio.ts` / `src/components/relatorio/` |
 | Apresentação do V1 · Institucional (páginas do PDF) | `src/assets/v1/` — gerar com `python3 scripts/gerar-v1.py <arquivo.pdf>` |
 | Fórmulas de cálculo | `src/lib/calculos.ts` |
 | Pilares e sugestões do plano de ação | `src/lib/diagnostico.ts` |
@@ -302,4 +303,11 @@ Quatro direções, cada uma com nota de 0 a 100 (média ponderada dos indicadore
 - **Analisar com IA:** manda as partes marcadas, na ordem, e um resumo do diagnóstico (sem e-mail e telefone) para a API do Claude (Anthropic) e preenche 8.2, 8.3 e 8.4. A chave da API e o modelo (padrão Claude Opus 5.5) ficam em **Configurações** (engrenagem), só neste navegador e fora dos backups. Sem chave ou sem internet: **Copiar prompt** (ou baixar .txt) para colar no claude.ai e **Colar resposta** para o app validar e preencher. Reanalisar depois de editar pergunta se junta ou substitui (anotações livres e o fator ajustado à mão ficam). Texto acima de ~200 mil tokens avisa; acima de 850 mil, pede para dividir.
 - **8.2 Dores, preocupações e gatilhos** e **8.3 Notas do Planejador** (objeções prováveis, GAPs de informação, perguntas afirmativas para a V2, riscos, oportunidades comerciais e anotação livre): listas editáveis, com a fala do cliente como evidência e o aviso quando a evidência é fraca.
 - **8.4 Analítico IA:** perfil comportamental no modelo **DISC** (D Dominância, I Influência, S Estabilidade, C Conformidade) — fator predominante e secundário, intensidade de cada fator, classificação, confiança, resumo, como fala, como decide e age, o que prefere, o que evita, como abordar na V2, frases que conectam e as falas que sustentam o perfil. É uma sugestão (não um diagnóstico); o consultor pode ajustar o fator predominante.
+
+## 7. Diagnóstico em PDF ("Plano de Vida Financeira")
+
+- Segue o modelo do Alberto: **A4 paisagem**, capa azul-marinho, sumário com 10 capítulos (01 Visão Executiva · 02 Sonhos e Objetivos · 03 Família e Educação · 04 Fluxo de Caixa Mensal · 05 Patrimônio e Reserva · 06 Proteção Patrimonial - Vida · 07 Independência Financeira · 08 Alavancagem Patrimonial · 09 Alertas e Plano de Ação · 10 Por que LIFE Brasil), página de abertura em cada capítulo, cabeçalho, rodapé com o aviso legal e "página N / total".
+- Todos os números vêm dos cálculos do diagnóstico; sem dado, "Não informado". Textos fixos (capa, aberturas, princípios, próximo passo, aviso e glossário) em `src/config/relatorio.ts`, para editar sem mexer no código. O e-mail da capa vem de Configurações.
+- Diferenças em relação ao modelo: "Probabilidade atual x Objetivo" virou **Cobertura atual x Objetivo** (parte do aporte de cada objetivo coberta pela sobra livre); entrou a página **Nota LIFE por Pilar** (estrela) no capítulo 01; as referências de proteção usam os horizontes de padrão de vida (1, 5 e 15 anos) do sistema; o capítulo 08 mostra as aquisições e os créditos informados (sem simular compra à vista × financiamento × consórcio).
+- Tabelas longas (objetivos, filhos, créditos, ações) continuam na folha seguinte sem cortar linhas. O plano de ação usa as ações montadas pelo consultor (6.8) ou, sem elas, as sugestões.
 

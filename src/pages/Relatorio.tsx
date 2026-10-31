@@ -78,7 +78,7 @@ export default function Relatorio() {
                 key={p.chave}
                 cliente={dados.nome}
                 emitido={fmtData(new Date().toISOString())}
-                email={RELATORIO.capa.emailConsultor}
+                email={cfg.email || RELATORIO.capa.emailConsultor}
                 plataforma={plataforma}
                 assinatura={[cfg.empresa, cfg.consultor].filter(Boolean).join(" · ")}
               />

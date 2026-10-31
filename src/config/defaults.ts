@@ -10,6 +10,8 @@ export const APP = {
 export interface ConfigConsultor {
   consultor: string;
   empresa: string;
+  /** E-mail do consultor (capa do diagnóstico em PDF). */
+  email: string;
   /** Chave da API do Claude (Anthropic) para o 8 · Analítico. Fica só neste navegador. */
   claudeChave: string;
   /** Modelo do Claude usado na análise da reunião. */
@@ -26,6 +28,7 @@ export const MODELOS_CLAUDE = [
 export const CONFIG_PADRAO: ConfigConsultor = {
   consultor: "Gabriel Bavaresco",
   empresa: "Life Financial Planning",
+  email: "gabriel.bavaresco@grupolifebrasil.com.br",
   claudeChave: "",
   claudeModelo: MODELOS_CLAUDE[0].id,
 };
