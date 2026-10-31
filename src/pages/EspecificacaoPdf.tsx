@@ -159,7 +159,7 @@ export default function EspecificacaoPdf() {
 
           <div className="flex-1 space-y-4 px-6 py-5 sm:px-[14mm]">
             {/* Dados da proposta */}
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-[#e3dfd3] pb-4 sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-[#e3dfd3] pb-4 sm:grid-cols-[1.6fr_1fr_1fr_1fr]">
               {[
                 ["Cliente", conjuge?.nome ? `${nome} e ${conjuge.nome}` : nome],
                 ["Data de emissão", emissao],
@@ -247,7 +247,7 @@ export default function EspecificacaoPdf() {
             {/* Aceite */}
             <section className="break-inside-avoid pt-2">
               <p className="text-[#3a3f52]">{TEXTOS_PDF.aceite}</p>
-              <div className="mt-8 grid gap-8 sm:grid-cols-2">
+              <div className="mt-12 grid gap-10 sm:grid-cols-2">
                 {[
                   [nome, "Cliente"],
                   [cfg.consultor || "Consultor", `Consultor · ${cfg.empresa || TEXTOS_PDF.submarca}`],

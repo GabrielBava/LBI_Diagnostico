@@ -1,0 +1,319 @@
+// Estrela LIFE (6.1 · Panorama geral): radar dos 8 pilares ou dos 20 sub-pilares, em SVG.
+// Anéis tracejados a cada 20%; com os sub-pilares, um arco tracejado agrupa os eixos de
+// cada pilar. Os eixos dividem o círculo em 20 fatias iguais (pilar de 10 pontos = 2 fatias,
+// de 15 = 3), então os pilares ficam no mesmo lugar com o interruptor ligado ou desligado.
+// Cores dos tokens (tema escuro e claro); rótulos encolhem ou viram números em telas estreitas.
+import { useEffect, useId, useRef, useState } from "react";
+import type { Estrela as DadosEstrela, PilarEstrela } from "@/lib/estrela";
+
+const SERIE = "var(--serie-1)";
+const TEXTO = "rgb(var(--foreground))";
+const MUDO = "rgb(var(--muted-foreground))";
+const GRADE = "rgb(var(--border))";
+const DESTAQUE = "rgb(var(--primary))";
+const FUNDO = "rgb(var(--card))";
+const ANEIS = [20, 40, 60, 80, 100];
+const PAD = 6;
+/** |cos| abaixo disso: rótulo centralizado no eixo (topo e base). */
+const LIMIAR_MEIO = 0.05;
+/** |sen| acima disso: rótulo inteiro acima (topo) ou abaixo (base) da ponta do eixo. */
+const LIMIAR_VERTICAL = 0.5;
+
+function useLargura<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [largura, setLargura] = useState(0);
+  useEffect(() => {
+    if (!ref.current) return;
+    const ro = new ResizeObserver(([e]) => setLargura(e.contentRect.width));
+    ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  return [ref, largura] as const;
+}
+
+/** Largura aproximada de um texto em Inter (caracteres × fonte × fator). */
+const larguraTexto = (t: string, fonte: number, negrito = false) => t.length * fonte * (negrito ? 0.62 : 0.57);
+/** Texto em caixa alta com espaçamento (nome do pilar sobre o arco). */
+const larguraCaixaAlta = (t: string, fonte: number) => t.length * fonte * 0.78;
+
+interface Eixo {
+  chave: string;
+  pilar: PilarEstrela;
+  /** Radianos; 0 = direita, sentido horário (y do SVG cresce para baixo). */
+  angulo: number;
+  pct: number;
+  linhas: string[];
+  valor: string;
+  semDados: boolean;
+  titulo: string;
+  detalhe: string;
+}
+
+interface Fontes {
+  nome: number;
+  valor: number;
+  negrito: boolean;
+}
+
+/** Raio que cabe na largura com os rótulos e a altura que o desenho precisa. */
+function geometria(W: number, eixos: Eixo[], f: Fontes, afastamento: number, raioMax: number, folgaArco: number) {
+  let R = raioMax;
+  eixos.forEach((e) => {
+    const cos = Math.cos(e.angulo);
+    if (Math.abs(cos) <= LIMIAR_MEIO) return;
+    const w = Math.max(...e.linhas.map((l) => larguraTexto(l, f.nome, f.negrito)), e.valor ? larguraTexto(e.valor, f.valor) : 0);
+    R = Math.min(R, (W / 2 - PAD - w) / Math.abs(cos) - afastamento);
+  });
+  R = Math.max(36, Math.floor(R));
+  let topo = R + folgaArco;
+  let base = R + folgaArco;
+  eixos.forEach((e) => {
+    const sen = Math.sin(e.angulo);
+    const h = alturaRotulo(e, f);
+    const y = (R + afastamento) * sen;
+    const [y0, y1] = sen < -LIMIAR_VERTICAL ? [y - h, y] : sen > LIMIAR_VERTICAL ? [y, y + h] : [y - h / 2, y + h / 2];
+    topo = Math.max(topo, -y0);
+    base = Math.max(base, y1);
+  });
+  return { R, cx: W / 2, cy: Math.ceil(topo + PAD), H: Math.ceil(topo + base + 2 * PAD) };
+}
+
+const alturaLinha = (fonte: number) => Math.round(fonte * 1.25);
+const alturaRotulo = (e: Eixo, f: Fontes) => e.linhas.length * alturaLinha(f.nome) + (e.valor ? alturaLinha(f.valor) : 0);
+
+export function Estrela({
+  dados,
+  subPilares,
+  selecionado,
+  onSelecionar,
+}: {
+  dados: DadosEstrela;
+  subPilares: boolean;
+  selecionado?: string;
+  onSelecionar?: (pilar: string) => void;
+}) {
+  const [ref, W] = useLargura<HTMLDivElement>();
+  const [foco, setFoco] = useState<string>();
+  const idBase = useId().replace(/:/g, "");
+  const ps = dados.pilares;
+  const fatias = ps.reduce((t, p) => t + p.subs.length, 0) || 1;
+  const fatia = (2 * Math.PI) / fatias;
+  // O primeiro pilar fica centrado no topo.
+  const inicio = -Math.PI / 2 - (ps[0]?.subs.length ?? 0) * (fatia / 2);
+  const grupos: { pilar: PilarEstrela; a0: number; a1: number; centro: number; primeiro: number }[] = [];
+  ps.reduce((acc, p) => {
+    const a0 = inicio + acc * fatia;
+    const a1 = a0 + p.subs.length * fatia;
+    grupos.push({ pilar: p, a0, a1, centro: (a0 + a1) / 2, primeiro: acc });
+    return acc + p.subs.length;
+  }, 0);
+
+  const montar = (compacto: boolean): Eixo[] =>
+    subPilares
+      ? grupos.flatMap((g) =>
+          g.pilar.subs.map((x, k) => ({
+            chave: `${g.pilar.id}.${x.id}`,
+            pilar: g.pilar,
+            angulo: g.a0 + (k + 0.5) * fatia,
+            pct: x.pct,
+            linhas: [compacto ? String(g.primeiro + k + 1) : x.curto],
+            valor: compacto ? "" : x.semDados ? "—" : `${x.nota}/5`,
+            semDados: !!x.semDados,
+            titulo: `${x.nome} · ${g.pilar.curto}`,
+            detalhe: x.semDados ? `Sem dados. ${x.pesou}` : `${x.nota} de 5 pontos. ${x.pesou}`,
+          })),
+        )
+      : grupos.map((g) => ({
+          chave: g.pilar.id,
+          pilar: g.pilar,
+          angulo: g.centro,
+          pct: g.pilar.pct,
+          linhas: compacto ? [g.pilar.curto] : g.pilar.linhas,
+          valor: g.pilar.status === "sem-dados" ? "—" : `${g.pilar.pct}%`,
+          semDados: g.pilar.status === "sem-dados",
+          titulo: g.pilar.nome,
+          detalhe: `${g.pilar.nota} de ${g.pilar.maximo} pontos (${g.pilar.pct}%). ${g.pilar.descricao}`,
+        }));
+
+  // Tamanhos: completo primeiro; se o raio ficar pequeno, rótulos curtos (pilares) ou números com legenda (sub-pilares).
+  const fontesCompleto: Fontes = subPilares ? { nome: 10.5, valor: 10, negrito: false } : { nome: 12, valor: 11, negrito: true };
+  const fontesCompacto: Fontes = { nome: 10.5, valor: 10, negrito: true };
+  const fonteArco = 9;
+  const raioMax = subPilares ? 168 : 172;
+  const afastamentoCompleto = subPilares ? 28 : 12;
+  let eixos = montar(false);
+  let fontes = fontesCompleto;
+  let afastamento = afastamentoCompleto;
+  let g = geometria(W, eixos, fontes, afastamento, raioMax, subPilares ? 22 : 0);
+  const compacto = W > 0 && g.R < (subPilares ? 120 : 96);
+  if (compacto) {
+    eixos = montar(true);
+    fontes = fontesCompacto;
+    afastamento = subPilares ? 24 : 10;
+    g = geometria(W, eixos, fontes, afastamento, raioMax, subPilares ? 20 : 0);
+  }
+  const { R, cx, cy, H } = g;
+  const raioArco = R + 8;
+  const ponto = (a: number, r: number) => [cx + r * Math.cos(a), cy + r * Math.sin(a)] as const;
+  const poligono = eixos.map((e) => ponto(e.angulo, (R * Math.max(0, Math.min(100, e.pct))) / 100).join(",")).join(" ");
+  const eixoFoco = eixos.find((e) => e.chave === foco);
+
+  const resumo =
+    `Estrela LIFE: ${dados.temDados ? `${dados.total} de ${dados.maximo} pontos` : "sem dados"}. ` +
+    ps
+      .map(
+        (p) =>
+          `${p.nome}: ${p.status === "sem-dados" ? "sem dados" : `${p.nota} de ${p.maximo}`}` +
+          (subPilares ? ` (${p.subs.map((x) => `${x.nome} ${x.semDados ? "sem dados" : `${x.nota} de 5`}`).join(", ")})` : ""),
+      )
+      .join("; ") +
+    ".";
+
+  return (
+    <div ref={ref} className="relative w-full">
+      {W > 0 && (
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={resumo} className="block select-none" onMouseLeave={() => setFoco(undefined)}>
+          {/* Anéis tracejados (20% a 100%) */}
+          {ANEIS.map((a) => (
+            <circle key={a} cx={cx} cy={cy} r={(R * a) / 100} fill="none" stroke={GRADE} strokeWidth={1} strokeDasharray="3 4" />
+          ))}
+          {/* Eixos */}
+          {eixos.map((e) => {
+            const [x, y] = ponto(e.angulo, R);
+            const ativo = selecionado === e.pilar.id;
+            return <line key={e.chave} x1={cx} y1={cy} x2={x} y2={y} stroke={ativo ? DESTAQUE : GRADE} strokeWidth={ativo ? 1.5 : 1} />;
+          })}
+          {/* Arcos que agrupam os sub-pilares de cada pilar, com o nome curto do pilar */}
+          {subPilares &&
+            grupos.map((gr) => {
+              const folga = Math.min(0.04, fatia * 0.12);
+              const a0 = gr.a0 + folga;
+              const a1 = gr.a1 - folga;
+              const [x0, y0] = ponto(a0, raioArco);
+              const [x1, y1] = ponto(a1, raioArco);
+              const ativo = selecionado === gr.pilar.id;
+              // Na metade de baixo o texto corre ao contrário para não ficar de cabeça para baixo.
+              const embaixo = Math.sin(gr.centro) > 0.2;
+              const rt = embaixo ? raioArco + 3 + fonteArco * 0.72 : raioArco + 3;
+              const [tx0, ty0] = ponto(embaixo ? a1 : a0, rt);
+              const [tx1, ty1] = ponto(embaixo ? a0 : a1, rt);
+              const nome = gr.pilar.curto.toUpperCase();
+              const cabe = larguraCaixaAlta(nome, fonteArco) <= rt * (a1 - a0) * 0.96;
+              const id = `${idBase}-arco-${gr.pilar.id}`;
+              return (
+                <g key={gr.pilar.id}>
+                  <path
+                    d={`M ${x0} ${y0} A ${raioArco} ${raioArco} 0 0 1 ${x1} ${y1}`}
+                    fill="none"
+                    stroke={ativo ? DESTAQUE : MUDO}
+                    strokeOpacity={ativo ? 1 : 0.7}
+                    strokeWidth={1.25}
+                    strokeDasharray="2 3"
+                  />
+                  {cabe && (
+                    <>
+                      <path id={id} d={`M ${tx0} ${ty0} A ${rt} ${rt} 0 0 ${embaixo ? 0 : 1} ${tx1} ${ty1}`} fill="none" stroke="none" />
+                      <text fontSize={fonteArco} fontWeight={700} letterSpacing="0.08em" fill={ativo ? DESTAQUE : MUDO}>
+                        <textPath href={`#${id}`} startOffset="50%" textAnchor="middle">
+                          {nome}
+                        </textPath>
+                      </text>
+                    </>
+                  )}
+                </g>
+              );
+            })}
+          {/* Área conquistada */}
+          <polygon points={poligono} fill={SERIE} fillOpacity={0.26} stroke={SERIE} strokeWidth={2} strokeLinejoin="round" />
+          {/* Pontos e rótulos (passar o mouse mostra o detalhe; clicar abre o pilar no resumo) */}
+          {eixos.map((e) => {
+            const [px, py] = ponto(e.angulo, (R * Math.max(0, Math.min(100, e.pct))) / 100);
+            const [ax, ay] = ponto(e.angulo, R + afastamento);
+            const cos = Math.cos(e.angulo);
+            const sen = Math.sin(e.angulo);
+            const ancora = cos > LIMIAR_MEIO ? "start" : cos < -LIMIAR_MEIO ? "end" : "middle";
+            const lhNome = alturaLinha(fontes.nome);
+            const lhValor = alturaLinha(fontes.valor);
+            const h = alturaRotulo(e, fontes);
+            const topo = sen < -LIMIAR_VERTICAL ? ay - h : sen > LIMIAR_VERTICAL ? ay : ay - h / 2;
+            const ativo = selecionado === e.pilar.id || foco === e.chave;
+            const eventos = {
+              onMouseEnter: () => setFoco(e.chave),
+              onClick: () => onSelecionar?.(e.pilar.id),
+            };
+            return (
+              <g key={e.chave} className={onSelecionar ? "cursor-pointer" : ""}>
+                {!e.semDados && (
+                  <circle cx={px} cy={py} r={ativo ? 5.5 : 4} fill={ativo ? DESTAQUE : SERIE} stroke={FUNDO} strokeWidth={2} />
+                )}
+                {/* Alvo maior que o ponto, para o mouse */}
+                <circle cx={px} cy={py} r={14} fill="transparent" {...eventos} />
+                <g {...eventos}>
+                  <text textAnchor={ancora} fontSize={fontes.nome} fontWeight={fontes.negrito || ativo ? 700 : 500} fill={ativo ? DESTAQUE : TEXTO}>
+                    {e.linhas.map((l, i) => (
+                      <tspan key={i} x={ax} y={topo + (i + 1) * lhNome - lhNome * 0.25}>
+                        {l}
+                      </tspan>
+                    ))}
+                    {e.valor && (
+                      <tspan x={ax} y={topo + e.linhas.length * lhNome + lhValor * 0.75} fontSize={fontes.valor} fontWeight={600} fill={MUDO}>
+                        {e.valor}
+                      </tspan>
+                    )}
+                  </text>
+                </g>
+              </g>
+            );
+          })}
+          {!dados.temDados && (
+            <text x={cx} y={cy + 4} textAnchor="middle" fontSize={12} fill={MUDO}>
+              Sem dados
+            </text>
+          )}
+        </svg>
+      )}
+      {/* Detalhe do eixo sob o mouse */}
+      {eixoFoco && W > 0 && (
+        <Detalhe
+          eixo={eixoFoco}
+          x={ponto(eixoFoco.angulo, (R * Math.max(0, Math.min(100, eixoFoco.pct))) / 100)[0]}
+          y={ponto(eixoFoco.angulo, (R * Math.max(0, Math.min(100, eixoFoco.pct))) / 100)[1]}
+          W={W}
+        />
+      )}
+      {/* Telas estreitas com sub-pilares: números no gráfico e esta legenda */}
+      {compacto && subPilares && (
+        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-[11px] leading-snug">
+          {grupos.map((gr) => (
+            <div key={gr.pilar.id} className="min-w-0">
+              <div className="font-semibold uppercase tracking-wider text-muted-foreground">{gr.pilar.curto}</div>
+              {gr.pilar.subs.map((x, k) => (
+                <div key={x.id} className="flex gap-1">
+                  <span className="w-4 shrink-0 text-right font-semibold tabular-nums">{gr.primeiro + k + 1}</span>
+                  <span className="min-w-0 flex-1 truncate">{x.curto}</span>
+                  <span className="shrink-0 tabular-nums text-muted-foreground">{x.semDados ? "—" : `${x.nota}/5`}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Caixa com o nome, a nota e o que pesou, perto do ponto. */
+function Detalhe({ eixo, x, y, W }: { eixo: Eixo; x: number; y: number; W: number }) {
+  const largura = Math.min(240, W - 8);
+  const left = Math.max(4, Math.min(W - largura - 4, x - largura / 2));
+  return (
+    <div
+      className="pointer-events-none absolute z-10 rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg"
+      style={{ left, top: y + 14, width: largura }}
+      aria-hidden
+    >
+      <div className="font-semibold text-foreground">{eixo.titulo}</div>
+      <p className="mt-0.5 text-muted-foreground">{eixo.detalhe}</p>
+    </div>
+  );
+}

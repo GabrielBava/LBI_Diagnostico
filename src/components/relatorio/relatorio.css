@@ -1,0 +1,880 @@
+/* Diagnóstico em PDF — folhas A4 paisagem no padrão do modelo LIFE.
+   Medidas em pt (como no modelo: 841,89 × 595,28 pt). Este CSS entra na
+   página só enquanto o relatório está aberto (veja Relatorio.tsx). */
+
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
+.rel {
+  --azul: #141c3b;
+  --azul-medio: #293866;
+  --azul-claro: #3d63ab;
+  --ouro: #c7a340;
+  --creme: #f7f5e8;
+  --creme-texto: #e8d28c;
+  --zebra: #fcfaf5;
+  --linha: #e0ded4;
+  --cinza: #787c8a;
+  --texto: #4f4f4f;
+  --verde: #268c5c;
+  --vermelho: #c43d3d;
+  --laranja: #db9426;
+  --vermelho-claro: #fcebeb;
+  --verde-claro: #e8f5ed;
+  font-family: Helvetica, Arial, "Liberation Sans", "Nimbus Sans", sans-serif;
+  color: var(--azul);
+  -webkit-font-smoothing: antialiased;
+}
+.rel *,
+.rel *::before,
+.rel *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- Tela: folhas empilhadas com sombra ---------- */
+.rel-visor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 16px 48px;
+  background: #dcd9cf;
+  min-height: 100vh;
+  overflow-x: auto;
+}
+.rel-folha {
+  position: relative;
+  flex: none;
+  width: 297mm;
+  height: 210mm;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 2px 14px rgb(0 0 0 / 0.2);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ---------- Impressão: uma folha por página, sem sombra ---------- */
+@media print {
+  .rel-visor {
+    display: block;
+    padding: 0;
+    gap: 0;
+    background: none;
+    min-height: 0;
+    overflow: visible;
+  }
+  .rel-folha {
+    box-shadow: none;
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+  }
+  .rel-folha:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
+
+/* ---------- Faixas douradas ---------- */
+.rel-faixa {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 4.3pt;
+  background: var(--ouro);
+}
+.rel-faixa-base {
+  top: auto;
+  bottom: 0;
+  height: 6.5pt;
+}
+
+/* ---------- Logo (texto + coração) ---------- */
+.rel-logo {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  line-height: 1;
+  white-space: nowrap;
+  font-family: "Arial Narrow", "Liberation Sans Narrow", "Roboto Condensed", Helvetica, Arial, sans-serif;
+  font-stretch: condensed;
+  letter-spacing: -0.01em;
+}
+.rel-logo-leve {
+  font-weight: 400;
+}
+.rel-logo-forte {
+  font-weight: 700;
+  margin: 0 0.06em 0 0.08em;
+}
+.rel-logo-coracao {
+  position: absolute;
+  right: -0.62em;
+  top: -0.62em;
+  width: 0.78em;
+  height: 0.78em;
+}
+
+/* ---------- Capa ---------- */
+.rel-capa {
+  background: var(--azul);
+  color: #fff;
+}
+.rel-capa .rel-faixa {
+  height: 5.8pt;
+}
+.rel-capa-conteudo {
+  position: absolute;
+  left: 52pt;
+  right: 52pt;
+  top: 36pt;
+}
+.rel-capa .rel-logo {
+  font-size: 18pt;
+  color: #fff;
+}
+.rel-capa-sistema {
+  margin-top: 15pt;
+  font-size: 9pt;
+  font-weight: 700;
+  color: var(--ouro);
+  letter-spacing: 0.01em;
+}
+.rel-capa-regua {
+  width: 60pt;
+  height: 3pt;
+  margin-top: 9pt;
+  background: var(--ouro);
+}
+.rel-capa-sub {
+  margin-top: 12pt;
+  font-size: 11pt;
+  color: var(--creme-texto);
+}
+.rel-capa-titulo {
+  margin-top: 50pt;
+  font-size: 44pt;
+  line-height: 48pt;
+  font-weight: 700;
+  color: #fff;
+}
+.rel-capa-lema {
+  margin-top: 14pt;
+  font-size: 12pt;
+  color: var(--creme-texto);
+}
+.rel-capa-cliente {
+  position: absolute;
+  left: 52pt;
+  right: 52pt;
+  top: 395pt;
+  border-top: 0.75pt solid var(--ouro);
+  padding-top: 13pt;
+}
+.rel-capa-rotulo {
+  font-size: 8pt;
+  font-weight: 700;
+  color: var(--ouro);
+}
+.rel-capa-nome {
+  margin-top: 4pt;
+  font-size: 20pt;
+  font-weight: 700;
+  color: #fff;
+}
+.rel-capa-linha {
+  margin-top: 5pt;
+  font-size: 9pt;
+  line-height: 14pt;
+  color: var(--creme-texto);
+}
+.rel-capa-plataforma {
+  margin-top: 8pt;
+  font-size: 8pt;
+  font-weight: 700;
+  color: var(--ouro);
+}
+.rel-capa-assina {
+  margin-top: 7pt;
+  font-size: 7.5pt;
+  color: var(--creme-texto);
+}
+
+/* ---------- Cabeçalho das páginas de conteúdo ---------- */
+.rel-cab {
+  position: absolute;
+  left: 52pt;
+  right: 52pt;
+  top: 10pt;
+  height: 24pt;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 5.5pt;
+  border-bottom: 0.75pt solid var(--linha);
+}
+.rel-cab-esq {
+  display: flex;
+  align-items: flex-end;
+  gap: 16pt;
+}
+.rel-cab .rel-logo {
+  font-size: 7.5pt;
+  color: var(--cinza);
+}
+.rel-cab .rel-logo-forte {
+  color: var(--azul);
+}
+.rel-cab-capitulo {
+  font-size: 7pt;
+  font-weight: 700;
+  color: var(--ouro);
+  line-height: 1;
+}
+.rel-cab-dir {
+  font-size: 7pt;
+  color: var(--cinza);
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* ---------- Corpo ---------- */
+.rel-corpo {
+  position: absolute;
+  left: 52pt;
+  right: 52pt;
+  top: 54pt;
+  bottom: 60pt;
+  display: flex;
+  flex-direction: column;
+}
+.rel-corpo-sem-titulo {
+  top: 80pt;
+}
+.rel-titulo {
+  font-size: 22pt;
+  line-height: 26pt;
+  font-weight: 700;
+  color: var(--azul);
+}
+.rel-titulo-cont {
+  font-size: 11pt;
+  font-weight: 400;
+  color: var(--cinza);
+}
+.rel-titulo-traco {
+  width: 44pt;
+  height: 3.6pt;
+  margin-top: 6pt;
+  background: var(--ouro);
+}
+.rel-subtitulo {
+  margin-top: 10pt;
+  font-size: 9.5pt;
+  line-height: 12pt;
+  color: var(--cinza);
+}
+.rel-conteudo {
+  margin-top: 20pt;
+  display: flex;
+  flex-direction: column;
+  gap: 18pt;
+  min-height: 0;
+}
+.rel-conteudo-junto {
+  gap: 10pt;
+}
+
+/* ---------- Rodapé ---------- */
+.rel-rodape {
+  position: absolute;
+  left: 52pt;
+  right: 52pt;
+  top: 543pt;
+  border-top: 0.75pt solid var(--linha);
+  padding-top: 4.5pt;
+  color: var(--cinza);
+}
+.rel-rodape-aviso {
+  font-size: 6.4pt;
+  line-height: 7.6pt;
+}
+.rel-rodape-plataforma {
+  margin-top: 1.5pt;
+  text-align: right;
+  font-size: 6.2pt;
+}
+.rel-rodape-base {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  margin-top: 2.5pt;
+  font-size: 6.8pt;
+}
+.rel-rodape-base > :nth-child(2) {
+  text-align: center;
+}
+.rel-rodape-base > :nth-child(3) {
+  text-align: right;
+  font-weight: 700;
+  color: var(--azul);
+}
+.rel-folha-azul .rel-rodape-base > :nth-child(3) {
+  color: var(--cinza);
+}
+
+/* ---------- Página de abertura de capítulo ---------- */
+.rel-abertura-topo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 327.6pt;
+  background: var(--creme);
+}
+.rel-abertura-base {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 327.6pt;
+  bottom: 0;
+  background: var(--azul);
+}
+.rel-abertura-texto {
+  position: absolute;
+  left: 52pt;
+  right: 52pt;
+  top: 112pt;
+}
+.rel-abertura-capitulo {
+  font-size: 9pt;
+  font-weight: 700;
+  color: var(--ouro);
+}
+.rel-abertura-titulo {
+  margin-top: 16pt;
+  font-size: 38pt;
+  line-height: 44pt;
+  font-weight: 700;
+  color: var(--azul);
+}
+.rel-abertura-regua {
+  width: 60pt;
+  height: 3pt;
+  margin-top: 26pt;
+  background: var(--ouro);
+}
+.rel-abertura-frase {
+  position: absolute;
+  left: 52pt;
+  right: 52pt;
+  top: 377pt;
+  font-size: 12pt;
+  line-height: 15pt;
+  color: #fff;
+}
+
+/* ---------- Sumário ---------- */
+.rel-sumario {
+  margin-top: 22pt;
+}
+.rel-sumario-item {
+  display: flex;
+  align-items: baseline;
+  height: 32pt;
+  padding-top: 7pt;
+  border-bottom: 0.75pt solid var(--linha);
+}
+.rel-sumario-num {
+  width: 44pt;
+  font-size: 16pt;
+  font-weight: 700;
+  color: var(--ouro);
+}
+.rel-sumario-nome {
+  font-size: 13pt;
+  font-weight: 700;
+  color: var(--azul);
+}
+
+/* ---------- Tabelas ---------- */
+.rel-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8pt;
+  line-height: 10.4pt;
+  color: var(--texto);
+}
+.rel-tabela th {
+  background: var(--azul);
+  color: #fff;
+  font-weight: 700;
+  text-align: left;
+  padding: 6pt 6pt;
+}
+.rel-tabela td {
+  padding: 6pt 6pt;
+  vertical-align: top;
+}
+.rel-tabela tbody tr:nth-child(odd) td {
+  background: var(--zebra);
+}
+.rel-tabela .dir {
+  text-align: right;
+  white-space: nowrap;
+}
+.rel-tabela .centro {
+  text-align: center;
+}
+.rel-tabela .forte {
+  font-weight: 700;
+}
+.rel-tabela .azul {
+  color: var(--azul);
+}
+.rel-tabela .vermelho {
+  color: var(--vermelho);
+}
+.rel-tabela .laranja {
+  color: var(--laranja);
+}
+.rel-tabela .nowrap {
+  white-space: nowrap;
+}
+.rel-tabela-compacta {
+  font-size: 7.5pt;
+  line-height: 9.2pt;
+}
+.rel-tabela-compacta th,
+.rel-tabela-compacta td {
+  padding: 4pt 6pt;
+}
+.rel-nivel-critico {
+  background: #ffeded !important;
+  color: var(--vermelho);
+  font-weight: 700;
+}
+.rel-nivel-alerta {
+  background: #fff7e0 !important;
+  color: var(--laranja);
+  font-weight: 700;
+}
+.rel-nivel-atencao {
+  background: #eef1f7 !important;
+  color: var(--azul-claro);
+  font-weight: 700;
+}
+.rel-tabela-legenda {
+  margin-top: 6pt;
+  font-size: 7pt;
+  color: var(--cinza);
+}
+
+/* ---------- Cartões de indicador ---------- */
+.rel-cartoes {
+  display: grid;
+  gap: 18pt;
+}
+.rel-cartao {
+  position: relative;
+  min-height: 88pt;
+  padding: 12pt 10pt 12pt 14pt;
+  background: var(--zebra);
+  border: 0.75pt solid var(--linha);
+  border-radius: 7pt;
+}
+.rel-cartao-baixo {
+  min-height: 0;
+}
+.rel-cartao::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12pt;
+  bottom: 12pt;
+  width: 2.5pt;
+  background: var(--cor, var(--azul));
+}
+.rel-cartao-rotulo {
+  font-size: 7pt;
+  line-height: 9pt;
+  font-weight: 700;
+  color: var(--cinza);
+  text-transform: uppercase;
+}
+.rel-cartao-valor {
+  margin-top: 9pt;
+  font-size: 15pt;
+  line-height: 18pt;
+  font-weight: 700;
+  color: var(--azul);
+  white-space: nowrap;
+}
+.rel-cartao-valor-medio {
+  font-size: 13pt;
+}
+.rel-cartao-valor-pequeno {
+  font-size: 11pt;
+}
+.rel-cartao-nota {
+  margin-top: 6pt;
+  font-size: 7.5pt;
+  line-height: 10pt;
+  color: var(--cinza);
+}
+
+/* ---------- Caixas de destaque ---------- */
+.rel-caixa {
+  padding: 18pt 20pt 20pt;
+  border-radius: 7pt;
+  background: var(--azul);
+  color: #fff;
+}
+.rel-caixa-rotulo {
+  font-size: 8.5pt;
+  font-weight: 700;
+  color: var(--ouro);
+}
+.rel-caixa-texto {
+  margin-top: 8pt;
+  font-size: 10pt;
+  line-height: 13pt;
+}
+.rel-caixa-ouro {
+  background: var(--ouro);
+  color: var(--azul);
+}
+.rel-caixa-ouro .rel-caixa-rotulo {
+  color: var(--azul);
+}
+
+/* ---------- Bloco decisório ---------- */
+.rel-bloco-titulo {
+  font-size: 9pt;
+  font-weight: 700;
+  color: var(--azul);
+  text-transform: uppercase;
+}
+.rel-bloco {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12pt;
+  margin-top: 6pt;
+}
+.rel-bloco-cartao {
+  min-height: 110pt;
+  padding: 12pt 12pt 12pt 14pt;
+  border-left: 2.5pt solid var(--azul);
+  border-radius: 0 7pt 7pt 0;
+  background: var(--creme);
+}
+.rel-bloco-cartao.realidade {
+  border-left-color: var(--vermelho);
+  background: var(--vermelho-claro);
+}
+.rel-bloco-cartao.ajuste {
+  border-left-color: var(--verde);
+  background: var(--verde-claro);
+}
+.rel-bloco-rotulo {
+  font-size: 6.8pt;
+  font-weight: 700;
+  color: var(--cinza);
+}
+.rel-bloco-texto {
+  margin-top: 9pt;
+  font-size: 9.5pt;
+  line-height: 13pt;
+  font-weight: 700;
+  color: var(--azul);
+}
+.rel-bloco-cartao.realidade .rel-bloco-texto {
+  color: var(--vermelho);
+}
+.rel-bloco-cartao.ajuste .rel-bloco-texto {
+  color: var(--verde);
+}
+.rel-bloco-compacto .rel-bloco-cartao {
+  min-height: 78pt;
+}
+
+/* ---------- Painel de gráfico ---------- */
+.rel-painel {
+  padding: 15pt 18pt 18pt;
+  background: var(--zebra);
+  border: 0.75pt solid var(--linha);
+  border-radius: 7pt;
+}
+.rel-painel-titulo {
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--azul);
+}
+.rel-painel-sub {
+  margin-top: 4pt;
+  font-size: 7.5pt;
+  color: var(--cinza);
+}
+.rel-painel-vazio {
+  padding: 26pt 0 14pt;
+  font-size: 9pt;
+  color: var(--cinza);
+  text-align: center;
+}
+.rel-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6pt 22pt;
+  margin: 14pt 0 0 14pt;
+  font-size: 8pt;
+  color: var(--azul);
+}
+.rel-legenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5pt;
+}
+.rel-legenda i {
+  display: inline-block;
+  width: 9pt;
+  height: 9pt;
+  border-radius: 2pt;
+}
+.rel-legenda i.traco {
+  height: 0;
+  border-top: 1.4pt dashed currentColor;
+  border-radius: 0;
+  width: 16pt;
+}
+
+/* Barras */
+.rel-barras {
+  margin: 10pt 14pt 0;
+}
+.rel-barras-area {
+  display: flex;
+  align-items: flex-end;
+  border-bottom: 0.75pt solid #d8d6cc;
+}
+.rel-barras-grupo {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 7pt;
+}
+.rel-barra {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.rel-barra-valor {
+  margin-bottom: 3pt;
+  font-size: 7pt;
+  font-weight: 700;
+  color: var(--azul);
+  white-space: nowrap;
+}
+.rel-barras-grande .rel-barra-valor {
+  font-size: 8pt;
+}
+.rel-barra-valor.negativo {
+  color: var(--vermelho);
+}
+.rel-barra-coluna {
+  width: 100%;
+  border-radius: 2pt 2pt 0 0;
+}
+.rel-barras-rotulos {
+  display: flex;
+}
+.rel-barras-rotulos div {
+  flex: 1;
+  padding: 7pt 4pt 0;
+  font-size: 7.5pt;
+  line-height: 9pt;
+  color: var(--cinza);
+  text-align: center;
+}
+
+/* Rosca */
+.rel-rosca {
+  display: flex;
+  align-items: center;
+  gap: 40pt;
+  margin-top: 12pt;
+}
+.rel-rosca svg {
+  flex: none;
+  margin-left: 44pt;
+}
+.rel-rosca-legenda {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6.5pt;
+}
+.rel-rosca-item {
+  display: flex;
+  align-items: center;
+  gap: 7pt;
+  font-size: 8pt;
+  line-height: 10pt;
+}
+.rel-rosca-item i {
+  flex: none;
+  width: 10.5pt;
+  height: 10.5pt;
+  border-radius: 2pt;
+}
+.rel-rosca-item b {
+  flex: 1;
+  font-weight: 700;
+  color: var(--azul);
+}
+.rel-rosca-item span {
+  flex: none;
+  color: var(--cinza);
+  font-size: 7.5pt;
+}
+
+/* Linhas (projeção) */
+.rel-linhas {
+  margin-top: 6pt;
+}
+.rel-linhas text {
+  font-family: Helvetica, Arial, "Liberation Sans", sans-serif;
+}
+
+/* ---------- Listas numeradas (princípios, referências, necessidades) ---------- */
+.rel-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10pt;
+}
+.rel-lista-item {
+  display: flex;
+  align-items: center;
+  gap: 14pt;
+  min-height: 42pt;
+  padding: 8pt 14pt;
+  background: var(--zebra);
+  border-left: 2.5pt solid var(--ouro);
+}
+.rel-lista-num {
+  flex: none;
+  width: 22pt;
+  font-size: 11pt;
+  font-weight: 700;
+  color: var(--azul);
+}
+.rel-lista-texto {
+  font-size: 8.4pt;
+  line-height: 10.6pt;
+  color: var(--azul);
+}
+.rel-lista-ref {
+  display: block;
+  min-height: 0;
+  padding: 9pt 14pt 10pt;
+}
+.rel-lista-ref b {
+  display: block;
+  font-size: 10pt;
+  line-height: 12pt;
+  color: var(--azul);
+}
+.rel-lista-ref p {
+  margin-top: 3pt;
+  font-size: 8pt;
+  line-height: 10pt;
+  color: var(--azul);
+}
+
+/* Composição da necessidade de seguro */
+.rel-necessidades {
+  display: flex;
+  flex-direction: column;
+  gap: 6pt;
+}
+.rel-necessidade {
+  display: flex;
+  gap: 14pt;
+  padding: 6.5pt 16pt 6.5pt 14pt;
+  background: var(--zebra);
+  border-left: 2.5pt solid var(--ouro);
+}
+.rel-necessidade > div:first-child {
+  flex: 1;
+}
+.rel-necessidade h4 {
+  font-size: 10pt;
+  line-height: 12pt;
+  font-weight: 700;
+  color: var(--azul);
+}
+.rel-necessidade p {
+  margin-top: 1.5pt;
+  font-size: 7.6pt;
+  line-height: 9.6pt;
+  color: var(--azul);
+}
+.rel-necessidade p.como {
+  color: var(--azul-medio);
+  font-size: 7pt;
+}
+.rel-necessidade-valor {
+  flex: none;
+  text-align: right;
+  font-size: 11.5pt;
+  font-weight: 700;
+  color: var(--azul);
+  white-space: nowrap;
+}
+.rel-necessidade-valor small {
+  display: block;
+  margin-top: 5pt;
+  font-size: 7pt;
+  font-weight: 400;
+  color: var(--azul-medio);
+}
+.rel-necessidade.menos {
+  border-left-color: var(--verde);
+}
+.rel-necessidade.menos .rel-necessidade-valor {
+  color: var(--verde);
+}
+
+/* Próximo passo */
+.rel-paragrafo {
+  font-size: 9pt;
+  line-height: 11.5pt;
+  color: #333;
+}
+.rel-marcadores {
+  display: flex;
+  flex-direction: column;
+  gap: 6.5pt;
+  font-size: 8.4pt;
+  line-height: 11pt;
+  color: #333;
+}
+.rel-marcadores li {
+  display: flex;
+  align-items: center;
+  gap: 10pt;
+  list-style: none;
+}
+.rel-marcadores li::before {
+  content: "";
+  flex: none;
+  width: 5pt;
+  height: 5pt;
+  border-radius: 50%;
+  background: var(--ouro);
+  margin-left: 2pt;
+}

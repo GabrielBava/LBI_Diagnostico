@@ -1,9 +1,13 @@
-// 6.1 · Panorama geral: perfil do cliente, perfil financeiro, nota LIFE e pilares,
-// fluxo de caixa, maiores categorias de despesa e balanço patrimonial.
-import type { ReactNode } from "react";
-import { CircleCheck, CircleMinus, CircleX, Quote, TriangleAlert } from "lucide-react";
+// 6.1 · Panorama geral: perfil do cliente, perfil financeiro, nota LIFE, Estrela LIFE
+// (radar dos pilares e resumo do diagnóstico), fluxo de caixa, maiores categorias de
+// despesa e balanço patrimonial.
+import { useState, type ReactNode } from "react";
+import { ChevronDown, CircleCheck, CircleMinus, CircleX, Quote, TriangleAlert } from "lucide-react";
+import { Interruptor } from "@/components/campos";
+import { Estrela } from "@/components/Estrela";
 import { BarrasHorizontais, RendaVsDespesas } from "@/components/graficos";
 import { Selo, SubBloco, corStatus, textoStatus } from "@/components/ui";
+import { secaoPorId } from "@/config/estrutura";
 import { useCliente } from "@/lib/cliente-context";
 import {
   despesas,
@@ -14,7 +18,8 @@ import {
   reservaEmergencia,
   s,
 } from "@/lib/calculos";
-import { notaGeral, pilares, temNota, type Status } from "@/lib/diagnostico";
+import type { Status } from "@/lib/diagnostico";
+import { estrela, porEstado, type Estrela as DadosEstrela, type PilarEstrela } from "@/lib/estrela";
 import { fmtBRL, fmtPct } from "@/lib/format";
 import { dadosPerfil, perfilFinanceiro } from "@/lib/plano";
 
@@ -25,13 +30,16 @@ export const iconeStatus: Record<Status, typeof CircleCheck> = {
   "sem-dados": CircleMinus,
 };
 
+/** Seção da coleta com os dados de cada pilar da estrela. */
 const secaoDoPilar: Record<string, string> = {
-  fluxo: "despesas",
-  reserva: "protecao",
-  dividas: "dividas",
+  organizacao: "despesas",
+  comportamento: "investimentos",
   protecao: "protecao",
-  futuro: "futuro",
   objetivos: "objetivos",
+  acumulo: "dividas",
+  aposentadoria: "aposentadoria",
+  expansao: "patrimonio",
+  sucessao: "protecao",
 };
 
 /** Par rótulo / valor do perfil. */
@@ -125,10 +133,125 @@ function PerfilFinanceiro() {
   );
 }
 
+/** Barra fina de 0 a 100%. */
+function Barrinha({ pct, className = "" }: { pct: number; className?: string }) {
+  return (
+    <div className={`h-1.5 overflow-hidden rounded-full bg-muted ${className}`}>
+      <div className="h-full rounded-full bg-gold" style={{ width: `${Math.max(0, Math.min(100, pct))}%` }} />
+    </div>
+  );
+}
+
+/** Um pilar do resumo: o que é, nota, estado e barra; aberto, mostra os sub-pilares e o que pesou. */
+function LinhaPilar({ pilar, aberto, onAlternar }: { pilar: PilarEstrela; aberto: boolean; onAlternar: () => void }) {
+  const { irPara } = useCliente();
+  const I = iconeStatus[pilar.status];
+  const semDados = pilar.status === "sem-dados";
+  const secao = secaoPorId(secaoDoPilar[pilar.id] ?? "");
+  return (
+    <li className={`rounded-lg border bg-card/60 transition ${aberto ? "border-primary/50" : "border-border"}`}>
+      <button type="button" aria-expanded={aberto} onClick={onAlternar} className="w-full rounded-lg p-3 text-left hover:bg-muted/30">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-sm font-semibold">{pilar.nome}</span>
+              <Selo className={`gap-1 ${corStatus[pilar.status]}`}>
+                <I className="h-3 w-3" /> {textoStatus[pilar.status]}
+              </Selo>
+            </div>
+            <p className="mt-0.5 text-xs text-muted-foreground">{pilar.descricao}</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="whitespace-nowrap tabular-nums">
+              <span className="text-lg font-bold">{semDados ? "—" : pilar.nota}</span>
+              <span className="text-xs text-muted-foreground"> / {pilar.maximo}</span>
+            </span>
+            <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${aberto ? "rotate-180" : ""}`} aria-hidden />
+          </div>
+        </div>
+        <Barrinha pct={semDados ? 0 : pilar.pct} className="mt-2" />
+      </button>
+      {aberto && (
+        <div className="border-t border-border/60 px-3 pb-3 pt-2">
+          <ul className="divide-y divide-border/60">
+            {pilar.subs.map((x) => (
+              <li key={x.id} className="py-2">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-[13px] font-medium">{x.nome}</span>
+                  <span className="shrink-0 whitespace-nowrap text-xs tabular-nums">
+                    <span className="font-semibold">{x.semDados ? "—" : x.nota}</span>
+                    <span className="text-muted-foreground"> / 5</span>
+                  </span>
+                </div>
+                <Barrinha pct={x.semDados ? 0 : x.pct} className="mt-1 h-1" />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {x.semDados && <span className="font-medium text-foreground">Sem dados. </span>}
+                  {x.pesou}
+                </p>
+              </li>
+            ))}
+          </ul>
+          {secao && (
+            <button
+              type="button"
+              onClick={() => irPara(secao.id)}
+              className="no-print mt-1 text-[11px] font-semibold text-primary hover:underline"
+            >
+              Ver os dados em {secao.numero} · {secao.titulo}
+            </button>
+          )}
+        </div>
+      )}
+    </li>
+  );
+}
+
+/** Estrela LIFE à esquerda e o resumo do diagnóstico (crítico → atenção → saudável) à direita. */
+function EstrelaLife({ dados }: { dados: DadosEstrela }) {
+  const [subPilares, setSubPilares] = useState(false);
+  const [aberto, setAberto] = useState<string>();
+  const alternar = (id: string) => setAberto((a) => (a === id ? undefined : id));
+  return (
+    <section className="rounded-xl border border-border bg-secondary/20 p-4">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <div className="min-w-0">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Estrela LIFE</h3>
+            <div className="no-print w-52">
+              <Interruptor label="Exibir sub-pilares" valor={subPilares} onChange={setSubPilares} />
+            </div>
+          </div>
+          <Estrela dados={dados} subPilares={subPilares} selecionado={aberto} onSelecionar={alternar} />
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Cada pilar soma 5 pontos por sub-pilar (total 100). Quanto mais longe do centro, melhor. Toque num pilar para ver o que pesou.
+          </p>
+        </div>
+        <div className="min-w-0">
+          <div className="mb-2 flex items-baseline justify-between gap-3">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Resumo do diagnóstico</h3>
+            <span className="text-right text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Nota conquistada / máxima</span>
+          </div>
+          <ul className="space-y-2">
+            {porEstado(dados.pilares).map((x) => (
+              <LinhaPilar key={x.id} pilar={x} aberto={subPilares || aberto === x.id} onAlternar={() => alternar(x.id)} />
+            ))}
+          </ul>
+          <div className="mt-3 flex items-baseline justify-between gap-3 rounded-lg border border-primary/30 bg-primary/[0.07] px-3 py-2">
+            <span className="text-sm font-semibold">Total</span>
+            <span className="tabular-nums">
+              <span className="text-lg font-bold text-primary">{dados.temDados ? dados.total : "—"}</span>
+              <span className="text-xs text-muted-foreground"> / {dados.maximo}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Panorama() {
-  const { cliente, irPara } = useCliente();
-  const ps = pilares(cliente);
-  const nota = notaGeral(ps);
+  const { cliente } = useCliente();
+  const est = estrela(cliente);
   const f = fluxo(cliente);
   const d = despesas(cliente);
   const p = patrimonio(cliente);
@@ -154,10 +277,10 @@ export default function Panorama() {
         <div className="rounded-xl bg-gold p-5 text-primary-foreground">
           <div className="text-[10px] font-semibold uppercase tracking-widest opacity-80">Nota LIFE</div>
           <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-5xl font-bold tabular-nums">{temNota(ps) ? nota : "—"}</span>
-            <span className="text-sm opacity-80">/ 100</span>
+            <span className="text-5xl font-bold tabular-nums">{est.temDados ? est.total : "—"}</span>
+            <span className="text-sm opacity-80">/ {est.maximo}</span>
           </div>
-          <p className="mt-2 text-xs opacity-90">Média dos pilares com dados preenchidos.</p>
+          <p className="mt-2 text-xs opacity-90">Soma dos 8 pilares da Estrela LIFE, logo abaixo.</p>
         </div>
         <div className="rounded-xl border border-border p-5 lg:col-span-2">
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -181,33 +304,7 @@ export default function Panorama() {
         </div>
       </div>
 
-      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-        {ps.map((x) => {
-          const I = iconeStatus[x.status];
-          return (
-            <button
-              key={x.id}
-              type="button"
-              onClick={() => irPara(secaoDoPilar[x.id])}
-              className="rounded-lg border border-border bg-secondary/30 p-3 text-left transition hover:border-primary/50"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold">{x.nome}</span>
-                <Selo className={`gap-1 ${corStatus[x.status]}`}>
-                  <I className="h-3 w-3" /> {textoStatus[x.status]}
-                </Selo>
-              </div>
-              <div className="mt-2 flex items-center gap-3">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-gold" style={{ width: `${x.status === "sem-dados" ? 0 : x.nota}%` }} />
-                </div>
-                <span className="w-8 text-right text-xs tabular-nums text-muted-foreground">{x.status === "sem-dados" ? "—" : x.nota}</span>
-              </div>
-              <p className="mt-1.5 text-xs text-muted-foreground">{x.resumo}</p>
-            </button>
-          );
-        })}
-      </div>
+      <EstrelaLife dados={est} />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <SubBloco titulo="Fluxo de caixa mensal">

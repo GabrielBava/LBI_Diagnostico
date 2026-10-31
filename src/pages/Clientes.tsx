@@ -4,7 +4,7 @@ import { Copy, Download, FlaskConical, Plus, Search, Trash2, Upload } from "luci
 import { progresso } from "@/config/estrutura";
 import { BarraProgresso, BotaoContorno, BotaoOuro } from "@/components/ui";
 import { s } from "@/lib/calculos";
-import { notaGeral, pilares } from "@/lib/diagnostico";
+import { notaLife } from "@/lib/estrela";
 import { clienteExemplo } from "@/lib/exemplo";
 import { fmtData } from "@/lib/format";
 import {
@@ -97,7 +97,8 @@ export default function Clientes() {
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtrados.map((c) => {
             const prog = progresso(c);
-            const nota = notaGeral(pilares(c));
+            // Nota LIFE: total da Estrela LIFE (a mesma do 6.1 · Panorama geral).
+            const nota = notaLife(c);
             return (
               <div key={c.id} className="group rounded-xl border border-border bg-card p-4 transition hover:border-primary/50">
                 <Link to={`/clientes/${c.id}`} className="block">
@@ -109,7 +110,7 @@ export default function Clientes() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold tabular-nums text-primary">{c.coletaFinalizada ? nota : "—"}</div>
+                      <div className="text-lg font-bold tabular-nums text-primary">{c.coletaFinalizada && nota !== undefined ? nota : "—"}</div>
                       <div className="text-[9px] uppercase tracking-widest text-muted-foreground">Nota LIFE</div>
                     </div>
                   </div>

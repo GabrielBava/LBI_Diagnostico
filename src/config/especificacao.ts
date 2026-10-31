@@ -45,7 +45,7 @@ export const VALIDADE_DIAS = 7;
 
 /** O que está incluso no planejamento (lista do PDF). */
 export const INCLUSO_PLANEJAMENTO = [
-  "Diagnóstico financeiro e plano de ação personalizado",
+  "Diagnóstico e plano de ação personalizado",
   "Organização do orçamento e do fluxo de caixa",
   "Plano para a reserva de emergência e os objetivos",
   "Análise da proteção da família e do patrimônio",
