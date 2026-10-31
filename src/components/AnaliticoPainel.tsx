@@ -34,6 +34,7 @@ import {
   type TipoErro,
 } from "@/lib/analitico";
 import type { AnaliseReuniao } from "@/lib/analitico-tipos";
+import { s } from "@/lib/calculos";
 import { useCliente } from "@/lib/cliente-context";
 import { fmtData, plural } from "@/lib/format";
 import { baixarArquivo, lerConfig } from "@/lib/storage";
@@ -225,7 +226,7 @@ export function PainelAnalise({ compacto }: { compacto?: boolean }) {
   const editada = foiEditada(analise);
   const incluidas = transcricoes.filter((t) => t.incluir !== false && t.texto.trim());
   // O pedido só é montado de novo quando as transcrições mudam.
-  const pedido = useMemo(() => montarPedido(cliente, transcricoes), [transcricoes]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pedido = useMemo(() => montarPedido(cliente, transcricoes), [transcricoes]);
   const grande = pedido.tokensEstimados > AVISO_TOKENS_ENTRADA;
   const grandeDemais = pedido.tokensEstimados > LIMITE_TOKENS_ENTRADA;
   const analisando = tarefa?.situacao === "analisando";
@@ -244,7 +245,7 @@ export function PainelAnalise({ compacto }: { compacto?: boolean }) {
   const analisar = () => comConfirmacao((modo) => void executarAnalise(cliente, atualizar, modo));
   const prompt = () => promptParaCopiar(montarPedido(cliente, cliente.analitico.transcricoes));
   const copiar = async () => setCopia((await copiarTexto(prompt())) ? "ok" : "falhou");
-  const baixar = () => baixarArquivo(`prompt-analise-${(cliente.cadastro.nome as string) || "cliente"}.txt`.replace(/\s+/g, "-"), prompt(), "text/plain;charset=utf-8");
+  const baixar = () => baixarArquivo(`prompt-analise-${s(cliente.cadastro.nome) || "cliente"}.txt`.replace(/\s+/g, "-"), prompt(), "text/plain;charset=utf-8");
   const aplicarColada = () => {
     try {
       const nova = lerRespostaJSON(resposta);
