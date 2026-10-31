@@ -13,6 +13,7 @@ Tudo corresponde a arquivos editáveis:
 | Modelos de mensagem da 5.2 (cliente e amigos/familiares) | `src/config/mensagens.ts` |
 | Especificação (percentual, desconto Pix, taxas do cartão, validade, itens inclusos, textos do PDF) | `src/config/especificacao.ts` (contas em `src/lib/especificacao.ts`) |
 | Estrela LIFE (pilares, sub-pilares e regras) | `src/lib/estrela.ts` |
+| Analítico do Planejador (prompt, chamada ao Claude, validação; leitura de .txt/.vtt/.srt/.docx) | `src/lib/analitico.ts` · `src/lib/arquivo-texto.ts` |
 | Apresentação do V1 · Institucional (páginas do PDF) | `src/assets/v1/` — gerar com `python3 scripts/gerar-v1.py <arquivo.pdf>` |
 | Fórmulas de cálculo | `src/lib/calculos.ts` |
 | Pilares e sugestões do plano de ação | `src/lib/diagnostico.ts` |
@@ -294,4 +295,11 @@ Quatro direções, cada uma com nota de 0 a 100 (média ponderada dos indicadore
 - **Cartão de crédito:** 1x = valor + 4,53% + R$ 0,29; 2x a 12x = valor + taxa(n) + R$ 0,29 por parcela, com taxa(n) = 5,15% (2x), 5,65%, 6,35%, 6,96%, 7,57%, 8,56%, 9,18%, 9,81%, 10,44%, 11,07% e 11,71% (12x); parcela = total ÷ n (mesma tabela do slide 11 da proposta comercial).
 - O consultor marca a condição escolhida (Pix/boleto ou cartão com n parcelas) e pode escrever observações. Os valores são sempre recalculados a partir da renda, do percentual e do desconto.
 - **Exportar especificação em PDF** (A4 retrato): cliente e cônjuge, data, consultor, validade (7 dias), o que está incluso, base de cálculo, valor do plano e **só a condição escolhida** (sem escolha, as duas), observações e linhas de aceite. Parâmetros e textos em `src/config/especificacao.ts`.
+
+## 6. Analítico do Planejador (etapa 8, só versão consultor)
+
+- **8.1 Transcrições da reunião:** anexar arquivos (.txt, .md, .vtt, .srt ou .docx — Teams, Zoom, Meet, Word; dá para arrastar) ou colar o texto. Cada transcrição vira **Parte 1, Parte 2…** (título editável, reordenar, remover e "Incluir na análise"); marcações de tempo saem e quem fala fica. .doc antigo e .pdf não são lidos (salve como .docx ou cole o texto).
+- **Analisar com IA:** manda as partes marcadas, na ordem, e um resumo do diagnóstico (sem e-mail e telefone) para a API do Claude (Anthropic) e preenche 8.2, 8.3 e 8.4. A chave da API e o modelo (padrão Claude Opus 5.5) ficam em **Configurações** (engrenagem), só neste navegador e fora dos backups. Sem chave ou sem internet: **Copiar prompt** (ou baixar .txt) para colar no claude.ai e **Colar resposta** para o app validar e preencher. Reanalisar depois de editar pergunta se junta ou substitui (anotações livres e o fator ajustado à mão ficam). Texto acima de ~200 mil tokens avisa; acima de 850 mil, pede para dividir.
+- **8.2 Dores, preocupações e gatilhos** e **8.3 Notas do Planejador** (objeções prováveis, GAPs de informação, perguntas afirmativas para a V2, riscos, oportunidades comerciais e anotação livre): listas editáveis, com a fala do cliente como evidência e o aviso quando a evidência é fraca.
+- **8.4 Analítico IA:** perfil comportamental no modelo **DISC** (D Dominância, I Influência, S Estabilidade, C Conformidade) — fator predominante e secundário, intensidade de cada fator, classificação, confiança, resumo, como fala, como decide e age, o que prefere, o que evita, como abordar na V2, frases que conectam e as falas que sustentam o perfil. É uma sugestão (não um diagnóstico); o consultor pode ajustar o fator predominante.
 

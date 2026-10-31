@@ -26,6 +26,8 @@ import {
 } from "./base";
 import { GraficoBarras, GraficoLinhas, GraficoRosca, Legenda, fmtCurto, type GrupoBarras } from "./graficos";
 import { NAO_INFORMADO, pct1, type DadosRelatorio } from "./dados";
+import { textoStatus } from "@/components/ui";
+import type { Status } from "@/lib/diagnostico";
 import { ALTURA_CABECALHO, ESPACO, LARGURA_UTIL, alturaLinha, emGrupos, linhasTexto, paginar } from "./paginar";
 
 export type PaginaRelatorio =
@@ -50,28 +52,38 @@ const NIVEL: Record<string, { texto: string; classe: string }> = {
   Média: { texto: "ALERTA", classe: "rel-nivel-alerta" },
   Baixa: { texto: "ATENÇÃO", classe: "rel-nivel-atencao" },
 };
+/** Cor e classe de cada estado dos pilares da Estrela LIFE. */
+const COR_STATUS: Record<Status, string> = { ok: COR.verde, atencao: COR.laranja, critico: COR.vermelho, "sem-dados": COR.cinza };
+const CLASSE_STATUS: Record<Status, string> = { ok: "verde", atencao: "laranja", critico: "vermelho", "sem-dados": "" };
 /** Percentual da meta com uma casa quando fica abaixo de 10% (0,5% e não "1%"). */
 const pctMeta = (v: number) => (v < 0.1 ? fmtPct(v, 1) : fmtPct(v));
 /** Espaço de um bloco decisório (título + cartões + respiro). */
 const ALTURA_BLOCO = 150;
-const ALTURA_BLOCO_COMPACTO = 118;
+/** Bloco compacto: cresce com o texto mais longo dos três cartões (cartão ≈ 205 pt, fonte 9,5 pt em negrito). */
+const alturaBlocoCompacto = (b: { objetivo: string; realidade: string; ajuste: string }) =>
+  38 + Math.max(78, 26 + 13 * Math.max(...[b.objetivo, b.realidade, b.ajuste].map((t) => linhasTexto(t, 205, 10.3))));
 
 export function montarPaginas(d: DadosRelatorio): PaginaRelatorio[] {
   const paginas: PaginaRelatorio[] = [{ chave: "capa", tipo: "capa" }];
   const meses = d.r.mesesMeta;
 
-  /** Abertura do capítulo + função para acrescentar as páginas dele. */
-  const capitulo = (numero: string) => {
+  /** Função que acrescenta páginas de conteúdo a um capítulo (cabeçalho "CAP. 0X — TÍTULO"). */
+  const adicionar = (numero: string) => {
     const c = cap(numero);
-    paginas.push({ chave: `abertura-${numero}`, tipo: "abertura", capitulo: c, frase: preencher(c.frase, { meses }) });
     const cabecalho = { esquerda: rotuloCapitulo(c), direita: cabecalhoCapitulo(c) };
     return (chave: string, p: Omit<Extract<PaginaRelatorio, { tipo: "conteudo" }>, "chave" | "tipo" | "cabecalho">) =>
       paginas.push({ chave: `${numero}-${chave}`, tipo: "conteudo", cabecalho, ...p });
   };
+  /** Página de abertura do capítulo + função para acrescentar as páginas dele. */
+  const capitulo = (numero: string) => {
+    const c = cap(numero);
+    paginas.push({ chave: `abertura-${numero}`, tipo: "abertura", capitulo: c, frase: preencher(c.frase, { meses }) });
+    return adicionar(numero);
+  };
 
   /** Tabela que continua nas folhas seguintes (o título se repete com "continuação"). */
   const tabelaPaginada = <L,>(
-    add: ReturnType<typeof capitulo>,
+    add: ReturnType<typeof adicionar>,
     chave: string,
     o: {
       titulo: string;
@@ -180,6 +192,51 @@ export function montarPaginas(d: DadosRelatorio): PaginaRelatorio[] {
           <Cartoes itens={indicadores} />
           <div style={{ height: "14pt" }} />
           <Caixa rotulo={T.indicadores.principioRotulo}>{T.indicadores.principioTexto}</Caixa>
+        </>
+      ),
+    });
+  }
+
+  // ------------------------------------- 01 · Nota LIFE por pilar (Estrela LIFE)
+  {
+    const e = d.estrela;
+    const conta = (st: Status) => e.pilares.filter((x) => x.status === st).length;
+    const add = adicionar("01");
+    add("estrela", {
+      titulo: T.estrela.titulo,
+      subtitulo: T.estrela.subtitulo,
+      corpo: (
+        <>
+          <Cartoes
+            baixo
+            itens={[
+              { rotulo: "Nota LIFE", valor: d.notaLife !== undefined ? `${d.notaLife} / ${e.maximo}` : NAO_INFORMADO, cor: COR.ouro },
+              { rotulo: "Pilares saudáveis", valor: String(conta("ok")), cor: COR.verde },
+              { rotulo: "Pilares em atenção", valor: String(conta("atencao")), cor: COR.laranja },
+              { rotulo: "Pilares críticos", valor: String(conta("critico")), cor: COR.vermelho },
+            ]}
+          />
+          <Tabela
+            colunas={[
+              { titulo: "Pilar", largura: "24%", classe: "forte azul" },
+              { titulo: "O que é", largura: "46%" },
+              { titulo: "Nota", largura: "14%" },
+              { titulo: "Estado", largura: "16%", classe: "forte" },
+            ]}
+            linhas={e.pilares.map((x) => [
+              x.nome,
+              x.descricao,
+              <span key="n" className="rel-nota">
+                <span>
+                  {x.nota} / {x.maximo}
+                </span>
+                <i>
+                  <b style={{ width: `${x.status === "sem-dados" ? 0 : x.pct}%`, background: COR_STATUS[x.status] }} />
+                </i>
+              </span>,
+              { texto: textoStatus[x.status], classe: CLASSE_STATUS[x.status] },
+            ])}
+          />
         </>
       ),
     });
@@ -641,7 +698,7 @@ export function montarPaginas(d: DadosRelatorio): PaginaRelatorio[] {
               { rotulo: "Liquidez sucessória", valor: fmtBRL(d.pr.recursos), nota: "Reserva, investimentos e previdência", cor: COR.verde },
               {
                 rotulo: "Capital x custo estimado",
-                valor: d.faltaSucessao > 0 ? `Diferença ${fmtBRL(d.faltaSucessao)}` : "Coberto",
+                valor: d.faltaSucessao > 0 ? `Diferença ${fmtBRL(d.faltaSucessao)}` : d.custoSucessao > 0 ? "Coberto" : "Sem custo",
                 cor: d.faltaSucessao > 0 ? COR.vermelho : COR.verde,
               },
             ]}
@@ -977,7 +1034,7 @@ export function montarPaginas(d: DadosRelatorio): PaginaRelatorio[] {
     const blocos = d.blocosAquisicao.length
       ? d.blocosAquisicao.map((b) => ({ ...b, ajuste: b.ajuste ?? T8.ajustePadrao }))
       : [{ objetivo: "Planejar as futuras aquisições preservando caixa", realidade: "Nenhuma aquisição planejada informada na coleta", ajuste: T8.ajustePadrao }];
-    paginar(blocos, () => ALTURA_BLOCO_COMPACTO, ESPACO.soTitulo).forEach((grupo, i) =>
+    paginar(blocos, alturaBlocoCompacto, ESPACO.soTitulo).forEach((grupo, i) =>
       add(`bloco-${i}`, {
         titulo: T8.blocoPagina,
         continuacao: i > 0,

@@ -332,13 +332,16 @@ export function dadosRelatorio(c: Cliente) {
     })),
   ];
   const consorciosAtivos = c.consorcios.filter((x) => n(x.credito) > 0);
+  // Até dois consórcios pelo nome; mais que isso, o total das cartas.
+  const jaPossui =
+    consorciosAtivos.length > 2
+      ? ` · já possui ${consorciosAtivos.length} consórcios (${fmtBRL(dv.creditoConsorcio)} em cartas)`
+      : consorciosAtivos.length
+        ? ` · já possui ${consorciosAtivos.map((x) => `consórcio${s(x.administradora) ? ` ${s(x.administradora)}` : ""} de ${fmtBRL(n(x.credito))}`).join(" e ")}`
+        : "";
   const blocosAquisicao = aquisicoes.map((a) => ({
     objetivo: `Adquirir ${a.nome} (${fmtBRL(a.valor)}) preservando caixa`,
-    realidade:
-      `Estratégia informada: ${a.estrategia ? a.estrategia.toLowerCase() : "não definida"}` +
-      (consorciosAtivos.length
-        ? ` · já possui ${consorciosAtivos.map((x) => `consórcio${s(x.administradora) ? ` ${s(x.administradora)}` : ""} de ${fmtBRL(n(x.credito))}`).join(" e ")}`
-        : ""),
+    realidade: `Estratégia informada: ${a.estrategia ? a.estrategia.toLowerCase() : "não definida"}${jaPossui}`,
     ajuste: a.oportunidade ? a.oportunidade.oferta.replace(/\.$/, "") : null,
   }));
 

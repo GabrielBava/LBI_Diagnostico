@@ -55,7 +55,14 @@ export const LIMITE_TOKENS_ENTRADA = 850_000;
 /** Acima disto a análise fica lenta e cara: o app avisa e sugere analisar por partes. */
 export const AVISO_TOKENS_ENTRADA = 200_000;
 
-export const nomeModelo = (id?: string) => MODELOS_CLAUDE.find((m) => m.id === id)?.nome ?? id ?? "";
+/** "claude-opus-5-5" → "Claude Opus 5.5" (nomes da lista ou montados a partir do id). */
+export function nomeModelo(id?: string) {
+  if (!id) return "";
+  const conhecido = MODELOS_CLAUDE.find((m) => m.id === id)?.nome;
+  if (conhecido) return conhecido;
+  const m = id.match(/^claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?$/);
+  return m ? `Claude ${m[1][0].toUpperCase()}${m[1].slice(1)} ${m[2]}${m[3] ? `.${m[3]}` : ""}` : id;
+}
 
 /** Estimativa de tokens (português: ~3 caracteres por token, para não subestimar). */
 export const estimarTokens = (texto: string) => Math.ceil(texto.length / 3);

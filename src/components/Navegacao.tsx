@@ -1,7 +1,7 @@
 // Menu lateral que acompanha a rolagem (scrollspy). Clique leva à seção.
 import { useEffect, useRef, useState } from "react";
 import { Check, ClipboardCheck, EyeOff, UserPlus } from "lucide-react";
-import { ETAPAS, ETAPAS_COLETA, SECOES, podeGerarRecomendacoes, progresso, secaoConcluida, secaoLiberada, secaoOculta } from "@/config/estrutura";
+import { ETAPAS, ETAPAS_COLETA, ETAPAS_SO_CONSULTOR, SECOES, podeGerarRecomendacoes, progresso, secaoConcluida, secaoLiberada, secaoOculta } from "@/config/estrutura";
 import type { Cliente } from "@/types";
 import { usePreferencias } from "@/lib/preferencias";
 import { BarraProgresso } from "./ui";
@@ -110,7 +110,7 @@ export function Navegacao({ cliente, ativa, irPara }: { cliente: Cliente; ativa:
               {secoes.map((x) => {
                 const ehAtiva = x.id === ativa;
                 const ok = x.coleta && secaoConcluida(cliente, x);
-                const oculta = secaoOculta(cliente, x);
+                const oculta = secaoOculta(cliente, x) && !ETAPAS_SO_CONSULTOR.includes(x.etapa);
                 return (
                   <button
                     key={x.id}

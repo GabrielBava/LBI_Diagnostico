@@ -2,7 +2,7 @@
 // conversa (gaveta), visibilidade na apresentação e "não se aplica".
 import { useState, type ReactNode } from "react";
 import { BookOpenText, Check, Eye, EyeOff, MessageSquareQuote, NotebookPen } from "lucide-react";
-import { ETAPAS, etapaPorId, secaoConcluida, secaoOculta, type SecaoDef } from "@/config/estrutura";
+import { ETAPAS, ETAPAS_SO_CONSULTOR, etapaPorId, secaoConcluida, secaoOculta, type SecaoDef } from "@/config/estrutura";
 import { ROTEIRO } from "@/config/roteiro";
 import { useCliente } from "@/lib/cliente-context";
 import { usePreferencias } from "@/lib/preferencias";
@@ -55,17 +55,20 @@ export function Secao({ def, children }: { def: SecaoDef; children: ReactNode })
                 <BookOpenText className="h-3.5 w-3.5" /> Roteiro
               </button>
             )}
-            <button
-              type="button"
-              title={oculta ? "Oculta na versão apresentação — clique para mostrar" : "Visível na versão apresentação — clique para ocultar"}
-              onClick={() => atualizar((c) => ({ ...c, ocultos: { ...c.ocultos, [def.id]: !oculta } }))}
-              className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[11px] font-medium transition ${
-                oculta ? "border-warning/40 bg-warning/10 text-warning" : "border-border text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {oculta ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              {oculta ? "Oculta na apresentação" : "Na apresentação"}
-            </button>
+            {/* Etapas 6–8 só existem na versão consultor: não há o que ocultar na apresentação. */}
+            {!ETAPAS_SO_CONSULTOR.includes(def.etapa) && (
+              <button
+                type="button"
+                title={oculta ? "Oculta na versão apresentação — clique para mostrar" : "Visível na versão apresentação — clique para ocultar"}
+                onClick={() => atualizar((c) => ({ ...c, ocultos: { ...c.ocultos, [def.id]: !oculta } }))}
+                className={`flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[11px] font-medium transition ${
+                  oculta ? "border-warning/40 bg-warning/10 text-warning" : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {oculta ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {oculta ? "Oculta na apresentação" : "Na apresentação"}
+              </button>
+            )}
           </div>
         )}
       </header>

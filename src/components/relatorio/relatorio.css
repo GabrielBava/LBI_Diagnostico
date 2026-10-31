@@ -441,6 +441,27 @@
 .rel-tabela .laranja {
   color: var(--laranja);
 }
+.rel-tabela .verde {
+  color: var(--verde);
+}
+/* Nota do pilar com barrinha de progresso */
+.rel-nota {
+  display: flex;
+  align-items: center;
+  gap: 8pt;
+  white-space: nowrap;
+}
+.rel-nota i {
+  flex: 1;
+  height: 4pt;
+  border-radius: 2pt;
+  background: #ebe8de;
+  overflow: hidden;
+}
+.rel-nota b {
+  display: block;
+  height: 100%;
+}
 .rel-tabela .nowrap {
   white-space: nowrap;
 }
@@ -518,6 +539,10 @@
 }
 .rel-cartao-valor-pequeno {
   font-size: 11pt;
+  line-height: 14pt;
+}
+.rel-cartao-valor-texto {
+  white-space: normal;
 }
 .rel-cartao-nota {
   margin-top: 6pt;

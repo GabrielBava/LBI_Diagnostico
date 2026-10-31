@@ -273,8 +273,13 @@ export interface DadosCartao {
 
 export function Cartoes({ itens, colunas, baixo }: { itens: DadosCartao[]; colunas?: number; baixo?: boolean }) {
   const n = colunas ?? itens.length;
-  // Valores longos diminuem a fonte para caber no cartão (6 cartões por linha).
-  const tamanho = (v: string) => (n >= 6 ? (v.length > 14 ? "rel-cartao-valor-pequeno" : v.length > 11 ? "rel-cartao-valor-medio" : "") : v.length > 22 ? "rel-cartao-valor-medio" : "");
+  // Valores longos diminuem a fonte para caber no cartão (6 cartões por linha);
+  // texto com palavras ("Não informado", "Diferença R$ …") pode quebrar a linha.
+  const tamanho = (v: string) => {
+    const texto = /\p{L}{4,}/u.test(v) ? "rel-cartao-valor-texto" : "";
+    const fonte = n >= 6 ? (texto || v.length > 14 ? "rel-cartao-valor-pequeno" : v.length > 11 ? "rel-cartao-valor-medio" : "") : v.length > 22 ? "rel-cartao-valor-medio" : "";
+    return `${fonte} ${texto}`;
+  };
   return (
     <div className="rel-cartoes" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
       {itens.map((c) => (

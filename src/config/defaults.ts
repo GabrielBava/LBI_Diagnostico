@@ -4,7 +4,7 @@
 export const APP = {
   nome: "Diagnóstico LIFE",
   slogan: "Financial Operating System™",
-  versao: "v10.0.0",
+  versao: "v11.0.0",
 };
 
 export interface ConfigConsultor {
@@ -18,9 +18,9 @@ export interface ConfigConsultor {
 
 /** Modelos do Claude oferecidos nas Configurações (o primeiro é o padrão). */
 export const MODELOS_CLAUDE = [
-  { id: "claude-opus-5-5", nome: "Claude Opus 5.5", detalhe: "recomendado: análise mais completa" },
-  { id: "claude-sonnet-5-5", nome: "Claude Sonnet 5.5", detalhe: "mais rápido e mais barato" },
-  { id: "claude-haiku-5-5", nome: "Claude Haiku 5.5", detalhe: "o mais econômico" },
+  { id: "claude-opus-5-5", nome: "Claude Opus 5.5", detalhe: "recomendado" },
+  { id: "claude-sonnet-5-5", nome: "Claude Sonnet 5.5", detalhe: "mais rápido e barato" },
+  { id: "claude-haiku-5-5", nome: "Claude Haiku 5.5", detalhe: "mais econômico" },
 ];
 
 export const CONFIG_PADRAO: ConfigConsultor = {
