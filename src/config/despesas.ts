@@ -54,7 +54,7 @@ export interface GrupoDespesa {
   /** Parte do modelo 50-30-20: "Necessidades" = Essencial (50%) · "Desejos" = Estilo e Desejos (30%). */
   modelo: ParteModelo;
   /**
-   * "dividas": parcelas de 8 · Financiamento e crédito (inclui bens financiados do Patrimônio).
+   * "dividas": parcelas de 8 · Financiamento, consórcio e FGTS (inclui bens financiados do Patrimônio).
    * "dependentes": mensalidades, auxílios e custos informados em Sucessão.
    */
   automatico?: "dividas" | "dependentes";
@@ -175,7 +175,7 @@ export const GRUPOS_DESPESA: GrupoDespesa[] = [
     modelo: "Necessidades",
     icone: ReceiptText,
     automatico: "dividas",
-    // Lançadas em 8 · Financiamento e crédito (e bens financiados do Patrimônio).
+    // Lançadas em 8 · Financiamento, consórcio e FGTS (e bens financiados do Patrimônio).
     foraDaTela: true,
     itens: [],
   },

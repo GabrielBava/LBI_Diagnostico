@@ -640,9 +640,13 @@ export const HORIZONTES_PADRAO_VIDA = [1, 5, 15];
 //  Etapa 4 · Investimentos
 // ---------------------------------------------------------------------
 const investe = (d: Secao) => sim(d.temInvestimento);
+/** Nível de conhecimento e perfil de investidor, lado a lado na mesma linha (Formulario de 2 colunas). */
+export const CAMPOS_INVESTIMENTOS_PERFIL: CampoDef[] = [
+  { key: "conhecimento", label: "Nível de conhecimento", tipo: "chips", opcoes: OPCOES.conhecimento },
+  { key: "perfil", label: "Perfil de investidor", tipo: "chips", opcoes: OPCOES.perfilInvestidor },
+];
+
 export const CAMPOS_INVESTIMENTOS: CampoDef[] = [
-  { key: "conhecimento", label: "Nível de conhecimento", tipo: "chips", opcoes: OPCOES.conhecimento, largura: 2 },
-  { key: "perfil", label: "Perfil de investidor", tipo: "chips", opcoes: OPCOES.perfilInvestidor, largura: 2 },
   {
     key: "temas",
     label: "Temas que já estudou",

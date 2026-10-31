@@ -1,5 +1,5 @@
 // 7 · Patrimônio — imóveis, móveis e futuras aquisições. Bem financiado abre
-// Instituição, Parcela, Prazo e Saldo (config) e entra sozinho em 8 · Financiamento e crédito.
+// Instituição, Parcela, Prazo e Saldo (config) e entra sozinho em 8 · Financiamento, consórcio e FGTS.
 // Manutenção e IPVA dos veículos entram em Despesas · Transporte.
 import type { ReactNode } from "react";
 import { Car, CheckCircle2, Landmark } from "lucide-react";
@@ -52,7 +52,7 @@ export default function Patrimonio() {
         <p>
           Entra em{" "}
           <button type="button" onClick={() => irPara("dividas")} className="font-medium text-primary underline-offset-2 hover:underline">
-            8 · Financiamento e crédito
+            8 · Financiamento, consórcio e FGTS
           </button>
         </p>
       </div>

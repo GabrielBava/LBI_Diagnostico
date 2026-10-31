@@ -161,7 +161,7 @@ export function Cascata({ linhas }: { linhas: { nome: string; valor: number; tip
   );
 }
 
-/** Duas barras por item (ex.: probabilidade atual × com plano). */
+/** Duas barras por item (ex.: cenário atual × com o plano). */
 export function BarrasDuplas({
   itens,
   rotulos,
@@ -209,7 +209,7 @@ export function GraficoFuturo({
   rotuloAtual = "Investindo a sobra atual",
 }: {
   serie: { ano: number; idade: number; atual: number; necessaria: number }[];
-  /** Nome da série do ritmo atual (sobra ou investimento mensal informado). */
+  /** Nome da série do ritmo atual (sobra livre ou quanto consegue poupar). */
   rotuloAtual?: string;
 }) {
   return (

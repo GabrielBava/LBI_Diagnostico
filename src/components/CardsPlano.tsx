@@ -45,6 +45,7 @@ export function CardsPlano({
   limite,
   acoes,
   extraCabecalho,
+  filtroSelo,
 }: {
   lista: ListaCards;
   automaticos: CardPlano[];
@@ -64,6 +65,8 @@ export function CardsPlano({
   acoes?: (card: CardTela) => ReactNode;
   /** Conteúdo extra no cabeçalho (ex.: produto). */
   extraCabecalho?: (card: CardTela) => ReactNode;
+  /** Mostra só os cartões com este selo (ex.: gravidade "Alta"); o cartão em edição continua visível. */
+  filtroSelo?: string;
 }) {
   const { cliente, atualizar } = useCliente();
   const { apresentacao } = usePreferencias();
@@ -72,7 +75,9 @@ export function CardsPlano({
 
   // Automáticos (ou a versão personalizada deles) e, depois, os acrescentados.
   const cards = mesclarCards(cliente, lista, automaticos, colunas.map((c) => c.key), !!rotuloSelo);
-  const visiveis = apresentacao ? cards.filter((c) => !c.oculto) : cards;
+  const visiveis = (apresentacao ? cards.filter((c) => !c.oculto) : cards).filter(
+    (c) => !filtroSelo || c.selo === filtroSelo || (!!editando && c.item?.id === editando),
+  );
   // O cartão em edição aparece mesmo depois do limite (ex.: um cartão recém-acrescentado).
   const mostrados = limite && !todos ? visiveis.filter((c, i) => i < limite || (!!editando && c.item?.id === editando)) : visiveis;
   const escondidos = visiveis.length - mostrados.length;

@@ -1,6 +1,7 @@
 // 6.2 · Plano atual (Diagnóstico · Motivo · Risco da inação)
 // 6.3 · Plano potencial (Oportunidade identificada · Como podemos atuar juntos · Objetivo desejado)
 // 6.4 · Plano otimização (Descrição · Motivo da escolha · Como melhorar)
+import { useState } from "react";
 import {
   CircleCheck,
   Handshake,
@@ -24,37 +25,47 @@ import { usePreferencias } from "@/lib/preferencias";
 import ProtecaoContratar from "./ProtecaoContratar";
 
 /** Faixa de contagem no topo de cada plano (ex.: 3 de gravidade alta). */
-function Resumo({ itens }: { itens: { rotulo: string; valor: number; cor: string }[] }) {
-  const visiveis = itens.filter((x) => x.valor > 0);
-  if (!visiveis.length) return null;
-  return (
-    <div className="flex flex-wrap gap-2">
-      {visiveis.map((x) => (
-        <span key={x.rotulo} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${x.cor}`}>
-          <strong className="tabular-nums">{x.valor}</strong> {x.rotulo}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------
 //  6.2 · Plano atual
 // ---------------------------------------------------------------------
+/** Abas de gravidade do 6.2: uma por vez, para a lista não ficar longa. */
+const GRAVIDADES = [
+  { id: "Alta", rotulo: "Alta", cor: "border-destructive/40 bg-destructive/10 text-destructive" },
+  { id: "Média", rotulo: "Média", cor: "border-warning/40 bg-warning/10 text-warning" },
+  { id: "Baixa", rotulo: "Baixa", cor: "border-border bg-muted/50 text-foreground" },
+  { id: "", rotulo: "Todas", cor: "border-primary/40 bg-primary/10 text-primary" },
+] as const;
+
 export function PlanoAtualCards() {
   const { cliente } = useCliente();
   const cards = planoAtual(cliente);
   const selos = selosVisiveis(cliente, "planoAtual", cards);
-  const conta = (g: string) => selos.filter((x) => x === g).length;
+  const conta = (g: string) => (g ? selos.filter((x) => x === g).length : selos.length);
+  // Abre na gravidade mais alta que tiver cartões.
+  const [escolha, setEscolha] = useState<string | null>(null);
+  const gravidade = escolha ?? (GRAVIDADES.find((g) => g.id && conta(g.id) > 0)?.id || "");
   return (
     <div className="space-y-4">
-      <Resumo
-        itens={[
-          { rotulo: "de gravidade alta", valor: conta("Alta"), cor: "border-destructive/30 bg-destructive/10 text-destructive" },
-          { rotulo: "de gravidade média", valor: conta("Média"), cor: "border-warning/30 bg-warning/10 text-warning" },
-          { rotulo: "de gravidade baixa", valor: conta("Baixa"), cor: "border-border bg-muted/40 text-muted-foreground" },
-        ]}
-      />
+      <div role="tablist" aria-label="Gravidade" className="flex flex-wrap gap-2">
+        {GRAVIDADES.map((g) => {
+          const ativa = gravidade === g.id;
+          return (
+            <button
+              key={g.rotulo}
+              type="button"
+              role="tab"
+              aria-selected={ativa}
+              onClick={() => setEscolha(g.id)}
+              className={`inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-xs font-medium transition ${
+                ativa ? `${g.cor} shadow-sm` : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
+              }`}
+            >
+              {g.id ? `Gravidade ${g.rotulo.toLowerCase()}` : g.rotulo}
+              <span className="rounded-full bg-background/60 px-1.5 tabular-nums">{conta(g.id)}</span>
+            </button>
+          );
+        })}
+      </div>
       <CardsPlano
         lista="planoAtual"
         automaticos={cards}
@@ -66,8 +77,13 @@ export function PlanoAtualCards() {
         ]}
         rotuloSelo="Gravidade"
         destaque="destructive"
+        filtroSelo={gravidade || undefined}
         textoAdicionar="Adicionar diagnóstico"
-        vazio="Nenhum ponto de atenção identificado com os dados preenchidos."
+        vazio={
+          gravidade && selos.length
+            ? `Nenhum ponto de gravidade ${gravidade.toLowerCase()}. Veja as outras gravidades acima.`
+            : "Nenhum ponto de atenção identificado com os dados preenchidos."
+        }
       />
     </div>
   );

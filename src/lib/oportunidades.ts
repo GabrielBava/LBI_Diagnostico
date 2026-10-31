@@ -311,19 +311,28 @@ export function oportunidades(c: Cliente): Oportunidade[] {
         detalhe: `Consórcio de ${fmtBRL(n(o.valorFuturo))} para “${s(o.titulo) || s(o.categoria)}”`,
       }),
     );
+  // FGTS com mais de 2 anos de contribuição: pode entrar na casa própria (amortização ou lance de consórcio imobiliário).
+  const fgtsUsavel = sim(c.fgts.temFgts) && sim(c.fgts.fgtsMais2Anos) ? Math.max(0, n(c.fgts.saldoFgts)) : 0;
   const troca = c.moveis.filter((m) => m.pensaAmpliacao === true);
+  // Valor de compra do modelo de desejo (7 · Patrimônio): a carta cobre a diferença para o bem atual, que entra como lance.
+  const valorTroca = troca.reduce((t, m) => t + Math.max(0, n(m.valorCompra)), 0);
+  const diferencaTroca = troca.reduce((t, m) => t + Math.max(0, n(m.valorCompra) - n(m.valor)), 0);
   if (troca.length)
     add({
       id: "op-troca",
       area: "Patrimonial",
       produto: "Consórcio",
       titulo: "Consórcio para a troca de bens",
-      oferta: `Carta de consórcio para trocar ${juntar(troca.map((m) => `${nomeBem(m)}${s(m.modeloDesejado) ? ` pelo ${s(m.modeloDesejado)}` : ""}`))}, usando o bem atual como lance.`,
-      porque: "O cliente pensa em trocar ou ampliar bens.",
+      oferta: `Carta de consórcio${valorTroca > 0 ? ` de cerca de ${fmtBRL(valorTroca)}` : ""} para trocar ${juntar(troca.map((m) => `${nomeBem(m)}${s(m.modeloDesejado) ? ` pelo ${s(m.modeloDesejado)}` : ""}`))}, usando o bem atual como lance.`,
+      porque:
+        valorTroca > 0
+          ? `O cliente pensa em trocar: o modelo de desejo custa ${fmtBRL(valorTroca)}${diferencaTroca > 0 ? ` (${fmtBRL(diferencaTroca)} acima do valor do bem atual)` : ""}.`
+          : "O cliente pensa em trocar ou ampliar bens.",
       objetivo: "Trocar de bem sem descapitalizar nem pagar juros.",
       potencial: potencial("Consórcio", 2),
       prioridade: "Média",
       prazo: "Médio",
+      ...(valorTroca > 0 ? { valor: valorTroca } : {}),
     });
   // Veículos financiados (sem troca planejada): a próxima troca pode ser por consórcio.
   const veiculosFinanciados = c.moveis.filter((m) => bemFinanciado(m) && m.pensaAmpliacao !== true);
@@ -401,8 +410,8 @@ export function oportunidades(c: Cliente): Oportunidade[] {
       area: "Patrimonial",
       produto: "Crédito",
       titulo: "Portabilidade / amortização de financiamento",
-      oferta: `Revisar taxa e portabilidade do saldo de ${fmtBRL(dv.saldoFin)} e simular amortizações.`,
-      porque: `Saldo devedor de ${fmtBRL(dv.saldoFin)} em financiamentos.`,
+      oferta: `Revisar taxa e portabilidade do saldo de ${fmtBRL(dv.saldoFin)} e simular amortizações${fgtsUsavel > 0 ? `, inclusive com o FGTS (${fmtBRL(fgtsUsavel)}) no financiamento da casa própria` : ""}.`,
+      porque: `Saldo devedor de ${fmtBRL(dv.saldoFin)} em financiamentos.${fgtsUsavel > 0 ? ` Há ${fmtBRL(fgtsUsavel)} de FGTS com mais de 2 anos de contribuição.` : ""}`,
       objetivo: "Pagar menos juros e quitar antes.",
       potencial: potencial("Crédito"),
       prioridade: "Média",

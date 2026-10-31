@@ -1,4 +1,4 @@
-# Metodologia do Diagnóstico LIFE (versão 10)
+# Metodologia do Diagnóstico LIFE (versão 11)
 
 Este documento descreve **o processo com o cliente** e **as fórmulas** de cada seção.
 Tudo corresponde a arquivos editáveis:
@@ -8,8 +8,9 @@ Tudo corresponde a arquivos editáveis:
 | Etapas, seções, ordem e regra de "seção concluída" | `src/config/estrutura.ts` |
 | Campos de cada seção (incluir / remover / renomear) | `src/config/campos.ts` |
 | Blocos e subcategorias de despesas (e a parte de cada bloco no 50-30-20) | `src/config/despesas.ts` |
-| Tabelas de INSS/IR para estimar bruta ↔ líquida | `src/config/tributos.ts` |
+| Tabelas de INSS/IR (CLT) e Simples Nacional/pró-labore (PJ) para estimar bruta ↔ líquida | `src/config/tributos.ts` |
 | Roteiro da conversa e frases de abertura das etapas | `src/config/roteiro.ts` |
+| Modelos de mensagem da 5.2 (cliente e amigos/familiares) | `src/config/mensagens.ts` |
 | Apresentação do V1 · Institucional (páginas do PDF) | `src/assets/v1/` — gerar com `python3 scripts/gerar-v1.py <arquivo.pdf>` |
 | Fórmulas de cálculo | `src/lib/calculos.ts` |
 | Pilares e sugestões do plano de ação | `src/lib/diagnostico.ts` |
@@ -21,10 +22,11 @@ Tudo corresponde a arquivos editáveis:
 ## 1. Como a página funciona
 
 - **Rolagem contínua:** todas as seções ficam em uma única página. Ao rolar, você passa de uma categoria para a próxima e o menu lateral acompanha. Clicar no menu leva à seção.
-- **Versão consultor × versão apresentação:** o botão no topo alterna entre as duas.
+- **Versão consultor × versão apresentação:** o botão no topo alterna entre as duas. O diagnóstico **sempre abre na versão apresentação**.
+  - A versão apresentação vai **até a etapa 5** (pré-diagnóstico: 5.1 Plano atual e 5.2 Recomendações). As etapas **6 (diagnóstico completo), 7 (especificação) e 8 (analítico do planejador) só aparecem na versão consultor**.
   - A versão apresentação oculta o roteiro, as anotações, os parâmetros financeiros, as sugestões internas e as seções marcadas como ocultas.
   - Cada seção tem o botão **"Na apresentação / Oculta na apresentação"** para decidir o que o cliente vê. A **Matriz de oportunidades** começa oculta.
-  - O PDF segue a versão apresentação: seção oculta não entra.
+  - O PDF do diagnóstico segue o modelo "Plano de Vida Financeira" (ver seção do PDF).
 - **Roteiro:** o botão "Roteiro" de cada seção abre a gaveta com o objetivo, a frase de abertura, as perguntas (checklist), os pontos de atenção e as anotações da conversa.
 - **Divisor de etapa:** antes de cada etapa aparecem só o número, o nome e o subtítulo da etapa.
 - **Parâmetros financeiros:** botão de engrenagem ("Parâmetros") no topo do cliente, só na versão consultor. Abre um pop-up com inflação geral, inflação educacional, meta de reserva (meses), limite de parcela (% da renda) e retorno real.
@@ -37,12 +39,15 @@ Tudo corresponde a arquivos editáveis:
 | Etapa | Seções |
 |---|---|
 | **1 · Conexão** | 1 Cadastro · 2 V1 Institucional · 3 Objetivos · 4 Sucessão |
-| **2 · Raio-X financeiro** | 5 Despesas · 6 Renda · 7 Patrimônio · 8 Financiamento e crédito · 9 Projetos · 10 Corporativo |
+| **2 · Raio-X financeiro** | 5 Despesas · 6 Renda · 7 Patrimônio · 8 Financiamento, consórcio e FGTS · 9 Projetos · 10 Corporativo |
 | **3 · Proteção e futuro** | 11 Proteção · 12 Futuro (aposentadoria) |
 | **4 · Investimentos** | 13 Investimentos |
 | **5 · Pré-diagnóstico** | 5.1 Plano atual: renda total, despesas atuais e modelo 50-30-20 (liberado por "Finalizar coleta") · 5.2 Recomendações: indicações do cliente (liberada por "Gerar recomendações") |
 | **6 · Diagnóstico completo** | 6.1 Panorama geral · 6.2 Plano atual · 6.3 Plano potencial · 6.4 Plano otimização · 6.5 Futuro (simulação) · 6.6 Matriz de oportunidades · 6.7 Bússola financeira · 6.8 Plano de ação |
-| **7 · Jornada** | 7.1 Jornada do cliente · 7.2 Cronograma de implementação |
+| **7 · Especificação** (só versão consultor) | 7.1 Especificação do planejamento: valor do plano e condições de pagamento, com PDF |
+| **8 · Analítico do Planejador** (só versão consultor) | 8.1 Transcrições da reunião · 8.2 Dores, preocupações e gatilhos · 8.3 Notas do Planejador · 8.4 Analítico IA |
+
+A antiga etapa **Jornada** (jornada do cliente e cronograma) saiu na versão 11; os encontros já registrados ficam guardados nos dados, sem uso.
 
 O progresso de **coleta** (menu lateral) considera as seções 1 e 3 a 13. Seções opcionais podem ser marcadas como **"Não se aplica"**.
 
@@ -50,19 +55,19 @@ O progresso de **coleta** (menu lateral) considera as seções 1 e 3 a 13. Seç�
 
 - **Estado civil:** "Nome do cônjuge" e "Renda do cônjuge" só aparecem para Casado(a) ou União estável.
 - **Tem filhos?** Com "Sim", aparece o contador de filhos. A quantidade **cria os cartões automaticamente em Sucessão**. Diminuir remove só cartões ainda vazios. Com "Não", nada aparece.
-- **Cadastro:** sexo (Homem / Mulher), usado no perfil.
+- **Cadastro:** sexo (Homem / Mulher), usado no perfil. O antigo campo "Perfil" (ex.: "Cliente Private") saiu.
 - **V1 Institucional:** só a apresentação em PDF (páginas como imagens), com setas, miniaturas, teclado, tela cheia ("Apresentar") e os links do PDF clicáveis. Sem textos nem campos.
-- **Ponto de partida (3 · Objetivos):** motivação e satisfação financeira (0 a 10), guardadas no cadastro; aparecem em "Nas palavras do cliente" (6.1) e na capa do PDF.
+- **Ponto de partida (3 · Objetivos):** motivação, satisfação com a organização do dinheiro (0 a 10) e **quanto consegue poupar todos os meses** (régua de R$ 0 a R$ 5.000, de 100 em 100; o teto fica em `POUPANCA_MENSAL_MAX`), guardados no cadastro. A motivação e a satisfação aparecem em "Nas palavras do cliente" (6.1) e no PDF; o quanto consegue poupar entra no resumo do 5.1, no futuro (6.5) e no plano.
 - **Satisfação financeira e impacto dos objetivos:** escala de 0 a 10 com um botão por nota.
-- **Objetivos:** categoria escolhida por ícones. Na coleta não aparecem totais, aportes nem "cabe na sobra"; o aporte de cada objetivo aparece só na versão consultor. Cada cartão tem um botão à direita que oculta os campos e deixa só o resumo (valor, prazo e prioridade).
+- **Objetivos:** primeiro as categorias (ícones); arrasta-se a categoria para **Essencial, Desejo ou Sonho** e então abrem os campos do objetivo. As probabilidades (atual e com o plano) saíram. Na coleta não aparecem totais, aportes nem "cabe na sobra"; o aporte de cada objetivo aparece só na versão consultor. Cada cartão tem um botão à direita que oculta os campos e deixa só o resumo (valor, prazo e prioridade).
 - **Sucessão:** nada aparece sem filhos ou dependentes. Para adicionar, escolhe-se primeiro a categoria. Filhos, enteados e netos têm idade e escolaridade; Pai/Mãe e "Outro dependente" mostram auxílio e outros custos. Mensalidades, auxílios e custos entram sozinhos nas despesas fixas (bloco Dependentes). Sem totalizadores no topo.
-- **Despesas:** blocos (Casa, Mercado, Transporte…) com subcategorias (Aluguel, Condomínio, Luz…). Cada bloco aceita itens extras. Transporte: combustível, estacionamento/garagem, aplicativos (Uber e 99) e transporte público; manutenção e IPVA vêm dos veículos (Patrimônio). A anuidade dos cartões (Renda) entra em "Outras despesas fixas". As parcelas não são digitadas aqui: vêm da seção 8 e aparecem só no total.
-- **Renda:** bruta e líquida do cliente; renda extra; **13º salário e bônus anual** (valores líquidos do ano); do cônjuge só para casado(a) ou união estável. Se só uma for informada, a outra é estimada. Modelo da declaração do IR (simplificada, completa ou não declara). Rendas extras ou de outra pessoa ficam em lista própria ("Outras rendas · PLR, aluguel ou de outra pessoa"); o bônus anual não se repete ali (o antigo tipo "Bônus / PLR" virou "PLR"). Cartões: qual, limite, gasto mensal, milhas e anuidade (valor por ano).
-- **Patrimônio:** imóveis e móveis com situação **Quitado / Financiado** e flag de seguro. Bem financiado abre instituição, parcela, prazo e saldo (opcional) e vira financiamento automaticamente na seção 8. Veículos: manutenção e IPVA por ano; "pensa em ampliação/troca" abre o modelo de desejo. **Futuras aquisições:** com "Sim", lista de segmento (imóvel/veículo), categoria, tipo, valor desejado e estratégia (à vista, financiamento, consórcio).
-- **Financiamento e crédito (8):** financiamentos (inclusive os do patrimônio), consórcios (parcela, prazo, carta) e dívidas com categoria (cartão, cheque especial, carnê, renegociação, empréstimo pessoal, consignado…). A soma das parcelas entra no total de despesas.
+- **Despesas:** ao lado de cada bloco há uma dica em palavras simples — **fixas** "se repetem todo mês, quase sempre no mesmo valor" (casa, mercado, transporte, saúde, escola, seguros e parcelas); **variáveis** "mudam de um mês para o outro, conforme o quanto e quantas vezes você usa" (restaurantes, lazer, roupas, assinaturas, esportes e viagens). Blocos (Casa, Mercado, Transporte…) com subcategorias (Aluguel, Condomínio, Luz…). Cada bloco aceita itens extras. Transporte: combustível, estacionamento/garagem, aplicativos (Uber e 99) e transporte público; manutenção e IPVA vêm dos veículos (Patrimônio). A anuidade dos cartões (Renda) entra em "Outras despesas fixas". As parcelas não são digitadas aqui: vêm da seção 8 e aparecem só no total.
+- **Renda:** bruta e líquida mensal do cliente, lado a lado (meio a meio); no canto superior direito do cartão, **CLT | PJ** (o mesmo para o cônjuge), que define as deduções da estimativa; com **CLT**, abrem **vale-refeição/alimentação (opcional)** e **vale-transporte (opcional)**, que entram na renda total; renda extra; **13º salário e bônus anual** (valores líquidos do ano); do cônjuge só para casado(a) ou união estável. Se só uma for informada, a outra é estimada. Modelo da declaração do IR (simplificada, completa ou não declara). Rendas extras ou de outra pessoa ficam em lista própria ("Outras rendas · PLR, aluguel ou de outra pessoa"); o bônus anual não se repete ali (o antigo tipo "Bônus / PLR" virou "PLR"). Cartões: com "Tem cartão de crédito? Sim", abre ao lado **Quantos cartões?** (1, 2, 3, 4…), que cria um cartão para cada (qual, limite, gasto mensal, milhas e anuidade por ano). Diminuir remove só cartões vazios (com dados, pede confirmação).
+- **Patrimônio:** imóveis e móveis com situação **Quitado / Financiado** e flag de seguro. Bem financiado abre instituição, parcela, prazo e saldo (opcional) e vira financiamento automaticamente na seção 8. Veículos: manutenção e IPVA por ano; "pensa em ampliação/troca" abre, lado a lado, o **modelo de desejo** e o **valor de compra** (entra na oferta de consórcio para a troca). **Futuras aquisições:** com "Sim", lista de segmento (imóvel/veículo), categoria, tipo, valor desejado e estratégia (à vista, financiamento, consórcio).
+- **Financiamento, consórcio e FGTS (8):** financiamentos (inclusive os do patrimônio), consórcios (parcela, prazo, carta) e dívidas com categoria (cartão, cheque especial, carnê, renegociação, empréstimo pessoal, consignado…). A soma das parcelas entra no total de despesas. **FGTS:** "Tem saldo de FGTS?" com "Sim" abre o saldo e "Contribui há mais de 2 anos?". O saldo entra nos ativos do balanço; com mais de 2 anos, a oferta de portabilidade/amortização cita o uso do FGTS na casa própria.
 - **Proteção:** reserva de emergência (valor e meses na visão do cliente), seguros, invalidez/DIT, **é fumante?** (substituiu o antigo "plano de saúde"; entra nas ofertas de seguro como "Cotação para fumante") e previdência (PGBL, VGBL ou os dois).
-- **Futuro (12):** idade de aposentadoria, investimento mensal, **valor mínimo que pode poupar e valor máximo que consegue poupar** por mês (negativos são ignorados; com o mínimo acima do máximo aparece um aviso e o diagnóstico usa o menor como mínimo), renda desejada, outras fontes e estilo de vida (cartões). **Mudanças de vida programadas:** com "Sim", lista com a mudança, o impacto (aumenta/reduz despesas, aumenta/reduz renda ou gasto único), daqui a quantos meses e o valor.
-- **Investimentos:** conhecimento, perfil, temas já estudados (múltipla escolha); valor (sem a reserva), assessor e instituição só aparecem com "Tem investimentos? Sim".
+- **Futuro (12):** só idade de aposentadoria, renda desejada, outras fontes de renda no mês e estilo da aposentadoria (cartões). O investimento mensal e a poupança mínima/máxima saíram (o quanto consegue poupar está no ponto de partida; na migração, o valor antigo vai para lá). **Mudanças de vida programadas:** com "Sim", lista com a mudança, o impacto (aumenta/reduz despesas, aumenta/reduz renda ou gasto único), daqui a quantos meses e o valor.
+- **Investimentos:** nível de conhecimento e perfil de investidor lado a lado na mesma linha; temas já estudados (múltipla escolha) na linha inteira; valor (sem a reserva), assessor e instituição só aparecem com "Tem investimentos? Sim".
 
 ---
 
@@ -72,8 +77,11 @@ Taxas anuais viram mensais por equivalência composta: `i = (1 + anual)^(1/12) �
 Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 
 ### Renda
-- Para cada pessoa: se só a **bruta** for informada, a **líquida** é estimada (bruta − INSS − IRRF); se só a líquida, a bruta é estimada pelo inverso. Tabelas de referência em `src/config/tributos.ts`: INSS empregado 2026 (teto R$ 8.475,55), IRRF mensal (maio/2025) com desconto simplificado de R$ 607,20 e o redutor de 2026 (isenção até R$ 5.000, redução parcial até R$ 7.350). É uma estimativa para assalariado; pró-labore e autônomo diferem.
-- `Renda total (líquida) = líquida do cliente + renda extra + (13º + bônus anual) ÷ 12 + líquida do cônjuge + outras rendas` (frequência Anual ÷ 12).
+- Para cada pessoa: se só a **bruta** for informada, a **líquida** é estimada; se só a líquida, a bruta é estimada pelo inverso. Mesmas regras da calculadora CLT x PJ da Contabilizei (`src/config/tributos.ts`):
+  - **CLT:** bruta − INSS − IRRF. INSS empregado 2026 (teto R$ 8.475,55), IRRF mensal com a dedução mais vantajosa (INSS ou desconto simplificado de R$ 607,20) e o redutor de 2026 (isenção até R$ 5.000, redução parcial até R$ 7.350). Ex.: R$ 9.000 de bruta → R$ 2.282,64 de descontos → R$ 6.717,36 de líquida.
+  - **PJ:** bruta − Simples Nacional (Anexo III, faturamento anual = bruta × 12, sem Fator R: 6% até R$ 180 mil/ano, depois a alíquota efetiva da faixa) − INSS de 11% sobre o pró-labore de um salário mínimo (R$ 1.621,00 → R$ 178,31). Ex.: R$ 9.000 → R$ 718,31 de descontos → R$ 8.281,69.
+- `Renda total (líquida) = líquida do cliente + renda extra + (13º + bônus anual) ÷ 12 + benefícios do CLT (VR/VA + VT, cliente e cônjuge) + líquida do cônjuge + outras rendas` (frequência Anual ÷ 12).
+- `Renda bruta total = bruta do cliente + bruta do cônjuge` (estimada quando só a líquida foi informada) — base da especificação (etapa 7).
 - **Renda passiva** = outras fontes do tipo Aluguel, Dividendos/Juros e Pensão/Aposentadoria.
 - Renda marcada como do cônjuge só entra no total quando o estado civil é casado(a) ou união estável.
 ### Despesas
@@ -81,7 +89,7 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 - `Despesas = fixas + variáveis`. As fixas incluem Dependentes (de Sucessão), as parcelas da seção 8, manutenção e IPVA dos veículos (÷ 12) e a anuidade dos cartões (÷ 12).
 - O gasto informado nos cartões **não** é somado de novo: ele já está distribuído nas despesas.
 - `Sobra = Renda − Despesas` · `Taxa de poupança = Sobra ÷ Renda`.
-- **Aportes em projetos** = soma do "aporte mensal" dos projetos (9) · `Sobra livre = Sobra − Aportes em projetos`. Com o investimento mensal (12) em branco, o futuro usa a sobra livre.
+- **Aportes em projetos** = soma do "aporte mensal" dos projetos (9) · `Sobra livre = Sobra − Aportes em projetos`. Sem o "quanto consegue poupar" (ponto de partida), o futuro usa a sobra livre.
 - `Comprometimento = Parcelas ÷ Renda` (alerta acima do limite dos parâmetros, padrão 30%). As parcelas são as da seção 8 (com os bens financiados do Patrimônio).
 
 ### 5.1 · Plano atual (pré-diagnóstico)
@@ -92,18 +100,23 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
   - **Estilo e Desejos (30)** — até 30%: cuidados pessoais, profissionais, restaurantes, lazer, roupas, assinaturas, esportes, viagens e outros.
   - **Projeto e Investimentos (20)** — pelo menos 20%: renda − despesas = aportes em projetos + sobra livre.
 - Aportes declarados acima da sobra: o topo, as despesas atuais, o gráfico e a lista de categorias mostram o mesmo déficit (despesas + aportes − renda), com o alerta em amarelo; no 6.2 aparece o cartão "Aportes em projetos acima da sobra".
-- Com a poupança declarada (12 · Futuro), o resumo compara o mínimo e o máximo que o cliente diz conseguir poupar com o ideal de 20%.
+- Com o "quanto consegue poupar" do ponto de partida, o resumo compara esse valor com o ideal de 20% ("abaixo dos R$ X do modelo" ou "já cobre").
+- A renda total mostra a linha **Benefícios do CLT (VR/VA e VT)** quando houver.
 - A parte de cada bloco fica no campo `modelo` de `src/config/despesas.ts`; os nomes, em `MODELO_50_30_20`.
 
 ### 5.2 · Recomendações (indicações do cliente)
 - Logo depois do 5.1 fica o botão **Gerar recomendações** (com atalho no menu, na etapa 5). Ele só aparece depois de "Finalizar coleta" e some depois do clique.
 - Ao clicar, a etapa **5.2 · Recomendações** entra no diagnóstico e no menu, com **três blocos** de indicação e a página rola até ela. Cada bloco tem **Nome** e **Contato** (WhatsApp, telefone ou e-mail, texto livre).
+- O título de cada bloco acompanha o **nome** digitado ("Recomendação 1" vira "Ana Souza").
 - **Adicionar recomendação** cria mais blocos; a lixeira remove um bloco. O topo conta as recomendações preenchidas (nome ou contato).
+- Na versão consultor, o **roteiro** da 5.2 já abre junto (perguntas para pedir indicações).
+- **Modelos de mensagem** (lado a lado, editáveis em `src/config/mensagens.ts`): à esquerda, a mensagem **para o cliente** (agradecimento pela reunião e pedido de indicação, com o primeiro nome do cliente); à direita, a mensagem **para amigos e familiares**, que o cliente encaminha (com "[Nome]" ou o primeiro nome de uma indicação escolhida em "Personalizar para"). Cada uma tem **Copiar** e **WhatsApp** (a do cliente abre a conversa com o telefone do cadastro).
+- **Finalizar recomendações** (como "Finalizar coleta") encerra a etapa; na versão consultor, a página segue para o diagnóstico completo. "Reabrir recomendações" desfaz.
 - Enquanto nada estiver preenchido, a versão consultor mostra **Fechar recomendações**: a 5.2 sai do diagnóstico e o botão volta.
-- As recomendações ficam salvas com o cliente (`recomendacoes`, e a data do clique em `recomendacoesAbertas`), entram no backup JSON e não vão para o PDF do diagnóstico. "Reabrir coleta" esconde a 5.2 junto com as etapas 5 e 6, sem apagar nada.
+- As recomendações ficam salvas com o cliente (`recomendacoes`; datas em `recomendacoesAbertas` e `recomendacoesFinalizadas`), entram no backup JSON e não vão para o PDF do diagnóstico. "Reabrir coleta" esconde a 5.2 junto com as etapas 5 e 6, sem apagar nada.
 
 ### Balanço patrimonial
-- **Ativos** = imóveis + móveis + reserva + investimentos + previdência + participação em empresa.
+- **Ativos** = imóveis + móveis + reserva + investimentos + previdência + participação em empresa + FGTS (com "Tem saldo de FGTS? Sim").
 - **Ativos** também incluem a reserva de emergência (Proteção).
 - **Passivos** = saldo dos financiamentos (seção 8 + bens não quitados do Patrimônio) + empréstimos. Saldo não informado é estimado pelo **valor presente** das parcelas restantes a uma taxa de referência (imóvel 10% a.a., veículo 18%, outros 20%, empréstimo 35% — `TAXAS_REFERENCIA` em `calculos.ts`).
 - Consórcio não é passivo: é compromisso mensal (entra nas parcelas).
@@ -116,7 +129,7 @@ Retorno nominal = `(1 + inflação) × (1 + retorno real) − 1`.
 ### Objetivos
 - `Aporte mensal = valor futuro × i ÷ ((1 + i)^meses − 1)`, com `i` = retorno nominal mensal.
 - Objetivo sem prazo não tem aporte calculado e não soma no total (o pilar pede o prazo).
-- **Probabilidade sugerida** ("sug." ao lado da régua): a sobra livre do mês (depois dos aportes em projetos) é distribuída entre os objetivos na ordem Essencial → Desejo → Sonho e, dentro de cada grupo, por prioridade. A sugestão é a parte do aporte que a sobra livre cobre, limitada a 95%. O consultor decide o valor final.
+- **Cobertura de cada objetivo** (rodapé do cartão, versão consultor): a sobra livre do mês (depois dos aportes em projetos) é distribuída entre os objetivos na ordem Essencial → Desejo → Sonho e, dentro de cada grupo, por prioridade; a cobertura é a parte do aporte que a sobra livre cobre (0 a 100%). As probabilidades (atual e com o plano) saíram na versão 11.
 
 ### Proteção — o que contratar (6.3 · Plano potencial)
 ```
@@ -142,13 +155,13 @@ A contratar        = max(0, capital necessário − seguro de vida individual at
 Renda desejada  = informada (ou custo de vida × fator do estilo de vida: mais simples 0,7 · igual a hoje 1,0 · mais confortável 1,3 · sofisticado 1,6)
 Outras rendas   = informada (ou aluguéis + pensão/aposentadoria atuais; juros e dividendos ficam de fora porque o capital que os gera já está na projeção)
 Patrimônio necessário = (renda desejada − outras rendas) × 12 ÷ 4%    (25×)
-Projeção = investimentos + previdência hoje (sem a reserva), investindo todo mês o "investimento mensal" (ou, em branco, a sobra livre), a retorno real
+Projeção = investimentos + previdência hoje (sem a reserva), investindo todo mês o "quanto consegue poupar" do ponto de partida (ou, em branco, a sobra livre), a retorno real
 Independência = projeção ÷ patrimônio necessário
 Aporte necessário = aporte mensal que leva o patrimônio de hoje ao necessário até a idade de aposentadoria
 ```
 Valores reais (R$ de hoje).
 
-**Simulação (6.5):** quatro réguas deslizantes — investimento mensal (com atalhos "mínimo" e "máximo" da poupança declarada), rentabilidade real, idade de aposentadoria e renda desejada — refazem a conta na hora. A simulação fica salva no cliente (não altera os dados da coleta); "Voltar aos dados da coleta" desfaz. Com a simulação ativa, o gráfico mostra as duas trajetórias (simulação × dados da coleta).
+**Simulação (6.5):** quatro réguas deslizantes — investimento mensal (com o atalho "Consegue poupar: R$ X/mês" do ponto de partida), rentabilidade real, idade de aposentadoria e renda desejada — refazem a conta na hora. A simulação fica salva no cliente (não altera os dados da coleta); "Voltar aos dados da coleta" desfaz. Com a simulação ativa, o gráfico mostra as duas trajetórias (simulação × dados da coleta).
 
 **Patrimônio ao longo da vida:** até os 95 anos. Antes da aposentadoria o patrimônio recebe o aporte mensal; depois, paga todo mês a renda que falta (renda desejada − outras rendas). Se o saldo zerar, o sistema mostra a idade em que o patrimônio acaba.
 
@@ -193,7 +206,7 @@ Cada plano é uma lista de cartões com três colunas:
 
 | Plano | Colunas | Origem dos cartões automáticos |
 |---|---|---|
-| 6.2 Plano atual | Diagnóstico · Motivo · Risco da inação | `planoAtual()`: déficit ou poupança < 20%, aportes em projetos acima da sobra, essencial > 50%, estilo e desejos > 30%, anuidade, dívidas caras, parcelas acima do limite, família descoberta, renda sem invalidez/DIT, bens sem seguro, reserva incompleta, sem investimentos (com a sobra livre), PGBL no simplificado, independência abaixo da meta, objetivos maiores que a sobra livre ou com chance < 50%, mudanças de vida que apertam o orçamento e custo do inventário. Ordem: gravidade Alta → Média → Baixa. |
+| 6.2 Plano atual | Diagnóstico · Motivo · Risco da inação | `planoAtual()`: déficit ou poupança < 20%, aportes em projetos acima da sobra, essencial > 50%, estilo e desejos > 30%, anuidade, dívidas caras, parcelas acima do limite, família descoberta, renda sem invalidez/DIT, bens sem seguro, reserva incompleta, sem investimentos (com a sobra livre), PGBL no simplificado, independência abaixo da meta, objetivos maiores que a sobra livre, mudanças de vida que apertam o orçamento e custo do inventário. Ordem: gravidade Alta → Média → Baixa. Na tela, abas **Gravidade alta / média / baixa / Todas** (com a contagem) mostram um grupo por vez; abre na mais alta que tiver cartões. |
 | 6.3 Plano potencial | Oportunidade identificada · Como podemos atuar juntos · Objetivo desejado | As oportunidades da matriz (6.6), na ordem de potencial. Mostra 6 e "Ver mais". Abaixo, o cálculo de **Proteção · o que contratar**. |
 | 6.4 Plano otimização | Descrição · Motivo da escolha · Como melhorar | `planoOtimizacao()`: boa poupança, orçamento no 50-30-20, milhas, sem dívidas ou parcelas sob controle, imóveis quitados, patrimônio sólido, seguro de vida, invalidez, bens segurados, reserva completa, investimentos, previdência (PGBL com declaração completa), independência no caminho e mudanças que aliviam o orçamento. |
 
@@ -248,10 +261,7 @@ Quatro direções, cada uma com nota de 0 a 100 (média ponderada dos indicadore
 - As ações da bússola usam os mesmos códigos das sugestões e oportunidades equivalentes: levar uma delas ao plano marca as outras como "No plano".
 - Cada ação vai ao plano de ação com um clique (versão consultor).
 
-### Plano de ação (6.8) e cronograma (7.2)
-- Cada ação tem área, prioridade (Alta, Média, Baixa), prazo (Curto, Médio, Longo) e status.
+### Plano de ação (6.8)
+- Cada ação tem área, prioridade (Alta, Média, Baixa), prazo (Curto: até 3 meses, Médio: 3 a 12, Longo: acima de 12) e status.
 - Áreas: Fluxo de caixa, Dívidas, Proteção, Futuro, Patrimonial, Investimentos, Sucessão, Fiscal/Tributário e Objetivos (a antiga área "Seguros" virou "Proteção").
-- O cronograma distribui as ações em **Curto (até 3 meses), Médio (3 a 12) e Longo (acima de 12)**, a partir da data do encontro de fechamento (ou de hoje).
-
-### Jornada (7.1)
-Encontros padrão: Conexão → Raio-X → Diagnóstico completo → Fechamento → Acompanhamento trimestral. Cada um tem data e status (Pendente, Agendada, Realizada). Encontros atrasados ou nos próximos 7 dias aparecem no sino do cabeçalho.
+- A antiga etapa Jornada (encontros e cronograma, com o sino de avisos no cabeçalho) saiu na versão 11.

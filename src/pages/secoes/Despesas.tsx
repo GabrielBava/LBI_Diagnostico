@@ -1,10 +1,10 @@
 // 5 · Despesas — blocos (Casa, Mercado, Transporte...) com subcategorias.
 // Cada bloco é um cartão recolhível; os grupos e itens vêm de src/config/despesas.ts.
 // Subtotais e totais saem de despesas(c) para bater com os cálculos do diagnóstico.
-// As parcelas (8 · Financiamento e crédito) não são lançadas aqui; entram no total do diagnóstico.
+// As parcelas (8 · Financiamento, consórcio e FGTS) não são lançadas aqui; entram no total do diagnóstico.
 // Sem totais na tela de coleta: os valores aparecem no pré-diagnóstico.
 import { useState, type ReactNode } from "react";
-import { ChevronDown, Lock, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Lightbulb, Lock, Plus, Trash2 } from "lucide-react";
 import { GRUPOS_DESPESA, chaveDespesa, type GrupoDespesa } from "@/config/despesas";
 import { CampoMoeda } from "@/components/campos";
 import { Botao, SubBloco } from "@/components/ui";
@@ -38,7 +38,7 @@ function ValorTravado({ valor }: { valor: number }) {
   );
 }
 
-/** Blocos que aparecem na tela (as parcelas são lançadas em 8 · Financiamento e crédito). */
+/** Blocos que aparecem na tela (as parcelas são lançadas em 8 · Financiamento, consórcio e FGTS). */
 const GRUPOS_NA_TELA = GRUPOS_DESPESA.filter((g) => !g.foraDaTela);
 
 /** Nome da seção de origem das linhas automáticas. */
@@ -53,6 +53,20 @@ function LinkSecao({ id, children }: { id: string; children: ReactNode }) {
     </button>
   );
 }
+
+/** Dica de cada bloco: o que é despesa fixa e o que é variável. */
+const DICA_BLOCO: Record<Bloco, { titulo: string; resumo: string; exemplo: string }> = {
+  Fixa: {
+    titulo: "Despesas fixas",
+    resumo: "se repetem todo mês, quase sempre no mesmo valor",
+    exemplo: "As contas básicas que chegam todo mês: casa (aluguel, condomínio, luz), mercado, transporte, saúde, escola, seguros e parcelas.",
+  },
+  Variável: {
+    titulo: "Despesas variáveis",
+    resumo: "mudam de um mês para o outro, conforme o quanto e quantas vezes você usa",
+    exemplo: "Gastos que sobem ou descem com o uso: restaurantes e delivery, lazer, roupas, assinaturas, esportes e viagens. Num mês tem mais, no outro tem menos.",
+  },
+};
 
 export default function Despesas() {
   const { cliente, atualizar, setLista } = useCliente();
@@ -246,11 +260,26 @@ export default function Despesas() {
     );
   };
 
-  const parte = (bloco: Bloco) => (
-    <SubBloco titulo={bloco === "Fixa" ? "Despesas fixas" : "Despesas variáveis"}>
-      <div className="grid items-start gap-3 lg:grid-cols-2">{GRUPOS_NA_TELA.filter((g) => g.bloco === bloco).map(cartaoGrupo)}</div>
-    </SubBloco>
-  );
+  const parte = (bloco: Bloco) => {
+    const dica = DICA_BLOCO[bloco];
+    return (
+      <SubBloco
+        titulo={
+          // Dica ao lado do título (como em Objetivos), em palavras simples para o consultor e o cliente.
+          <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="text-foreground">{dica.titulo}</span>
+            <span className="font-normal normal-case tracking-normal">· {dica.resumo}</span>
+          </span>
+        }
+      >
+        <p className="-mt-1 mb-3 flex items-start gap-1.5 text-xs text-muted-foreground">
+          <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+          <span>{dica.exemplo}</span>
+        </p>
+        <div className="grid items-start gap-3 lg:grid-cols-2">{GRUPOS_NA_TELA.filter((g) => g.bloco === bloco).map(cartaoGrupo)}</div>
+      </SubBloco>
+    );
+  };
 
   return (
     <div className="space-y-4">

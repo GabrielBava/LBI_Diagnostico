@@ -76,6 +76,8 @@ export interface SecaoDef {
   concluida?: (c: Cliente) => boolean;
   /** Só aparece quando esta condição vale (além da regra das etapas liberadas após a coleta). */
   liberada?: (c: Cliente) => boolean;
+  /** Na versão consultor, o roteiro da conversa já começa aberto. */
+  roteiroAberto?: boolean;
 }
 
 const temValor = (itens: { [k: string]: unknown }[], campo: string) => itens.some((i) => n(i[campo] as never) > 0);
@@ -235,6 +237,7 @@ export const SECOES: SecaoDef[] = [
     subtitulo: "Indicações do cliente: nome e contato",
     icone: UserPlus,
     liberada: (c) => !!c.recomendacoesAbertas,
+    roteiroAberto: true,
   },
 
   // Etapa 6 · Diagnóstico completo

@@ -1,10 +1,10 @@
-// 8 · Financiamento e crédito — os bens financiados do Patrimônio aparecem aqui
+// 8 · Financiamento, consórcio e FGTS — os bens financiados do Patrimônio aparecem aqui
 // somente leitura (edição em 7 · Patrimônio); abaixo, financiamentos avulsos,
-// consórcios (com administradora) e dívidas (com categoria). Sem totais no topo.
+// consórcios (com administradora), dívidas (com categoria) e o FGTS. Sem totais no topo.
 // As parcelas daqui entram no total de despesas (não são lançadas em 5 · Despesas).
 import { Car, Home, Lock, Pencil } from "lucide-react";
-import { CAMPOS_CONSORCIO, CAMPOS_EMPRESTIMO, CAMPOS_FINANCIAMENTO } from "@/config/campos";
-import { Rotulo } from "@/components/campos";
+import { CAMPOS_CONSORCIO, CAMPOS_EMPRESTIMO, CAMPOS_FGTS, CAMPOS_FINANCIAMENTO } from "@/config/campos";
+import { Formulario, Rotulo } from "@/components/campos";
 import { ListaItens } from "@/components/ListaEditor";
 import { Botao, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
@@ -22,7 +22,7 @@ function Dado({ rotulo, valor }: { rotulo: string; valor: string }) {
 }
 
 export default function Dividas() {
-  const { cliente, setLista, irPara } = useCliente();
+  const { cliente, setLista, setCampo, irPara } = useCliente();
   const dv = dividas(cliente);
   const temDoPatrimonio = dv.doPatrimonio.length > 0;
   return (
@@ -87,6 +87,9 @@ export default function Dividas() {
           textoAdicionar="Adicionar dívida ou empréstimo"
           tituloItem={(x, i) => [s(x.categoria), s(x.instituicao)].filter(Boolean).join(" · ") || `Dívida ${i + 1}`}
         />
+      </SubBloco>
+      <SubBloco titulo="Fundo de garantia (FGTS)">
+        <Formulario campos={CAMPOS_FGTS} dados={cliente.fgts} cliente={cliente} colunas={4} onChange={(k, v) => setCampo("fgts", k, v)} />
       </SubBloco>
     </div>
   );

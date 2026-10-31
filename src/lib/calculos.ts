@@ -9,7 +9,7 @@
 import type { Cliente, Item, Secao, Valor } from "@/types";
 import { DEPENDENTES_ESCOLARES, ESTILOS_VIDA, HORIZONTES_PADRAO_VIDA, OPCOES, bemFinanciado } from "@/config/campos";
 import { GRUPOS_DESPESA, MODELO_50_30_20, chaveDespesa, type ParteModelo } from "@/config/despesas";
-import { brutaDeLiquida, liquidaDeBruta } from "@/config/tributos";
+import { brutaDeLiquida, brutaDeLiquidaPJ, liquidaDeBruta, liquidaDeBrutaPJ } from "@/config/tributos";
 
 // ---------------------------------------------------------------------
 //  Leitura segura de valores
@@ -212,18 +212,30 @@ export const RENDA_FUTURA = ["Aluguel", "Pensão / Aposentadoria"];
  * Bruta e líquida de uma pessoa. Se só uma for informada, a outra é estimada
  * pelas tabelas de INSS/IR (src/config/tributos.ts).
  */
-export function brutaLiquida(bruta: Valor, liquida: Valor) {
+/** Regime da renda principal: "PJ" usa as deduções do PJ; qualquer outro valor (ou em branco), CLT. */
+export const regimeRenda = (v: Valor): "CLT" | "PJ" => (s(v) === "PJ" ? "PJ" : "CLT");
+
+export function brutaLiquida(bruta: Valor, liquida: Valor, regime: "CLT" | "PJ" = "CLT") {
   const b = nOpt(bruta);
   const l = nOpt(liquida);
+  const deLiquida = regime === "PJ" ? brutaDeLiquidaPJ : brutaDeLiquida;
+  const deBruta = regime === "PJ" ? liquidaDeBrutaPJ : liquidaDeBruta;
   if (l !== undefined && l > 0)
-    return { bruta: b && b > 0 ? b : brutaDeLiquida(l), liquida: l, estimada: b && b > 0 ? undefined : ("bruta" as const) };
-  if (b !== undefined && b > 0) return { bruta: b, liquida: liquidaDeBruta(b), estimada: "liquida" as const };
-  return { bruta: 0, liquida: 0, estimada: undefined };
+    return { bruta: b && b > 0 ? b : deLiquida(l), liquida: l, estimada: b && b > 0 ? undefined : ("bruta" as const), regime };
+  if (b !== undefined && b > 0) return { bruta: b, liquida: deBruta(b), estimada: "liquida" as const, regime };
+  return { bruta: 0, liquida: 0, estimada: undefined, regime };
 }
 
 export function renda(c: Cliente) {
-  const cliente = brutaLiquida(c.renda.brutaCliente, c.renda.liquidaCliente);
-  const conjuge = temConjuge(c) ? brutaLiquida(c.renda.brutaConjuge, c.renda.liquidaConjuge) : brutaLiquida(0, 0);
+  const regimeCliente = regimeRenda(c.renda.regimeCliente);
+  const regimeConjuge = regimeRenda(c.renda.regimeConjuge);
+  const cliente = brutaLiquida(c.renda.brutaCliente, c.renda.liquidaCliente, regimeCliente);
+  const conjuge = temConjuge(c) ? brutaLiquida(c.renda.brutaConjuge, c.renda.liquidaConjuge, regimeConjuge) : brutaLiquida(0, 0, regimeConjuge);
+  // Benefícios do CLT (vale-refeição/alimentação e vale-transporte): entram na renda total, como na calculadora CLT x PJ.
+  const beneficioCliente = regimeCliente === "CLT" ? Math.max(0, n(c.renda.valeRefeicao)) + Math.max(0, n(c.renda.valeTransporte)) : 0;
+  const beneficioConjuge =
+    temConjuge(c) && regimeConjuge === "CLT" ? Math.max(0, n(c.renda.valeRefeicaoConjuge)) + Math.max(0, n(c.renda.valeTransporteConjuge)) : 0;
+  const beneficios = beneficioCliente + beneficioConjuge;
   // Renda marcada como do cônjuge só conta se o cadastro tiver cônjuge.
   const validas = c.outrasRendas.filter((r) => temConjuge(c) || s(r.pessoa) !== "Cônjuge");
   const outras = soma(validas, mensal);
@@ -259,12 +271,16 @@ export function renda(c: Cliente) {
     bonusAnual,
     /** 13º + bônus anual ÷ 12. */
     anualMensal,
+    /** Vale-refeição/alimentação e vale-transporte (só CLT), cliente + cônjuge. */
+    beneficios,
+    beneficioCliente,
+    beneficioConjuge,
     outras,
     outrasPorPessoa,
     passiva,
     futura,
-    /** Renda familiar líquida mensal (13º e bônus como média mensal). */
-    total: cliente.liquida + extra + anualMensal + conjuge.liquida + outras,
+    /** Renda familiar líquida mensal (13º e bônus como média mensal; benefícios do CLT incluídos). */
+    total: cliente.liquida + extra + anualMensal + beneficios + conjuge.liquida + outras,
     brutaTotal: cliente.bruta + conjuge.bruta,
   };
 }
@@ -335,7 +351,7 @@ export function despesas(c: Cliente) {
       soma(extras, (e) => n(e.valor)) +
       (auto[g.id] ?? []).reduce((t, x) => t + x.valor, 0);
     let automatico = false;
-    // Parcelas (8 · Financiamento e crédito) e dependentes (4 · Sucessão) vêm de outras seções.
+    // Parcelas (8 · Financiamento, consórcio e FGTS) e dependentes (4 · Sucessão) vêm de outras seções.
     if (g.automatico === "dividas") {
       valor = dv.parcelas;
       automatico = true;
@@ -384,7 +400,7 @@ export function fluxo(c: Cliente) {
     /** Sobra depois dos aportes em projetos (o que fica livre para investir). */
     sobraLivre: sobra - aportes,
     taxaPoupanca: r.total > 0 ? sobra / r.total : 0,
-    // Parcelas de 8 · Financiamento e crédito (incluem os bens financiados do Patrimônio).
+    // Parcelas de 8 · Financiamento, consórcio e FGTS (incluem os bens financiados do Patrimônio).
     comprometimento: r.total > 0 ? d.parcelas / r.total : 0,
   };
 }
@@ -460,8 +476,10 @@ export function patrimonio(c: Cliente) {
   const reserva = sim(c.protecao.temReserva) ? n(c.protecao.valorReserva) : 0;
   const previdencia = sim(c.protecao.temPrevidencia) ? n(c.protecao.valorPrevidencia) : 0;
   const empresa = sim(c.corporativo.possuiEmpresa) ? n(c.corporativo.valorParticipacao) : 0;
+  // FGTS (8 · Financiamento, consórcio e FGTS): é do cliente, mas só sai em situações previstas em lei.
+  const fgts = sim(c.fgts.temFgts) ? Math.max(0, n(c.fgts.saldoFgts)) : 0;
   const dv = dividas(c);
-  const ativos = imoveis + moveis + reserva + investimentos + previdencia + empresa;
+  const ativos = imoveis + moveis + reserva + investimentos + previdencia + empresa + fgts;
   return {
     imoveis,
     moveis,
@@ -469,6 +487,7 @@ export function patrimonio(c: Cliente) {
     investimentos,
     previdencia,
     empresa,
+    fgts,
     /** Recursos financeiros: reserva + investimentos + previdência. */
     financeiro: reserva + investimentos + previdencia,
     ativos,
@@ -481,6 +500,7 @@ export function patrimonio(c: Cliente) {
       { nome: "Investimentos", valor: investimentos },
       { nome: "Previdência privada", valor: previdencia },
       { nome: "Participação em empresa", valor: empresa },
+      { nome: "FGTS", valor: fgts },
     ],
     linhasPassivo: [
       { nome: "Financiamentos (saldo)", valor: dv.saldoFin },
@@ -513,10 +533,10 @@ export function objetivo(c: Cliente, o: Item) {
 }
 
 /**
- * Probabilidade sugerida: distribui a sobra livre do mês (depois dos aportes em
+ * Cobertura dos objetivos: distribui a sobra livre do mês (depois dos aportes em
  * projetos) entre os objetivos na ordem Essencial → Desejo → Sonho e, dentro de cada
- * um, por prioridade. A sugestão é a parte do aporte necessário que a sobra livre
- * consegue cobrir (limitada a 95%).
+ * um, por prioridade. `sugestao` (cobertura) é a parte do aporte necessário que a
+ * sobra livre consegue cobrir, de 0 a 100%, em passos de 5.
  */
 export function objetivos(c: Cliente) {
   const sobra = Math.max(0, fluxo(c).sobraLivre);
@@ -533,7 +553,7 @@ export function objetivos(c: Cliente) {
     aportes[o.id] = aporte;
     const coberto = aporte > 0 ? Math.min(aporte, disponivel) : 0;
     disponivel -= coberto;
-    sugestao[o.id] = aporte > 0 ? Math.min(95, Math.round(((coberto / aporte) * 100) / 5) * 5) : 0;
+    sugestao[o.id] = aporte > 0 ? Math.min(100, Math.floor(((coberto / aporte) * 100) / 5) * 5) : 0;
   });
   const aporteTotal = Object.values(aportes).reduce((t, x) => t + x, 0);
   const porTipo = (t: string) => c.objetivos.filter((o) => s(o.tipo) === t);

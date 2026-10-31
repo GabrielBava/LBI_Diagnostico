@@ -1,4 +1,4 @@
-// 12 · Futuro (Etapa 3): idade de aposentadoria, investimento mensal, renda desejada, outras fontes,
+// 12 · Futuro (Etapa 3): idade de aposentadoria, renda desejada, outras fontes,
 // estilo de vida e mudanças de vida programadas (impacto, quando e quanto).
 // A projeção de independência financeira fica em 6.5 · Futuro. Com a renda desejada
 // em branco, o cálculo usa o custo de vida × fator do estilo (ESTILOS_VIDA), sem exibir aqui.

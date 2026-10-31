@@ -83,7 +83,7 @@ export const ROTEIRO: Record<string, Roteiro> = {
     atencao: [
       "Gastos anuais: divida por 12.",
       "Dependentes vêm de Sucessão; manutenção e IPVA dos veículos, do Patrimônio; anuidade dos cartões, da Renda.",
-      "Parcelas de financiamentos e dívidas não entram aqui: são lançadas em 8 · Financiamento e crédito e somadas no total.",
+      "Parcelas de financiamentos e dívidas não entram aqui: são lançadas em 8 · Financiamento, consórcio e FGTS e somadas no total.",
       "Algo fora da lista? Use “+ Adicionar item” dentro do bloco.",
       "Confira com as faturas do cartão: os gastos variáveis costumam ser subestimados.",
     ],

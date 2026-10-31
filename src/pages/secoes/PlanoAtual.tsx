@@ -81,6 +81,7 @@ export default function PlanoAtual() {
       nome: `13º e bônus (${fmtBRL(r.decimoTerceiro + r.bonusAnual)}/ano ÷ 12)`,
       valor: r.anualMensal,
     },
+    { nome: "Benefícios do CLT (vale-refeição/alimentação e vale-transporte)", valor: r.beneficios },
     { nome: "Renda líquida do cônjuge", valor: r.conjuge },
     { nome: "Outras rendas do cliente", valor: outrasPessoa("Cliente") },
     { nome: "Outras rendas do cônjuge", valor: outrasPessoa("Cônjuge") },

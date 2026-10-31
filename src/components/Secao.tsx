@@ -10,7 +10,7 @@ import { usePreferencias } from "@/lib/preferencias";
 export function Secao({ def, children }: { def: SecaoDef; children: ReactNode }) {
   const { cliente, atualizar } = useCliente();
   const { apresentacao } = usePreferencias();
-  const [roteiroAberto, setRoteiroAberto] = useState(false);
+  const [roteiroAberto, setRoteiroAberto] = useState(!!def.roteiroAberto);
   const oculta = secaoOculta(cliente, def);
   const naoAplica = !!cliente.naoAplica[def.id];
   const ok = def.coleta && secaoConcluida(cliente, def);
