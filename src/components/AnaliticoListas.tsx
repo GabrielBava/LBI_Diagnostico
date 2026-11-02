@@ -1,12 +1,15 @@
 // Listas editáveis do 8 · Analítico (dores, notas, perfil…): cada item tem uma
 // frase curta e, quando houver, o trecho da fala do cliente que o sustenta.
+// Cada card mostra os 3 primeiros itens (os mais importantes); "Ver mais" abre o resto.
 import { useState, type ReactNode } from "react";
-import { Check, Pencil, Quote, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, Pencil, Quote, Trash2, X } from "lucide-react";
 import type { ItemAnalise } from "@/lib/analitico-tipos";
 import { uid } from "@/lib/format";
 import { BotaoAdicionar, Selo } from "./ui";
 
 const NOVO = "__novo__";
+/** Itens mostrados em cada card antes do "Ver mais". */
+export const ITENS_VISIVEIS = 3;
 const botaoIcone = "rounded-md p-1.5 text-muted-foreground transition hover:bg-muted/60 hover:text-foreground";
 
 export function ListaAnalise({
@@ -39,6 +42,10 @@ export function ListaAnalise({
   // Item em edição (NOVO = item ainda não salvo, que só entra na lista ao salvar).
   const [editando, setEditando] = useState<string | null>(null);
   const [rascunho, setRascunho] = useState<ItemAnalise | null>(null);
+  const [todos, setTodos] = useState(false);
+  // O item em edição continua visível mesmo depois do terceiro.
+  const visiveis = todos ? itens : itens.filter((i, idx) => idx < ITENS_VISIVEIS || i.id === editando);
+  const escondidos = itens.length - visiveis.length;
 
   const abrir = (item: ItemAnalise) => {
     setEditando(item.id);
@@ -132,7 +139,7 @@ export function ListaAnalise({
       </div>
       {itens.length === 0 && editando !== NOVO && <p className="mb-3 text-xs text-muted-foreground">{vazio}</p>}
       <ul className="mb-3 space-y-2">
-        {itens.map((item, idx) =>
+        {visiveis.map((item, idx) =>
           editando === item.id && rascunho ? (
             formulario(item.id)
           ) : (
@@ -171,6 +178,17 @@ export function ListaAnalise({
         )}
         {editando === NOVO && formulario(NOVO)}
       </ul>
+      {(escondidos > 0 || (todos && itens.length > ITENS_VISIVEIS)) && (
+        <button
+          type="button"
+          onClick={() => setTodos(!todos)}
+          aria-expanded={todos}
+          className="no-print -mt-1 mb-3 inline-flex items-center gap-1 self-start rounded-md px-1.5 py-1 text-xs font-semibold text-primary hover:bg-primary/10"
+        >
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${todos ? "rotate-180" : ""}`} aria-hidden="true" />
+          {todos ? "Ver menos" : `Ver mais (${escondidos})`}
+        </button>
+      )}
       <div className="mt-auto">
         <BotaoAdicionar onClick={adicionar}>Adicionar</BotaoAdicionar>
       </div>

@@ -903,3 +903,11 @@
   background: var(--ouro);
   margin-left: 2pt;
 }
+
+/* Logo da capa: a imagem do Grupo Life Brasil (versão branca, como no modelo). */
+.rel .rel-logo-capa {
+  display: block;
+  height: 15mm;
+  width: auto;
+}
+

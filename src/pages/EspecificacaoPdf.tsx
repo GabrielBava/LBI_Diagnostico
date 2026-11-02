@@ -143,27 +143,27 @@ export default function PrecificacaoPdf() {
       )}
 
       <div className="px-3 py-6 print:p-0">
-        <article className="folha-especificacao mx-auto flex w-full max-w-[210mm] flex-col bg-white text-[12.5px] text-[#272c3d] shadow-xl print:shadow-none">
+        <article className="folha-especificacao mx-auto flex w-full max-w-[210mm] flex-col bg-white text-[11.5px] text-[#272c3d] shadow-xl print:shadow-none">
           {/* Cabeçalho azul-marinho */}
           <header className="bg-[#141C3B] text-white">
             <div className="h-1.5 bg-[#C7A340]" />
-            <div className="px-6 pb-5 pt-5 sm:px-[14mm]">
+            <div className="px-6 pb-4 pt-4 sm:px-[14mm]">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <Marca />
                 <span className="text-[10px] uppercase tracking-[0.2em] text-white/70">Emitida em {emissao}</span>
               </div>
-              <div className="mt-5 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#C7A340]">
+              <div className="mt-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-[#C7A340]">
                 {TEXTOS_PDF.marca} · {TEXTOS_PDF.submarca}
               </div>
               <div className="mt-2 h-0.5 w-10 bg-[#C7A340]" />
-              <h1 className="mt-3 text-[26px] font-semibold leading-tight sm:text-[30px]">{TEXTOS_PDF.titulo}</h1>
+              <h1 className="mt-2 text-[24px] font-semibold leading-tight sm:text-[26px]">{TEXTOS_PDF.titulo}</h1>
               <p className="mt-1 text-sm text-white/75">{TEXTOS_PDF.subtitulo}</p>
             </div>
           </header>
 
-          <div className="flex-1 space-y-4 px-6 py-5 sm:px-[14mm]">
+          <div className="flex-1 space-y-3 px-6 py-4 sm:px-[14mm]">
             {/* Dados da proposta */}
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-b border-[#e3dfd3] pb-4 sm:grid-cols-[1.6fr_1fr_1fr_1fr]">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-b border-[#e3dfd3] pb-3 sm:grid-cols-[1.6fr_1fr_1fr_1fr]">
               {[
                 ["Cliente", conjuge?.nome ? `${nome} e ${conjuge.nome}` : nome],
                 ["Data de emissão", emissao],
@@ -177,14 +177,12 @@ export default function PrecificacaoPdf() {
               ))}
             </dl>
 
-            <p className="leading-relaxed text-[#3a3f52]">{TEXTOS_PDF.introducao}</p>
-
             {/* Modelo de consultoria: o que inclui, cronograma e regras de entrada */}
             <Bloco titulo={`Modelo de consultoria · ${e.modelo.nome}`}>
               <p className="mb-2 leading-snug text-[#3a3f52]">
                 {e.modelo.resumo} <strong className="text-[#141C3B]">Duração: {e.modelo.duracao} · até {e.modelo.reunioes} reuniões.</strong>
               </p>
-              <ul className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+              <ul className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
                 {e.modelo.inclui.map((item) => (
                   <li key={item} className="flex gap-2 leading-snug">
                     <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#141C3B] text-[#E3C77A]">
@@ -198,7 +196,7 @@ export default function PrecificacaoPdf() {
 
             <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
               <Bloco titulo="Cronograma">
-                <ol className="space-y-1.5 border-l-2 border-[#C7A340] pl-3">
+                <ol className="space-y-1 border-l-2 border-[#C7A340] pl-3 text-[11px]">
                   {e.modelo.cronograma.map((c) => (
                     <li key={c.quando} className="leading-snug">
                       <span className="font-semibold text-[#141C3B]">{c.quando}:</span> {c.oque}
@@ -207,7 +205,7 @@ export default function PrecificacaoPdf() {
                 </ol>
               </Bloco>
               <Bloco titulo="Regras de entrada">
-                <ul className="list-disc space-y-1 pl-4 leading-snug">
+                <ul className="list-disc space-y-0.5 pl-4 text-[11px] leading-snug">
                   {e.modelo.regras.map((r) => (
                     <li key={r}>{r}</li>
                   ))}
@@ -215,7 +213,7 @@ export default function PrecificacaoPdf() {
               </Bloco>
             </div>
 
-            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+            <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
               <Bloco titulo="Base de cálculo">
                 <dl className="divide-y divide-[#eeebe3]">
                   {e.valorManual ? null : e.simulada ? (
@@ -255,9 +253,9 @@ export default function PrecificacaoPdf() {
                 </p>
               </Bloco>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <Bloco titulo={condicoes.length > 1 ? "Condições de pagamento" : "Condição de pagamento"}>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {condicoes.map((x) => (
                       <CaixaCondicao key={x} e={e} condicao={x} />
                     ))}
@@ -277,9 +275,9 @@ export default function PrecificacaoPdf() {
             </div>
 
             {/* Aceite */}
-            <section className="break-inside-avoid pt-2">
+            <section className="break-inside-avoid pt-1">
               <p className="text-[#3a3f52]">{TEXTOS_PDF.aceite}</p>
-              <div className="mt-12 grid gap-10 sm:grid-cols-2">
+              <div className="mt-7 grid gap-10 sm:grid-cols-2">
                 {[
                   [nome, "Cliente"],
                   [cfg.consultor || "Consultor", `Consultor · ${cfg.empresa || TEXTOS_PDF.submarca}`],
@@ -291,7 +289,7 @@ export default function PrecificacaoPdf() {
                   </div>
                 ))}
               </div>
-              <p className="mt-4 text-[11px] text-[#6b7080]">Local e data: ____________________________________________</p>
+              <p className="mt-2 text-[11px] text-[#6b7080]">Local e data: ____________________________________________</p>
             </section>
           </div>
 

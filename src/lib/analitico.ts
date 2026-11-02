@@ -183,7 +183,7 @@ Regras:
 - O perfil DISC é uma sugestão baseada só no jeito de falar e agir observado na reunião, não um diagnóstico psicológico. Use "confianca" baixa quando houver poucas falas do cliente.
 - Não repita dados sensíveis (CPF, números de conta, senhas, endereço).
 - Se a transcrição for curta, ruim ou não parecer uma reunião com cliente, devolva listas curtas ou vazias e explique em "observacoes". Lista vazia é melhor que item inventado.
-- Ordene cada lista do mais importante para o menos importante: de 3 a 8 itens quando houver base, nunca mais de 12.
+- Resuma: em cada lista, os 3 primeiros itens devem ser os mais importantes (é o que o planejador vê primeiro). Ordene do mais importante para o menos importante; inclua no máximo 6 itens por lista, e só quando houver base.
 
 O que cada campo significa:
 - dores: problemas e incômodos que o cliente vive hoje com dinheiro, família, trabalho ou patrimônio (o que dói agora).
@@ -308,7 +308,7 @@ ${MODELO_JSON}`;
   };
 }
 
-/** Texto único para colar no claude.ai (lá não há campo de instruções do sistema). */
+/** Texto único para colar na IA escolhida pelo planejador (Claude, ChatGPT, Gemini…). */
 export const promptParaCopiar = (p: Pedido) =>
   `# Instruções\n${p.sistema}\n\n# Reunião e diagnóstico\n${p.usuario}\n\nDevolva só o JSON, em um único bloco de código.`;
 

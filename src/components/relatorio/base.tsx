@@ -2,6 +2,7 @@
 // abertura de capítulo, sumário, tabelas, cartões e caixas do modelo LIFE.
 import { useId, type CSSProperties, type ReactNode } from "react";
 import { RELATORIO, type CapituloRelatorio } from "@/config/relatorio";
+import logoCapa from "@/assets/logo/grupo-life-brasil-branco.png";
 
 export const COR = {
   azul: "#141c3b",
@@ -163,13 +164,18 @@ export function FolhaAbertura({ capitulo, frase, info, numero, total }: { capitu
 }
 
 /** Capa azul-marinho com faixas douradas. */
+/** Logo do Grupo Life Brasil (versão branca, a mesma do modelo) para a capa azul-marinho. */
+function LogoCapa() {
+  return <img src={logoCapa} alt="Grupo Life Brasil" className="rel-logo-capa" />;
+}
+
 export function FolhaCapa({ cliente, emitido, email, plataforma, assinatura }: { cliente: string; emitido: string; email: string; plataforma: string; assinatura: string }) {
   const c = RELATORIO.capa;
   return (
     <section className="rel-folha rel-capa">
       <div className="rel-faixa" />
       <div className="rel-capa-conteudo">
-        <LogoLife />
+        <LogoCapa />
         <div className="rel-capa-sistema">{RELATORIO.sistema}</div>
         <div className="rel-capa-regua" />
         <div className="rel-capa-sub">{c.subtitulo}</div>

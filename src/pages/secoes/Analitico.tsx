@@ -1,5 +1,5 @@
 // Etapa 8 · Analítico do Planejador (só na versão consultor).
-// 8.1 transcrições da reunião (Parte 1, Parte 2…) e análise por IA (Claude);
+// 8.1 transcrições da reunião (Parte 1, Parte 2…) e análise pela IA escolhida pelo planejador;
 // 8.2 dores, preocupações e gatilhos; 8.3 notas do planejador; 8.4 perfil DISC.
 // Tudo é editável à mão e fica salvo em cliente.analitico.
 import { useMemo, useRef, useState, type ReactNode } from "react";
@@ -70,7 +70,7 @@ function SemAnalise({ irPara }: { irPara: (id: string) => void }) {
       <button type="button" onClick={() => irPara("transcricoes")} className="font-semibold text-primary underline-offset-2 hover:underline">
         8.1
       </button>
-      e clique em "Analisar com IA", ou escreva os itens à mão.
+      e gere a análise com a sua IA (ou escreva os itens à mão).
     </p>
   );
 }

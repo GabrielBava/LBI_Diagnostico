@@ -4,7 +4,7 @@
 export const APP = {
   nome: "Diagnóstico LIFE",
   slogan: "Financial Operating System™",
-  versao: "v11.0.0",
+  versao: "v12.0.0",
 };
 
 export interface ConfigConsultor {
@@ -16,7 +16,22 @@ export interface ConfigConsultor {
   claudeChave: string;
   /** Modelo do Claude usado na análise da reunião. */
   claudeModelo: string;
+  /** IA escolhida pelo planejador no 8 · Analítico (id de PLATAFORMAS_IA). */
+  iaPlataforma: string;
 }
+
+/**
+ * IAs que o planejador pode usar no 8 · Analítico: copia o prompt, abre a plataforma e cola o
+ * resultado de volta. "api" analisa direto pelo Claude com a chave da API (Configurações).
+ */
+export const PLATAFORMAS_IA = [
+  { id: "claude", nome: "Claude", url: "https://claude.ai/new" },
+  { id: "chatgpt", nome: "ChatGPT", url: "https://chatgpt.com/" },
+  { id: "gemini", nome: "Gemini", url: "https://gemini.google.com/app" },
+  { id: "copilot", nome: "Copilot", url: "https://copilot.microsoft.com/" },
+  { id: "outra", nome: "Outra IA", url: "" },
+  { id: "api", nome: "Claude automático (chave da API)", url: "" },
+];
 
 /** Modelos do Claude oferecidos nas Configurações (o primeiro é o padrão). */
 export const MODELOS_CLAUDE = [
@@ -31,4 +46,5 @@ export const CONFIG_PADRAO: ConfigConsultor = {
   email: "gabriel.bavaresco@grupolifebrasil.com.br",
   claudeChave: "",
   claudeModelo: MODELOS_CLAUDE[0].id,
+  iaPlataforma: "claude",
 };

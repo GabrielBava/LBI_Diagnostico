@@ -1,6 +1,7 @@
-// Painel "Analisar com IA" do 8 · Analítico: chama a API do Claude e mostra o
-// andamento; sem chave (ou sem internet), oferece copiar o prompt para o claude.ai
-// e colar a resposta de volta. O estado da análise é compartilhado entre 8.1 e 8.4.
+// Painel "Analisar com IA" do 8 · Analítico. O planejador escolhe a IA que usa (Claude, ChatGPT,
+// Gemini, Copilot ou outra): copia o prompt, abre a plataforma e cola o resultado de volta. Com a
+// opção "Claude automático", o app chama a API do Claude com a chave das Configurações e mostra o
+// andamento. O estado da análise é compartilhado entre 8.1 e 8.4.
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   AlertTriangle,
@@ -8,6 +9,7 @@ import {
   ClipboardPaste,
   Copy,
   Download,
+  ExternalLink,
   KeyRound,
   Loader2,
   Lock,
@@ -17,7 +19,7 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
-import { MODELOS_CLAUDE } from "@/config/defaults";
+import { MODELOS_CLAUDE, PLATAFORMAS_IA } from "@/config/defaults";
 import {
   AVISO_TOKENS_ENTRADA,
   ErroAnalise,
@@ -37,7 +39,7 @@ import type { AnaliseReuniao } from "@/lib/analitico-tipos";
 import { s } from "@/lib/calculos";
 import { useCliente } from "@/lib/cliente-context";
 import { fmtData, plural } from "@/lib/format";
-import { baixarArquivo, lerConfig } from "@/lib/storage";
+import { baixarArquivo, lerConfig, salvarConfig } from "@/lib/storage";
 import type { Cliente } from "@/types";
 import { Botao } from "./ui";
 
@@ -86,8 +88,15 @@ export function useConfigClaude() {
       window.removeEventListener("storage", reler);
     };
   }, []);
-  return { chave: cfg.claudeChave?.trim() ?? "", modelo: cfg.claudeModelo || MODELOS_CLAUDE[0].id };
+  const plataforma = PLATAFORMAS_IA.find((p) => p.id === cfg.iaPlataforma) ?? PLATAFORMAS_IA[0];
+  return { chave: cfg.claudeChave?.trim() ?? "", modelo: cfg.claudeModelo || MODELOS_CLAUDE[0].id, plataforma };
 }
+
+/** Guarda a IA escolhida (vale para todos os clientes deste navegador). */
+const escolherPlataforma = (id: string) => {
+  salvarConfig({ ...lerConfig(), iaPlataforma: id });
+  window.dispatchEvent(new Event("life:config"));
+};
 
 function useOnline() {
   const [online, setOnline] = useState(() => (typeof navigator === "undefined" ? true : navigator.onLine));
@@ -200,7 +209,7 @@ function Cronometro({ inicio }: { inicio: number }) {
 export function OrigemAnalise({ analise }: { analise?: AnaliseReuniao }) {
   if (!analise?.geradaEm) return null;
   const origem =
-    analise.origem === "colada" ? "resposta colada do claude.ai" : analise.origem === "ia" ? nomeModelo(analise.modelo) || "Claude" : "escrita à mão";
+    analise.origem === "colada" ? "resposta colada de uma IA" : analise.origem === "ia" ? nomeModelo(analise.modelo) || "Claude" : "escrita à mão";
   return (
     <p className="text-[11px] text-muted-foreground">
       Última análise: {fmtData(analise.geradaEm)} às {fmtHora(analise.geradaEm)} · {origem}
@@ -218,7 +227,8 @@ const juntarPartes = (partes: string[]) => (partes.length <= 3 ? partes.join(", 
 // ---------------------------------------------------------------------
 export function PainelAnalise({ compacto }: { compacto?: boolean }) {
   const { cliente, atualizar, irPara } = useCliente();
-  const { chave, modelo } = useConfigClaude();
+  const { chave, modelo, plataforma } = useConfigClaude();
+  const viaApi = plataforma.id === "api";
   const online = useOnline();
   const tarefa = useTarefa(cliente.id);
   const transcricoes = cliente.analitico.transcricoes;
@@ -244,7 +254,12 @@ export function PainelAnalise({ compacto }: { compacto?: boolean }) {
   };
   const analisar = () => comConfirmacao((modo) => void executarAnalise(cliente, atualizar, modo));
   const prompt = () => promptParaCopiar(montarPedido(cliente, cliente.analitico.transcricoes));
-  const copiar = async () => setCopia((await copiarTexto(prompt())) ? "ok" : "falhou");
+  const copiar = async () => {
+    const ok = await copiarTexto(prompt());
+    setCopia(ok ? "ok" : "falhou");
+    // Abre a IA escolhida numa aba nova, já com o prompt na área de transferência.
+    if (ok && plataforma.url) window.open(plataforma.url, "_blank", "noopener,noreferrer");
+  };
   const baixar = () => baixarArquivo(`prompt-analise-${s(cliente.cadastro.nome) || "cliente"}.txt`.replace(/\s+/g, "-"), prompt(), "text/plain;charset=utf-8");
   const aplicarColada = () => {
     try {
@@ -279,13 +294,18 @@ export function PainelAnalise({ compacto }: { compacto?: boolean }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="flex items-center gap-2 text-sm font-semibold">
-            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" /> Análise por IA (Claude)
+            <Sparkles className="h-4 w-4 text-primary" aria-hidden="true" /> Análise por IA · {viaApi ? "Claude automático" : plataforma.nome}
           </h3>
           <p className="mt-0.5 text-xs text-muted-foreground">{linhaTamanho}</p>
           {analise?.geradaEm ? <OrigemAnalise analise={analise} /> : <p className="text-[11px] text-muted-foreground">Nenhuma análise ainda.</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {chave ? (
+          {!viaApi ? (
+            <Botao variante="primario" onClick={copiar} disabled={semTranscricao} title="Copia as instruções, as transcrições e o resumo do diagnóstico">
+              <Copy className="h-4 w-4" /> {plataforma.url ? `Copiar prompt e abrir ${plataforma.nome}` : "Copiar prompt"}
+              {plataforma.url && <ExternalLink className="h-3.5 w-3.5 opacity-70" aria-hidden="true" />}
+            </Botao>
+          ) : chave ? (
             <Botao variante="primario" onClick={analisar} disabled={analisando || semTranscricao || grandeDemais} title={`Modelo: ${nomeModelo(modelo)}`}>
               {analisando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {analise?.geradaEm ? "Analisar de novo" : "Analisar com IA"}
@@ -314,17 +334,47 @@ export function PainelAnalise({ compacto }: { compacto?: boolean }) {
         </p>
       )}
 
-      {!chave && !compacto && (
-        <div className="rounded-lg border border-border bg-card p-3 text-xs text-muted-foreground">
-          <p>
-            Para analisar direto daqui, informe a <strong className="text-foreground">chave da API do Claude</strong> em{" "}
-            <button type="button" onClick={abrirConfiguracoes} className="font-semibold text-primary underline-offset-2 hover:underline">
-              Configurações
-            </button>{" "}
-            (engrenagem no topo). Sem chave, use o claude.ai: <strong className="text-foreground">Copiar prompt</strong> → cole numa conversa nova no claude.ai →
-            copie a resposta → <strong className="text-foreground">Colar resposta</strong>.
-          </p>
-        </div>
+      {/* IA do planejador: a escolha fica guardada neste navegador */}
+      <div role="radiogroup" aria-label="IA usada na análise" className="flex flex-wrap items-center gap-1.5">
+        <span className="mr-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Sua IA:</span>
+        {PLATAFORMAS_IA.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            role="radio"
+            aria-checked={plataforma.id === p.id}
+            onClick={() => escolherPlataforma(p.id)}
+            className={`h-8 rounded-full border px-3 text-[11px] font-medium transition ${
+              plataforma.id === p.id ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary/40" : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground"
+            }`}
+          >
+            {p.nome}
+          </button>
+        ))}
+      </div>
+
+      {!compacto && (
+        <p className="rounded-lg border border-border bg-card p-3 text-xs text-muted-foreground">
+          {viaApi ? (
+            chave ? (
+              <>O app manda as partes marcadas para o Claude ({nomeModelo(modelo)}) e preenche 8.2, 8.3 e 8.4 sozinho.</>
+            ) : (
+              <>
+                Para analisar direto daqui, informe a <strong className="text-foreground">chave da API do Claude</strong> em{" "}
+                <button type="button" onClick={abrirConfiguracoes} className="font-semibold text-primary underline-offset-2 hover:underline">
+                  Configurações
+                </button>{" "}
+                (engrenagem no topo), ou escolha outra IA acima.
+              </>
+            )
+          ) : (
+            <>
+              <strong className="text-foreground">1.</strong> {plataforma.url ? `Copie o prompt (abre o ${plataforma.nome} numa aba nova)` : "Copie o prompt"} ·{" "}
+              <strong className="text-foreground">2.</strong> cole numa conversa nova e envie · <strong className="text-foreground">3.</strong> copie a resposta (o
+              bloco JSON) e use <strong className="text-foreground">Colar resultado</strong>. O app confere e preenche 8.2, 8.3 e 8.4.
+            </>
+          )}
+        </p>
       )}
 
       {!online && (
@@ -436,21 +486,25 @@ export function PainelAnalise({ compacto }: { compacto?: boolean }) {
       {!compacto && (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Sem chave ou sem internet:</span>
-            <Botao pequeno onClick={copiar} disabled={semTranscricao} title="Copia as instruções, as transcrições e o resumo do diagnóstico">
-              <Copy className="h-3.5 w-3.5" /> Copiar prompt
-            </Botao>
+            {viaApi && (
+              <>
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Sem chave ou sem internet:</span>
+                <Botao pequeno onClick={copiar} disabled={semTranscricao} title="Copia as instruções, as transcrições e o resumo do diagnóstico">
+                  <Copy className="h-3.5 w-3.5" /> Copiar prompt
+                </Botao>
+              </>
+            )}
             <Botao pequeno variante="fantasma" onClick={baixar} disabled={semTranscricao} title="Baixa o prompt num arquivo .txt">
               <Download className="h-3.5 w-3.5" /> Baixar .txt
             </Botao>
             <Botao pequeno onClick={() => setColar(!colar)}>
-              <ClipboardPaste className="h-3.5 w-3.5" /> Colar resposta
+              <ClipboardPaste className="h-3.5 w-3.5" /> Colar resultado
             </Botao>
           </div>
 
           {copia === "ok" && (
             <p className="flex items-center gap-2 text-xs text-success">
-              <Check className="h-3.5 w-3.5" aria-hidden="true" /> Prompt copiado. Cole numa conversa nova no claude.ai e traga a resposta em "Colar resposta".
+              <Check className="h-3.5 w-3.5" aria-hidden="true" /> Prompt copiado. Cole numa conversa nova{viaApi ? "" : ` no ${plataforma.nome}`} e traga a resposta em "Colar resultado".
             </p>
           )}
           {copia === "falhou" && (
@@ -463,7 +517,7 @@ export function PainelAnalise({ compacto }: { compacto?: boolean }) {
           {colar && (
             <div className="aparecer space-y-2 rounded-lg border border-border bg-card p-3">
               <label className="block">
-                <span className="mb-1 block text-[10px] uppercase tracking-widest text-muted-foreground">Resposta do Claude (o bloco JSON)</span>
+                <span className="mb-1 block text-[10px] uppercase tracking-widest text-muted-foreground">Resposta da IA (o bloco JSON)</span>
                 <textarea
                   rows={6}
                   className="inp font-mono text-[11px]"
@@ -493,8 +547,8 @@ export function PainelAnalise({ compacto }: { compacto?: boolean }) {
 
           <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
             <Lock className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
-            Ao analisar com IA, o texto das transcrições e um resumo do diagnóstico (sem e-mail e telefone) vão para a API da Anthropic (Claude). Evite dados
-            sensíveis desnecessários, como CPF e números de conta.
+            Ao analisar com IA, o texto das transcrições e um resumo do diagnóstico (sem e-mail e telefone) vão para a IA escolhida. Evite dados sensíveis
+            desnecessários, como CPF e números de conta.
           </p>
         </>
       )}
