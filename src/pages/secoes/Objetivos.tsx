@@ -1,6 +1,6 @@
 // 3 · Objetivos: ponto de partida (motivação, satisfação e poupança) e os objetivos em Essencial, Desejo e Sonho.
 // Arrasta e solta: a categoria (Casa, Viagem…) sai da faixa "Categorias" para uma das três faixas e vira um
-// objetivo com os campos abertos para preencher. O cartão troca de faixa pela alça (arrastando ou clicando nela).
+// objetivo fechado (só o resumo): o consultor abre os campos pela seta. O cartão troca de faixa pela alça.
 // Sem arrastar: clicar/tocar na categoria (ou Enter/Espaço) e depois na faixa. Mecanismo em components/ArrastaObjetivos.
 // O aporte necessário de cada objetivo aparece só na versão consultor.
 import { useEffect, useRef, useState, type KeyboardEvent as EventoTecla, type MouseEvent, type PointerEvent as EventoPonteiro, type ReactNode } from "react";
@@ -17,14 +17,13 @@ import type { Item, Valor } from "@/types";
 
 /** Campos do cartão: a categoria vem do arraste e fica no ícone do cabeçalho (clique nele para trocar). */
 const CAMPOS_CARTAO = CAMPOS_OBJETIVO.filter((c) => c.key !== "categoria");
-const ROTULO_TITULO = CAMPOS_OBJETIVO.find((c) => c.key === "titulo")?.label ?? "";
 const iconeDe = (categoria: string) => CATEGORIAS.find((c) => c.nome === categoria)?.Icone;
 const tituloDe = (o: Item) => s(o.titulo) || s(o.categoria) || "Novo objetivo";
 const foco = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 type Painel = "mover" | "categoria";
 /** O que receber o foco depois de criar, mover ou trocar a categoria. */
-type Foco = { id: string; alvo: "titulo" | "alca" | "painel" | "selo" };
+type Foco = { id: string; alvo: "abrir" | "alca" | "painel" | "selo" };
 
 export default function Objetivos() {
   const { cliente, atualizar, setCampo } = useCliente();
@@ -34,7 +33,8 @@ export default function Objetivos() {
   const raiz = useRef<HTMLDivElement>(null);
   /** Categoria escolhida por clique/teclado, esperando a faixa. */
   const [selecao, setSelecao] = useState<string | null>(null);
-  const [recolhidos, setRecolhidos] = useState<Set<string>>(new Set());
+  // Os cartões começam fechados (só o resumo); o consultor abre os dados pela seta.
+  const [abertos, setAbertos] = useState<Set<string>>(new Set());
   const [painel, setPainel] = useState<{ id: string; tipo: Painel } | null>(null);
   const [destaque, setDestaque] = useState<string | null>(null);
   const [focar, setFocar] = useState<Foco | null>(null);
@@ -50,8 +50,9 @@ export default function Objetivos() {
     setSelecao(null);
     // Sem categoria (botão "Adicionar"): abre a escolha da categoria primeiro.
     setPainel(categoria ? null : { id: novo.id, tipo: "categoria" });
-    setFocar({ id: novo.id, alvo: categoria ? "titulo" : "painel" });
-    anunciar(categoria ? `Objetivo ${categoria} criado em ${tipo}. Preencha os dados.` : `Novo objetivo em ${tipo}. Escolha a categoria.`);
+    // Com categoria (arraste), o cartão nasce fechado: o foco vai para a seta que abre os dados.
+    setFocar({ id: novo.id, alvo: categoria ? "abrir" : "painel" });
+    anunciar(categoria ? `Objetivo ${categoria} criado em ${tipo}. Abra pela seta para preencher os dados.` : `Novo objetivo em ${tipo}. Escolha a categoria.`);
   };
 
   const mover = (id: string, tipo: string) => {
@@ -104,16 +105,18 @@ export default function Objetivos() {
     if (!cartao) return;
     setFocar(null);
     setDestaque(focar.id);
-    const alvo =
-      focar.alvo === "titulo"
-        ? (cartao.querySelector<HTMLInputElement>(`input[aria-label="${CSS.escape(ROTULO_TITULO)}"]`) ?? cartao.querySelector<HTMLInputElement>('input[type="text"]'))
-        : cartao.querySelector<HTMLElement>(
-            focar.alvo === "alca" ? "[data-alca]" : focar.alvo === "selo" ? "[data-selo]" : "[data-painel] [aria-checked='true'], [data-painel] button",
-          );
+    const alvo = cartao.querySelector<HTMLElement>(
+      focar.alvo === "abrir"
+        ? "[data-abrir]"
+        : focar.alvo === "alca"
+          ? "[data-alca]"
+          : focar.alvo === "selo"
+            ? "[data-selo]"
+            : "[data-painel] [aria-checked='true'], [data-painel] button",
+    );
     const suave = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     (alvo ?? cartao).scrollIntoView({ behavior: suave ? "smooth" : "auto", block: "center" });
     alvo?.focus({ preventScroll: true });
-    if (alvo instanceof HTMLInputElement) alvo.select();
   }, [focar, cliente.objetivos]);
 
   useEffect(() => {
@@ -235,14 +238,14 @@ export default function Objetivos() {
                 <CartaoObjetivo
                   key={o.id}
                   o={o}
-                  recolhido={recolhidos.has(o.id)}
+                  recolhido={!abertos.has(o.id)}
                   painel={painel?.id === o.id ? painel.tipo : null}
                   destaque={destaque === o.id}
                   arrastando={objetivoArrastado?.id === o.id}
                   resumo={resumo(o)}
                   rodape={rodape(o)}
                   onAlternarRecolhido={() =>
-                    setRecolhidos((atual) => {
+                    setAbertos((atual) => {
                       const prox = new Set(atual);
                       if (prox.has(o.id)) prox.delete(o.id);
                       else prox.add(o.id);
@@ -353,7 +356,7 @@ function CartaoObjetivo({
   };
   const opcao = (ativo: boolean) =>
     `inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition ${foco} ${
-      ativo ? "border-transparent bg-gold text-primary-foreground shadow-sm" : "border-border bg-card text-foreground hover:border-primary/60 hover:text-primary"
+      ativo ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary/40" : "border-border bg-card text-foreground hover:border-primary/60 hover:text-primary"
     }`;
 
   return (
@@ -391,10 +394,10 @@ function CartaoObjetivo({
           title={categoria ? "Trocar a categoria" : "Escolher a categoria"}
           onClick={(e) => alternar("categoria", e)}
           className={`grid h-8 w-8 shrink-0 place-items-center rounded-md transition ${foco} ${
-            Icone ? "bg-gold text-primary-foreground hover:brightness-105" : "border border-dashed border-primary/60 text-primary hover:bg-primary/10"
+            Icone ? "border border-border bg-input text-muted-foreground hover:border-primary/50 hover:text-foreground" : "border border-dashed border-primary/60 text-primary hover:bg-primary/10"
           }`}
         >
-          {Icone ? <Icone className="h-4 w-4" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
+          {Icone ? <Icone className="h-[18px] w-[18px]" strokeWidth={1.6} aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
         </button>
         <div className="min-w-0 flex-1">
           {/* Em tela estreita a categoria desce para baixo do título (não espreme as palavras). */}
@@ -407,13 +410,14 @@ function CartaoObjetivo({
         <div className="no-print flex shrink-0 items-center gap-1">
           <button
             type="button"
+            data-abrir
             aria-expanded={!recolhido}
-            aria-label={recolhido ? "Mostrar os dados" : "Ocultar os dados"}
-            title={recolhido ? "Mostrar os dados" : "Ocultar os dados"}
+            aria-label={recolhido ? `Abrir os dados de ${titulo}` : `Fechar os dados de ${titulo}`}
+            title={recolhido ? "Abrir os dados" : "Fechar os dados"}
             onClick={onAlternarRecolhido}
             className={`rounded-md p-1.5 text-muted-foreground transition hover:bg-muted/50 hover:text-foreground ${foco}`}
           >
-            <ChevronDown className={`h-3.5 w-3.5 transition-transform ${recolhido ? "" : "rotate-180"}`} />
+            <ChevronDown className={`h-4 w-4 transition-transform ${recolhido ? "" : "rotate-180"}`} />
           </button>
           <button
             type="button"

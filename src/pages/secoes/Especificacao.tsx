@@ -1,16 +1,17 @@
-// 7.1 · Especificação do planejamento (só na versão consultor): simulador do valor do
-// planejamento (renda bruta anual × percentual − desconto) e condições de pagamento
-// (Pix/boleto com desconto ou cartão em até 12x). A condição marcada vai para o PDF.
-// Tudo fica em cliente.especificacao; as contas estão em src/lib/especificacao.ts.
+// 7.1 · Precificação do planejamento (só na versão consultor): modelo de consultoria (pontual,
+// contrato ou concierge, com cronograma, regras de entrada e limite de reuniões), valor do plano
+// (renda bruta anual × percentual − desconto, ou o valor digitado; mínimo R$ 2.790) e condições de
+// pagamento (Pix/boleto com desconto ou cartão em até 12x), com o líquido após a nota fiscal.
+// A condição marcada vai para o PDF. Tudo fica em cliente.especificacao (contas em src/lib/especificacao.ts).
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, FileDown, QrCode, RotateCcw, TriangleAlert, type LucideIcon } from "lucide-react";
+import { CalendarRange, CreditCard, FileDown, ListChecks, QrCode, RotateCcw, ShieldCheck, TriangleAlert, type LucideIcon } from "lucide-react";
 import { CampoMoeda, CampoNumero, Chips, Rotulo } from "@/components/campos";
 import { BotaoOuro, Kpi, Selo, SubBloco } from "@/components/ui";
-import { DESCONTO_PIX, PARCELAS, PERCENTUAL_PADRAO } from "@/config/especificacao";
+import { DESCONTO_PIX, IMPOSTO_NOTA_FISCAL, MODELOS_CONSULTORIA, PARCELAS, VALOR_MINIMO } from "@/config/especificacao";
 import { useCliente } from "@/lib/cliente-context";
 import { s } from "@/lib/calculos";
-import { especificacao, fmtPercentual, type CondicaoPagamento } from "@/lib/especificacao";
+import { especificacao, fmtPercentual, type CondicaoPagamento, type notaFiscal } from "@/lib/especificacao";
 import { fmtBRL } from "@/lib/format";
 import type { Valor } from "@/types";
 
@@ -88,7 +89,17 @@ function ValorCondicao({ rotulo, valor, detalhe }: { rotulo: string; valor: stri
 
 const linha = "flex items-baseline justify-between gap-3 py-1.5";
 
-export default function Especificacao() {
+/** Nota fiscal e líquido da condição (interno: não vai para o PDF). */
+function LinhaNota({ nota }: { nota: ReturnType<typeof notaFiscal> }) {
+  return (
+    <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-[11px] text-muted-foreground tabular-nums">
+      Nota fiscal ({fmtPercentual(nota.impostoPct)}): <span className="text-foreground">− {fmtBRL(nota.imposto, true)}</span> · Líquido:{" "}
+      <strong className="text-foreground">{fmtBRL(nota.liquido, true)}</strong>
+    </div>
+  );
+}
+
+export default function Precificacao() {
   const { cliente, setCampo, irPara } = useCliente();
   const navigate = useNavigate();
   const dados = cliente.especificacao ?? {};
@@ -100,6 +111,7 @@ export default function Especificacao() {
   // Desconto pedido acima do valor do plano: fica limitado a ele.
   const descontoLimitado = e.bruto > 0 && (e.tipoDesconto === "%" ? e.descontoInformado > 100 : e.descontoInformado > e.bruto);
 
+  const modeloAtual = e.modelo;
   const noPdf = !temValor
     ? "Informe a renda para calcular o valor do plano e exportar."
     : e.condicao === "pix"
@@ -112,13 +124,84 @@ export default function Especificacao() {
     <div className="space-y-4">
       {/* Título de destaque */}
       <div className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">Etapa 7 · Especificação</div>
-        <h3 className="mt-0.5 text-lg font-semibold sm:text-xl">Especificação · Planejamento financeiro</h3>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">Etapa 7 · Precificação</div>
+        <h3 className="mt-0.5 text-lg font-semibold sm:text-xl">Precificação · Planejamento financeiro</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Acompanhamento anual calculado sobre a renda bruta da família. Ajuste o percentual, dê um desconto se quiser e marque a condição
-          de pagamento: ela vai para o PDF.
+          Escolha o modelo de consultoria, ajuste o percentual ou digite o valor do plano (mínimo de {fmtBRL(VALOR_MINIMO)}) e marque a
+          condição de pagamento: ela vai para o PDF.
         </p>
       </div>
+
+      {/* Modelo de consultoria: pontual, contrato ou concierge */}
+      <SubBloco titulo="Modelo de consultoria">
+        <div role="radiogroup" aria-label="Modelo de consultoria" className="grid gap-3 md:grid-cols-3">
+          {MODELOS_CONSULTORIA.map((m) => {
+            const ativo = modeloAtual.id === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                role="radio"
+                aria-checked={ativo}
+                onClick={() => {
+                  set("modelo", m.id);
+                  // O percentual digitado era do modelo anterior: volta ao padrão do novo modelo.
+                  if (dados.percentual !== undefined) set("percentual", undefined);
+                }}
+                className={`flex min-w-0 flex-col gap-1.5 rounded-xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
+                  ativo ? "border-primary/70 bg-primary/5 ring-1 ring-primary/40" : "border-border bg-card hover:border-primary/50"
+                }`}
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">{m.nome}</span>
+                  {ativo && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-primary">Escolhido</span>}
+                </span>
+                <span className="text-xs leading-snug text-muted-foreground">{m.resumo}</span>
+                <span className="mt-auto flex flex-wrap gap-1.5 pt-1">
+                  <Selo className="border-border bg-muted/40 text-muted-foreground">{m.duracao}</Selo>
+                  <Selo className="border-border bg-muted/40 text-muted-foreground">até {m.reunioes} reuniões</Selo>
+                  <Selo className="border-primary/30 bg-primary/10 text-primary">{fmtPercentual(m.percentual)} da renda anual</Selo>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              <CalendarRange className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Cronograma
+            </div>
+            <ol className="space-y-2 border-l border-border pl-3">
+              {modeloAtual.cronograma.map((c) => (
+                <li key={c.quando} className="text-xs">
+                  <span className="font-semibold text-foreground">{c.quando}</span>
+                  <span className="block text-muted-foreground">{c.oque}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Regras de entrada · até {modeloAtual.reunioes} reuniões
+            </div>
+            <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+              {modeloAtual.regras.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="min-w-0">
+            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+              <ListChecks className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> O que inclui
+            </div>
+            <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
+              {modeloAtual.inclui.map((r) => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </SubBloco>
 
       <div className="grid gap-4 xl:grid-cols-2">
         {/* (a) Base de cálculo */}
@@ -205,11 +288,13 @@ export default function Especificacao() {
                 sufixo="%"
                 min={0}
                 max={100}
-                placeholder={`${PERCENTUAL_PADRAO} (padrão)`}
+                placeholder={`${modeloAtual.percentual.toLocaleString("pt-BR")} (padrão do modelo)`}
                 ariaLabel="Percentual sobre a renda anual"
               />
               <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3">
-                <span className="text-[11px] text-muted-foreground/80">Sobre a renda bruta anual. Padrão: {fmtPercentual(PERCENTUAL_PADRAO)}</span>
+                <span className="text-[11px] text-muted-foreground/80">
+                  Sobre a renda bruta anual. Padrão do modelo: {fmtPercentual(modeloAtual.percentual)}
+                </span>
                 <BotaoRestaurar onClick={() => set("percentual", undefined)} disabled={e.percentualPadrao}>
                   Voltar ao padrão
                 </BotaoRestaurar>
@@ -241,23 +326,37 @@ export default function Especificacao() {
                 {descontoLimitado ? "Desconto limitado ao valor do plano." : "Opcional. Em branco, sem desconto."}
               </span>
             </div>
+            <div className="min-w-0 sm:col-span-2">
+              <Rotulo>Valor do plano definido pelo planejador (opcional)</Rotulo>
+              <CampoMoeda valor={dados.valorManual} onChange={(v) => set("valorManual", v)} ariaLabel="Valor do plano definido pelo planejador" />
+              <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3">
+                <span className={`text-[11px] leading-snug ${e.valorManual ? "text-primary" : "text-muted-foreground/80"}`}>
+                  {e.valorManual ? "Valor digitado: substitui renda anual × percentual." : "Em branco, usa renda anual × percentual."} Mínimo de{" "}
+                  {fmtBRL(VALOR_MINIMO)}.
+                </span>
+                <BotaoRestaurar onClick={() => set("valorManual", undefined)} disabled={!e.valorManual}>
+                  Voltar ao calculado
+                </BotaoRestaurar>
+              </div>
+            </div>
           </div>
 
           <div className="mt-4">
             <Kpi
               tom="ouro"
-              rotulo="Valor do plano · acompanhamento anual"
-              valor={temValor || e.base > 0 ? fmtBRL(e.valor, true) : "—"}
+              rotulo={`Valor do plano · ${modeloAtual.nome}`}
+              valor={fmtBRL(e.valor, true)}
               detalhe={
-                e.base > 0 ? (
-                  <span className="tabular-nums">
-                    {fmtBRL(e.base)} × {fmtPercentual(e.percentual)} = {fmtBRL(e.bruto, true)}
-                    {e.desconto > 0 &&
-                      ` − desconto ${fmtBRL(e.desconto, true)}${e.tipoDesconto === "%" ? ` (${fmtPercentual(Math.min(100, e.descontoInformado))})` : ""}`}
-                  </span>
-                ) : (
-                  "Informe a renda bruta para calcular."
-                )
+                <span className="tabular-nums">
+                  {e.valorManual
+                    ? `Valor definido pelo planejador: ${fmtBRL(e.bruto, true)}`
+                    : e.base > 0
+                      ? `${fmtBRL(e.base)} × ${fmtPercentual(e.percentual)} = ${fmtBRL(e.bruto, true)}`
+                      : "Sem renda: vale o valor mínimo."}
+                  {e.desconto > 0 &&
+                    ` − desconto ${fmtBRL(e.desconto, true)}${e.tipoDesconto === "%" ? ` (${fmtPercentual(Math.min(100, e.descontoInformado))})` : ""}`}
+                  {e.noMinimo && ` → valor mínimo do plano (${fmtBRL(VALOR_MINIMO)})`}
+                </span>
               }
             />
           </div>
@@ -267,7 +366,10 @@ export default function Especificacao() {
       {/* (c) Condições de pagamento */}
       <SubBloco titulo="Condições de pagamento">
         <fieldset className="min-w-0">
-          <legend className="mb-3 text-xs text-muted-foreground">Marque a condição escolhida pelo cliente. Só ela entra no PDF.</legend>
+          <legend className="mb-3 text-xs text-muted-foreground">
+            Marque a condição escolhida pelo cliente. Só ela entra no PDF. A nota fiscal ({fmtPercentual(IMPOSTO_NOTA_FISCAL)}) e o líquido aparecem
+            só aqui.
+          </legend>
           <div className="grid gap-3 md:grid-cols-2">
             <Opcao
               grupo={grupo}
@@ -282,13 +384,17 @@ export default function Especificacao() {
                 rotulo="À vista"
                 valor={temValor ? fmtBRL(e.pix.total, true) : "—"}
                 detalhe={
-                  temValor && (
+                  temValor &&
+                  (e.pix.economia > 0 ? (
                     <>
                       {fmtPercentual(DESCONTO_PIX)} de desconto sobre {fmtBRL(e.valor, true)}: economia de {fmtBRL(e.pix.economia, true)}
                     </>
-                  )
+                  ) : (
+                    <>No valor mínimo do plano, o Pix não tem desconto.</>
+                  ))
                 }
               />
+              {temValor && <LinhaNota nota={e.notaPix} />}
             </Opcao>
 
             <Opcao
@@ -316,15 +422,9 @@ export default function Especificacao() {
               <ValorCondicao
                 rotulo={e.parcelas === 1 ? "À vista no cartão" : `Em ${e.parcelas} parcelas`}
                 valor={temValor ? (e.parcelas === 1 ? fmtBRL(e.cartao.total, true) : `${e.parcelas}× de ${fmtBRL(e.cartao.parcela, true)}`) : "—"}
-                detalhe={
-                  temValor && (
-                    <>
-                      Total {fmtBRL(e.cartao.total, true)} · taxa da maquininha {fmtPercentual(e.cartao.taxa)} + {fmtBRL(e.cartao.tarifa, true)}
-                      {e.parcelas > 1 && " (R$ 0,29 por parcela)"}
-                    </>
-                  )
-                }
+                detalhe={temValor && e.parcelas > 1 && <>Total {fmtBRL(e.cartao.total, true)}</>}
               />
+              {temValor && <LinhaNota nota={e.notaCartao} />}
             </Opcao>
           </div>
         </fieldset>
@@ -352,7 +452,7 @@ export default function Especificacao() {
           disabled={!temValor}
           className="shrink-0 justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> Exportar especificação em PDF
+          <FileDown className="h-3.5 w-3.5" aria-hidden="true" /> Exportar precificação em PDF
         </BotaoOuro>
       </div>
     </div>

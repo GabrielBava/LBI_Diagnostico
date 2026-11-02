@@ -56,7 +56,7 @@ export const ETAPAS: Etapa[] = [
   { id: "investimentos", numero: 4, nome: "Investimentos", subtitulo: "Como o cliente investe hoje" },
   { id: "pre", numero: 5, nome: "Pré-diagnóstico", subtitulo: "Visão breve, gerada com o que foi preenchido" },
   { id: "completo", numero: 6, nome: "Diagnóstico completo", subtitulo: "A leitura completa e o plano de ação" },
-  { id: "especificacao", numero: 7, nome: "Especificação", subtitulo: "Especificação do planejamento financeiro" },
+  { id: "especificacao", numero: 7, nome: "Precificação", subtitulo: "Precificação do planejamento financeiro" },
   { id: "analitico", numero: 8, nome: "Analítico do Planejador", subtitulo: "Transcrições, perfil do cliente e preparação da V2" },
 ];
 
@@ -85,21 +85,21 @@ const temValor = (itens: { [k: string]: unknown }[], campo: string) => itens.som
 export const SECOES: SecaoDef[] = [
   // Etapa 1 · Conexão
   {
-    id: "cadastro",
+    id: "institucional",
     etapa: "conexao",
     numero: "1",
+    titulo: "V1 · Institucional",
+    subtitulo: "Apresentação do Grupo Life Brasil",
+    icone: Presentation,
+  },
+  {
+    id: "cadastro",
+    etapa: "conexao",
+    numero: "2",
     titulo: "Cadastro",
     icone: User,
     coleta: true,
     concluida: (c) => !!s(c.cadastro.nome) && !!s(c.cadastro.nascimento) && !!s(c.cadastro.estadoCivil) && !!s(c.cadastro.temFilhos),
-  },
-  {
-    id: "institucional",
-    etapa: "conexao",
-    numero: "2",
-    titulo: "V1 · Institucional",
-    subtitulo: "Apresentação do Grupo Life Brasil",
-    icone: Presentation,
   },
   {
     id: "objetivos",
@@ -279,13 +279,13 @@ export const SECOES: SecaoDef[] = [
   { id: "bussola", etapa: "completo", numero: "6.7", titulo: "Bússola financeira", subtitulo: "Saúde financeira e o norte das ações", icone: Compass },
   { id: "plano-acao", etapa: "completo", numero: "6.8", titulo: "Plano de ação", icone: ListChecks },
 
-  // Etapa 7 · Especificação (só na versão consultor)
+  // Etapa 7 · Precificação (só na versão consultor; o id interno continua "especificacao")
   {
     id: "especificacao",
     etapa: "especificacao",
     numero: "7.1",
-    titulo: "Especificação do planejamento",
-    subtitulo: "Valor do plano e condições de pagamento",
+    titulo: "Precificação do planejamento",
+    subtitulo: "Modelo de consultoria, valor do plano e condições de pagamento",
     icone: BadgeDollarSign,
   },
 

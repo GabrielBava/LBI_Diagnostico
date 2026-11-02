@@ -227,8 +227,8 @@ export function Fantasma({ Icone, titulo, zona }: { Icone?: LucideIcon; titulo: 
   return (
     <div className="flex max-w-[240px] rotate-2 items-center gap-2 rounded-lg border border-primary bg-card px-3 py-2 text-xs font-semibold text-foreground shadow-2xl shadow-black/40 ring-2 ring-primary/30">
       {Icone && (
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-gold text-primary-foreground">
-          <Icone className="h-4 w-4" aria-hidden="true" />
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-border bg-input text-muted-foreground">
+          <Icone className="h-4 w-4" strokeWidth={1.6} aria-hidden="true" />
         </span>
       )}
       <span className="min-w-0">
@@ -278,7 +278,12 @@ export function FaixaCategorias({
         <strong className="font-semibold text-foreground">Desejo</strong> ou <strong className="font-semibold text-foreground">Sonho</strong>. Se preferir,
         toque nela e escolha onde colocar.
       </p>
-      <div ref={areaToque} role="group" aria-label="Categorias de objetivo" className="flex flex-wrap gap-2">
+      <div
+        ref={areaToque}
+        role="group"
+        aria-label="Categorias de objetivo"
+        className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-3 sm:grid-cols-5 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-10"
+      >
         {CATEGORIAS.map(({ nome, Icone }) => {
           const ativa = selecionada === nome;
           return (
@@ -294,20 +299,16 @@ export function FaixaCategorias({
                 focarBandeja.current = e.detail === 0 && !ativa;
                 onSelecionar(ativa ? null : nome);
               }}
-              className={`flex h-11 cursor-grab select-none items-center gap-2 rounded-lg border py-1 pl-1.5 pr-3 text-xs font-medium transition [-webkit-touch-callout:none] active:cursor-grabbing ${foco} ${
+              className={`flex h-11 cursor-grab select-none items-center gap-1.5 rounded-lg border px-2 text-[11px] font-medium transition [-webkit-touch-callout:none] active:cursor-grabbing min-[400px]:h-[72px] min-[400px]:flex-col min-[400px]:justify-center min-[400px]:gap-1.5 min-[400px]:px-1 ${foco} ${
                 ativa
-                  ? "border-primary bg-primary/15 text-foreground ring-2 ring-primary/40"
+                  ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary/40"
                   : arrastando === nome
-                    ? "border-primary/60 bg-primary/10 text-foreground"
-                    : "border-border bg-card text-foreground hover:border-primary/60 hover:bg-primary/5"
+                    ? "border-primary/60 bg-primary/5 text-foreground"
+                    : "border-border bg-input text-muted-foreground hover:border-primary/50 hover:text-foreground"
               }`}
             >
-              {Icone && (
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-gold text-primary-foreground">
-                  <Icone className="h-4 w-4" aria-hidden="true" />
-                </span>
-              )}
-              {nome}
+              {Icone && <Icone className="h-5 w-5 shrink-0 min-[400px]:h-6 min-[400px]:w-6" strokeWidth={1.5} aria-hidden="true" />}
+              <span className="w-full min-w-0 hyphens-auto break-words text-left leading-tight min-[400px]:text-center">{nome}</span>
             </button>
           );
         })}

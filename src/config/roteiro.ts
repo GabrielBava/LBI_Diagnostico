@@ -288,6 +288,10 @@ export const ROTEIRO: Record<string, Roteiro> = {
     objetivo: "Apresentar o valor do planejamento e fechar a condição de pagamento.",
     abertura: "Para te acompanhar ao longo do ano, o investimento no planejamento é calculado sobre a renda bruta anual da família.",
     perguntas: ["Faz sentido para você começarmos agora?", "Prefere Pix/boleto (com 5% de desconto) ou parcelar no cartão?", "Qual a melhor data para a primeira reunião do plano?"],
-    atencao: ["O percentual padrão é 3% da renda bruta anual; você pode ajustar ou dar desconto.", "Pix ou boleto: 5% de desconto. Cartão: taxas da maquininha conforme o número de parcelas."],
+    atencao: [
+      "Escolha o modelo: consultoria pontual, contrato (planejamento anual, 3% da renda bruta anual) ou concierge.",
+      "Você pode ajustar o percentual, dar desconto ou digitar o valor do plano; o mínimo é R$ 2.790.",
+      "Pix ou boleto: 5% de desconto. A nota fiscal (18,5%) e o líquido aparecem só para você.",
+    ],
   },
 };

@@ -1,14 +1,16 @@
 // 5.2 · Recomendações: aberta pelo botão "Gerar recomendações" (logo abaixo do 5.1).
 // Começa com três blocos de indicação (nome e contato) — o título do bloco vira o nome digitado —
-// e o consultor pode adicionar mais ou remover. Abaixo, os modelos de mensagem (para o cliente e
-// para os amigos e familiares) e o botão "Finalizar recomendações", como na coleta.
+// e o consultor pode adicionar mais ou remover. Os modelos de mensagem (para o cliente e para os
+// amigos e familiares) ficam só na versão consultor, no botão "Mensagens" do cabeçalho.
+// No fim, o botão "Finalizar recomendações", como na coleta.
 // Sem nada preenchido, dá para fechar a 5.2 e voltar ao botão.
 import { useState, type ReactNode } from "react";
-import { Check, ClipboardCheck, Copy, MessageCircle, RotateCcw, Trash2, X } from "lucide-react";
+import { Check, ClipboardCheck, Copy, MessageCircle, MessageSquareText, RotateCcw, Trash2, X } from "lucide-react";
 import { CAMPOS_RECOMENDACAO } from "@/config/campos";
 import { recomendacoesPreenchidas } from "@/config/estrutura";
 import { MENSAGEM_AMIGOS, MENSAGEM_CLIENTE, preencherMensagem } from "@/config/mensagens";
 import { Formulario } from "@/components/campos";
+import { NoCabecalho, botaoCabecalho } from "@/components/Secao";
 import { Botao, BotaoAdicionar, BotaoOuro, SubBloco } from "@/components/ui";
 import { useCliente } from "@/lib/cliente-context";
 import { s } from "@/lib/calculos";
@@ -106,6 +108,7 @@ export default function Recomendacoes() {
   // Nomes das indicações para personalizar a mensagem dos amigos.
   const nomes = itens.map((i) => s(i.nome).trim()).filter(Boolean);
   const [destinatario, setDestinatario] = useState("");
+  const [mensagens, setMensagens] = useState(false);
   const nomeEscolhido = nomes.includes(destinatario) ? destinatario : "";
 
   const alterar = (id: string, key: string, v: Valor) => setLista("recomendacoes", itens.map((i) => (i.id === id ? { ...i, [key]: v } : i)));
@@ -122,6 +125,50 @@ export default function Recomendacoes() {
 
   return (
     <div className="space-y-4">
+      {/* Modelos de mensagem: só na versão consultor, abertos pelo botão "Mensagens" no cabeçalho (como o Roteiro). */}
+      {!apresentacao && (
+        <NoCabecalho>
+          <button type="button" onClick={() => setMensagens(!mensagens)} aria-expanded={mensagens} className={botaoCabecalho(mensagens)}>
+            <MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" /> Mensagens
+          </button>
+        </NoCabecalho>
+      )}
+      {!apresentacao && mensagens && (
+        <SubBloco titulo="Modelos de mensagem">
+          <div className="grid gap-3 lg:grid-cols-2">
+            <CartaoMensagem
+              titulo={MENSAGEM_CLIENTE.titulo}
+              subtitulo={MENSAGEM_CLIENTE.subtitulo}
+              texto={preencherMensagem(MENSAGEM_CLIENTE.texto, { cliente: primeiroNome })}
+              telefone={s(cliente.cadastro.telefone)}
+            />
+            <CartaoMensagem
+              titulo={MENSAGEM_AMIGOS.titulo}
+              subtitulo={MENSAGEM_AMIGOS.subtitulo}
+              texto={preencherMensagem(MENSAGEM_AMIGOS.texto, { nome: nomeEscolhido.split(/\s+/)[0] })}
+              extra={
+                nomes.length > 0 && (
+                  <div className="no-print mb-2 flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <span className="text-muted-foreground">Personalizar para:</span>
+                    {nomes.map((nome) => (
+                      <button
+                        key={nome}
+                        type="button"
+                        aria-pressed={nomeEscolhido === nome}
+                        onClick={() => setDestinatario(nomeEscolhido === nome ? "" : nome)}
+                        className="rounded-full border border-primary/40 px-2 py-0.5 font-semibold text-primary hover:bg-primary/10 aria-pressed:bg-primary/15"
+                      >
+                        {nome}
+                      </button>
+                    ))}
+                  </div>
+                )
+              }
+            />
+          </div>
+        </SubBloco>
+      )}
+
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <p className="min-w-0 flex-1 basis-[260px] text-sm text-muted-foreground">
           Quem mais pode se beneficiar de um planejamento como este? Anote o nome e o melhor contato de cada indicação.
@@ -165,40 +212,6 @@ export default function Recomendacoes() {
       )}
 
       <BotaoAdicionar onClick={() => setLista("recomendacoes", [...itens, { id: uid() }])}>Adicionar recomendação</BotaoAdicionar>
-
-      <SubBloco titulo="Modelos de mensagem">
-        <div className="grid gap-3 lg:grid-cols-2">
-          <CartaoMensagem
-            titulo={MENSAGEM_CLIENTE.titulo}
-            subtitulo={MENSAGEM_CLIENTE.subtitulo}
-            texto={preencherMensagem(MENSAGEM_CLIENTE.texto, { cliente: primeiroNome })}
-            telefone={s(cliente.cadastro.telefone)}
-          />
-          <CartaoMensagem
-            titulo={MENSAGEM_AMIGOS.titulo}
-            subtitulo={MENSAGEM_AMIGOS.subtitulo}
-            texto={preencherMensagem(MENSAGEM_AMIGOS.texto, { nome: nomeEscolhido.split(/\s+/)[0] })}
-            extra={
-              nomes.length > 0 && (
-                <div className="no-print mb-2 flex flex-wrap items-center gap-1.5 text-[11px]">
-                  <span className="text-muted-foreground">Personalizar para:</span>
-                  {nomes.map((nome) => (
-                    <button
-                      key={nome}
-                      type="button"
-                      aria-pressed={nomeEscolhido === nome}
-                      onClick={() => setDestinatario(nomeEscolhido === nome ? "" : nome)}
-                      className="rounded-full border border-primary/40 px-2 py-0.5 font-semibold text-primary hover:bg-primary/10 aria-pressed:bg-primary/15"
-                    >
-                      {nome}
-                    </button>
-                  ))}
-                </div>
-              )
-            }
-          />
-        </div>
-      </SubBloco>
 
       {finalizadas ? (
         !apresentacao && (

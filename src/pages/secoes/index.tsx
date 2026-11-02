@@ -22,7 +22,7 @@ import Futuro from "./Futuro";
 import Oportunidades from "./Oportunidades";
 import Bussola from "./Bussola";
 import PlanoAcao from "./PlanoAcao";
-import Especificacao from "./Especificacao";
+import Precificacao from "./Especificacao";
 import { AnaliticoIA, DoresGatilhos, NotasPlanejador, Transcricoes } from "./Analitico";
 
 export const TELAS: Record<string, ComponentType> = {
@@ -49,7 +49,7 @@ export const TELAS: Record<string, ComponentType> = {
   oportunidades: Oportunidades,
   bussola: Bussola,
   "plano-acao": PlanoAcao,
-  especificacao: Especificacao,
+  especificacao: Precificacao,
   transcricoes: Transcricoes,
   "dores-gatilhos": DoresGatilhos,
   "notas-planejador": NotasPlanejador,

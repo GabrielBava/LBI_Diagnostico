@@ -1,11 +1,13 @@
-// Especificação do planejamento em PDF (página de impressão A4 retrato, aberta pela 7.1).
-// Identidade do Grupo Life Brasil (azul-marinho e dourado). Mostra só a condição de pagamento
-// marcada na 7.1; sem condição marcada, mostra as duas (com aviso só na tela).
+// Precificação do planejamento em PDF (página de impressão A4 retrato, aberta pela 7.1).
+// Identidade do Grupo Life Brasil (azul-marinho e dourado). Mostra o modelo de consultoria
+// (cronograma, regras de entrada e limite de reuniões), o valor do plano e só a condição de
+// pagamento marcada na 7.1; sem condição marcada, mostra as duas (com aviso só na tela).
+// A nota fiscal e as taxas da maquininha não aparecem aqui (são internas).
 import { useEffect, type ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { ArrowLeft, Check, Printer, TriangleAlert } from "lucide-react";
 import { BotaoOuro } from "@/components/ui";
-import { DESCONTO_PIX, INCLUSO_PLANEJAMENTO, TEXTOS_PDF, VALIDADE_DIAS } from "@/config/especificacao";
+import { DESCONTO_PIX, TEXTOS_PDF, VALIDADE_DIAS, VALOR_MINIMO } from "@/config/especificacao";
 import { s } from "@/lib/calculos";
 import { especificacao, fmtPercentual, validadeAte, type Especificacao } from "@/lib/especificacao";
 import { fmtBRL, fmtData } from "@/lib/format";
@@ -61,7 +63,7 @@ function CaixaCondicao({ e, condicao }: { e: Especificacao; condicao: "pix" | "c
         <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#141C3B]">
           {pix ? "Pix ou boleto · à vista" : avistaCartao ? "Cartão de crédito · à vista" : "Cartão de crédito · parcelado"}
         </span>
-        {pix && (
+        {pix && e.pix.economia > 0 && (
           <span className="rounded-full bg-[#141C3B] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#E3C77A]">
             {fmtPercentual(DESCONTO_PIX)} de desconto
           </span>
@@ -72,16 +74,18 @@ function CaixaCondicao({ e, condicao }: { e: Especificacao; condicao: "pix" | "c
       </div>
       <p className="mt-1 text-[11px] leading-snug text-[#5d6274] tabular-nums">
         {pix
-          ? `Valor do plano de ${fmtBRL(e.valor, true)} com ${fmtPercentual(DESCONTO_PIX)} de desconto no Pix ou boleto (economia de ${fmtBRL(e.pix.economia, true)}).`
+          ? e.pix.economia > 0
+            ? `Valor do plano de ${fmtBRL(e.valor, true)} com ${fmtPercentual(DESCONTO_PIX)} de desconto no Pix ou boleto (economia de ${fmtBRL(e.pix.economia, true)}).`
+            : "Pagamento à vista no Pix ou boleto."
           : avistaCartao
-            ? "Pagamento único no cartão de crédito, com as taxas do cartão incluídas."
-            : `Total no cartão: ${fmtBRL(e.cartao.total, true)}, com as taxas do cartão incluídas.`}
+            ? "Pagamento único no cartão de crédito."
+            : `Total no cartão: ${fmtBRL(e.cartao.total, true)}.`}
       </p>
     </div>
   );
 }
 
-export default function EspecificacaoPdf() {
+export default function PrecificacaoPdf() {
   const { id } = useParams();
   const cliente = useClientes().find((c) => c.id === id);
   const nome = cliente ? s(cliente.cadastro.nome) || "Cliente" : "";
@@ -90,7 +94,7 @@ export default function EspecificacaoPdf() {
   useEffect(() => {
     if (!nome) return;
     const anterior = document.title;
-    document.title = `Especificação - ${nome}`;
+    document.title = `Precificação - ${nome}`;
     return () => {
       document.title = anterior;
     };
@@ -132,8 +136,8 @@ export default function EspecificacaoPdf() {
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <p>
             {e.valor <= 0
-              ? "Sem valor do plano: informe a renda bruta na 7.1 · Especificação."
-              : "Nenhuma condição de pagamento marcada: o PDF mostra as duas opções. Marque a escolhida pelo cliente na 7.1 · Especificação."}
+              ? "Sem valor do plano: informe a renda bruta na 7.1 · Precificação."
+              : "Nenhuma condição de pagamento marcada: o PDF mostra as duas opções. Marque a escolhida pelo cliente na 7.1 · Precificação."}
           </p>
         </div>
       )}
@@ -175,9 +179,13 @@ export default function EspecificacaoPdf() {
 
             <p className="leading-relaxed text-[#3a3f52]">{TEXTOS_PDF.introducao}</p>
 
-            <Bloco titulo="O que está incluso no planejamento">
+            {/* Modelo de consultoria: o que inclui, cronograma e regras de entrada */}
+            <Bloco titulo={`Modelo de consultoria · ${e.modelo.nome}`}>
+              <p className="mb-2 leading-snug text-[#3a3f52]">
+                {e.modelo.resumo} <strong className="text-[#141C3B]">Duração: {e.modelo.duracao} · até {e.modelo.reunioes} reuniões.</strong>
+              </p>
               <ul className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
-                {INCLUSO_PLANEJAMENTO.map((item) => (
+                {e.modelo.inclui.map((item) => (
                   <li key={item} className="flex gap-2 leading-snug">
                     <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#141C3B] text-[#E3C77A]">
                       <Check className="h-2.5 w-2.5" strokeWidth={3.5} aria-hidden="true" />
@@ -189,9 +197,28 @@ export default function EspecificacaoPdf() {
             </Bloco>
 
             <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+              <Bloco titulo="Cronograma">
+                <ol className="space-y-1.5 border-l-2 border-[#C7A340] pl-3">
+                  {e.modelo.cronograma.map((c) => (
+                    <li key={c.quando} className="leading-snug">
+                      <span className="font-semibold text-[#141C3B]">{c.quando}:</span> {c.oque}
+                    </li>
+                  ))}
+                </ol>
+              </Bloco>
+              <Bloco titulo="Regras de entrada">
+                <ul className="list-disc space-y-1 pl-4 leading-snug">
+                  {e.modelo.regras.map((r) => (
+                    <li key={r}>{r}</li>
+                  ))}
+                </ul>
+              </Bloco>
+            </div>
+
+            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
               <Bloco titulo="Base de cálculo">
                 <dl className="divide-y divide-[#eeebe3]">
-                  {e.simulada ? (
+                  {e.valorManual ? null : e.simulada ? (
                     <Linha rotulo="Renda bruta anual considerada" valor={fmtBRL(e.base)} />
                   ) : (
                     <>
@@ -202,7 +229,11 @@ export default function EspecificacaoPdf() {
                       <Linha rotulo="Renda bruta anual (× 12 meses)" valor={fmtBRL(e.base)} />
                     </>
                   )}
-                  <Linha rotulo="Percentual do planejamento" valor={fmtPercentual(e.percentual)} />
+                  {e.valorManual ? (
+                    <Linha rotulo="Valor definido pelo planejador" valor={fmtBRL(e.bruto, true)} />
+                  ) : (
+                    <Linha rotulo="Percentual do planejamento" valor={fmtPercentual(e.percentual)} />
+                  )}
                   {e.desconto > 0 && (
                     <>
                       <Linha rotulo="Valor de referência" valor={fmtBRL(e.bruto, true)} />
@@ -214,12 +245,13 @@ export default function EspecificacaoPdf() {
                   )}
                 </dl>
                 <div className="mt-2 rounded-lg bg-[#141C3B] px-4 py-3 text-white">
-                  <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C7A340]">Valor do plano · acompanhamento anual</div>
+                  <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C7A340]">Valor do plano · {e.modelo.nome}</div>
                   <div className="mt-0.5 text-[22px] font-bold tabular-nums">{fmtBRL(e.valor, true)}</div>
                 </div>
                 <p className="mt-2 text-[10px] leading-snug text-[#6b7080]">
-                  {TEXTOS_PDF.base}
-                  {e.estimada && ` ${TEXTOS_PDF.estimada}`}
+                  {e.valorManual ? "" : TEXTOS_PDF.base}
+                  {!e.valorManual && e.estimada && ` ${TEXTOS_PDF.estimada}`}
+                  {e.noMinimo && ` Valor mínimo do plano: ${fmtBRL(VALOR_MINIMO)}.`}
                 </p>
               </Bloco>
 
@@ -267,7 +299,7 @@ export default function EspecificacaoPdf() {
             <span>
               {TEXTOS_PDF.marca} · {TEXTOS_PDF.submarca}
             </span>
-            <span>Especificação emitida em {emissao}</span>
+            <span>Precificação emitida em {emissao}</span>
           </footer>
         </article>
       </div>

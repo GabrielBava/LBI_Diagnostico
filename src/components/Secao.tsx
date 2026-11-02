@@ -1,16 +1,33 @@
 // Moldura de cada seção da página contínua: número, título, roteiro da
 // conversa (gaveta), visibilidade na apresentação e "não se aplica".
-import { useState, type ReactNode } from "react";
+// A tela da seção pode pôr botões no canto direito do cabeçalho com <NoCabecalho>.
+import { createContext, useContext, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { BookOpenText, Check, Eye, EyeOff, MessageSquareQuote, NotebookPen } from "lucide-react";
 import { ETAPAS, ETAPAS_SO_CONSULTOR, etapaPorId, secaoConcluida, secaoOculta, type SecaoDef } from "@/config/estrutura";
 import { ROTEIRO } from "@/config/roteiro";
 import { useCliente } from "@/lib/cliente-context";
 import { usePreferencias } from "@/lib/preferencias";
 
+/** Estilo dos botões do cabeçalho (Roteiro, Na apresentação, Abrir todos, Mensagens…). */
+export const botaoCabecalho = (ativo = false) =>
+  `flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-[11px] font-medium transition ${
+    ativo ? "border-primary/50 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+  }`;
+
+const AlvoCabecalho = createContext<HTMLElement | null>(null);
+
+/** Leva o conteúdo para o canto direito do cabeçalho da seção (ao lado de Roteiro e Na apresentação). */
+export function NoCabecalho({ children }: { children: ReactNode }) {
+  const alvo = useContext(AlvoCabecalho);
+  return alvo ? createPortal(children, alvo) : null;
+}
+
 export function Secao({ def, children }: { def: SecaoDef; children: ReactNode }) {
   const { cliente, atualizar } = useCliente();
   const { apresentacao } = usePreferencias();
   const [roteiroAberto, setRoteiroAberto] = useState(!!def.roteiroAberto);
+  const [alvoCabecalho, setAlvoCabecalho] = useState<HTMLElement | null>(null);
   const oculta = secaoOculta(cliente, def);
   const naoAplica = !!cliente.naoAplica[def.id];
   const ok = def.coleta && secaoConcluida(cliente, def);
@@ -31,6 +48,8 @@ export function Secao({ def, children }: { def: SecaoDef; children: ReactNode })
           </h2>
           {def.subtitulo && <p className="text-xs text-muted-foreground">{def.subtitulo}</p>}
         </div>
+        {/* Botões da própria tela (ex.: Abrir todos), nas duas versões. */}
+        <div ref={setAlvoCabecalho} className="no-print flex flex-wrap items-center gap-1.5 empty:hidden" />
         {!apresentacao && (
           <div className="no-print flex flex-wrap items-center gap-1.5">
             {def.opcional && (
@@ -75,7 +94,9 @@ export function Secao({ def, children }: { def: SecaoDef; children: ReactNode })
 
       {!apresentacao && roteiroAberto && r && <GavetaRoteiro secaoId={def.id} />}
 
-      <div className={`p-5 ${naoAplica ? "opacity-50" : ""}`}>{children}</div>
+      <div className={`p-5 ${naoAplica ? "opacity-50" : ""}`}>
+        <AlvoCabecalho.Provider value={alvoCabecalho}>{children}</AlvoCabecalho.Provider>
+      </div>
     </section>
   );
 }

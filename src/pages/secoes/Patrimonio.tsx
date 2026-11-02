@@ -134,14 +134,6 @@ export default function Patrimonio() {
               tituloItem={(x, i) =>
                 [s(x.segmento) || "Aquisição", s(x.categoria), s(x.tipo)].filter(Boolean).join(" · ") || `Aquisição ${i + 1}`
               }
-              rodapeItem={(x) =>
-                n(x.valorDesejado) > 0 && s(x.estrategia) ? (
-                  <>
-                    <strong className="text-foreground tabular-nums">{fmtBRL(n(x.valorDesejado))}</strong> ·{" "}
-                    {s(x.estrategia) === "À vista" ? "compra à vista" : `via ${s(x.estrategia).toLowerCase()}`}
-                  </>
-                ) : null
-              }
             />
           </div>
         )}

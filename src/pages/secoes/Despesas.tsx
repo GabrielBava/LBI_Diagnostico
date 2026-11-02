@@ -8,6 +8,7 @@ import { ChevronDown, Lightbulb, Lock, Plus, Trash2 } from "lucide-react";
 import { GRUPOS_DESPESA, chaveDespesa, type GrupoDespesa } from "@/config/despesas";
 import { CampoMoeda } from "@/components/campos";
 import { Botao, SubBloco } from "@/components/ui";
+import { NoCabecalho, botaoCabecalho } from "@/components/Secao";
 import { useCliente } from "@/lib/cliente-context";
 import { custoDependente, despesas, n, rotuloDependente, s, type LinhaAutomatica } from "@/lib/calculos";
 import { moedaCampo, uid } from "@/lib/format";
@@ -283,13 +284,12 @@ export default function Despesas() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">Valores mensais.</p>
-        <Botao variante="fantasma" pequeno onClick={alternarTodos} className="no-print">
+      <NoCabecalho>
+        <button type="button" onClick={alternarTodos} aria-expanded={todosAbertos} className={botaoCabecalho(todosAbertos)}>
           <ChevronDown className={`h-3.5 w-3.5 transition-transform ${todosAbertos ? "rotate-180" : ""}`} aria-hidden="true" />
           {todosAbertos ? "Fechar todos" : "Abrir todos"}
-        </Botao>
-      </div>
+        </button>
+      </NoCabecalho>
       {parte("Fixa")}
       {parte("Variável")}
     </div>
