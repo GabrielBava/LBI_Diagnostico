@@ -24,6 +24,7 @@ import {
   Landmark,
   Lightbulb,
   ListChecks,
+  MonitorPlay,
   NotebookPen,
   Presentation,
   Radar,
@@ -58,6 +59,7 @@ export const ETAPAS: Etapa[] = [
   { id: "completo", numero: 6, nome: "Diagnóstico completo", subtitulo: "A leitura completa e o plano de ação" },
   { id: "especificacao", numero: 7, nome: "Precificação", subtitulo: "Precificação do planejamento financeiro" },
   { id: "analitico", numero: 8, nome: "Analítico do Planejador", subtitulo: "Transcrições, perfil do cliente e preparação da V2" },
+  { id: "v2", numero: 9, nome: "V2 · Apresentação", subtitulo: "O diagnóstico em slides para apresentar ao cliente" },
 ];
 
 export interface SecaoDef {
@@ -294,14 +296,24 @@ export const SECOES: SecaoDef[] = [
   { id: "dores-gatilhos", etapa: "analitico", numero: "8.2", titulo: "Dores, preocupações e gatilhos", icone: Flame },
   { id: "notas-planejador", etapa: "analitico", numero: "8.3", titulo: "Notas do Planejador", subtitulo: "Objeções, lacunas, perguntas para a V2, riscos e oportunidades", icone: NotebookPen },
   { id: "analitico-ia", etapa: "analitico", numero: "8.4", titulo: "Analítico IA", subtitulo: "Perfil comportamental e como falar a língua do cliente na V2", icone: BrainCircuit },
+
+  // Etapa 9 · V2 Apresentação (só na versão consultor): abre os slides para o cliente
+  {
+    id: "apresentacao-v2",
+    etapa: "v2",
+    numero: "9.1",
+    titulo: "Apresentação V2",
+    subtitulo: "Resumo do diagnóstico em slides, sem download nem impressão",
+    icone: MonitorPlay,
+  },
 ];
 
 export const secaoPorId = (id: string) => SECOES.find((x) => x.id === id);
 
 /** Etapas liberadas só depois do botão "Finalizar coleta". */
-export const ETAPAS_APOS_COLETA = ["pre", "completo", "especificacao", "analitico"];
+export const ETAPAS_APOS_COLETA = ["pre", "completo", "especificacao", "analitico", "v2"];
 /** Etapas que só aparecem na versão consultor (a apresentação vai até o pré-diagnóstico). */
-export const ETAPAS_SO_CONSULTOR = ["completo", "especificacao", "analitico"];
+export const ETAPAS_SO_CONSULTOR = ["completo", "especificacao", "analitico", "v2"];
 /** Etapas de coleta (o botão "Finalizar coleta" fica depois da última delas). */
 export const ETAPAS_COLETA = ["conexao", "raio-x", "protecao", "investimentos"];
 export const coletaFinalizada = (c: Cliente) => !!c.coletaFinalizada;

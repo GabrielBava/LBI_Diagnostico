@@ -1,0 +1,400 @@
+/* =====================================================================
+   V2 · Apresentação (etapa 9) — slides 16:9 para apresentar ao cliente.
+   Palco de 1280 × 720 escalado para caber na tela; identidade Life
+   Planejamento (azul-marinho, dourado e o laranja do coração).
+   ===================================================================== */
+
+.v2-root {
+  --v2-navy: #141b3d;
+  --v2-navy-2: #232c5c;
+  --v2-gold: #c9a23f;
+  --v2-gold-claro: #e8d39a;
+  --v2-laranja: #ea6a2a;
+  --v2-creme: #f7f4ec;
+  --v2-tinta: #1e2333;
+  --v2-mudo: #6b7080;
+  --v2-linha: #e6e1d6;
+  --v2-verde: #1f9d6b;
+  --v2-vermelho: #d64545;
+  --v2-ambar: #d9902a;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(120% 120% at 0% 0%, #20295a 0%, #0d1230 60%, #080b1f 100%);
+  color: var(--v2-tinta);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Palco: tamanho fixo, escalado pelo componente (transform). */
+.v2-palco {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1280px;
+  height: 720px;
+  transform-origin: center center;
+  border-radius: 18px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #ffffff 0%, #fbf9f4 55%, var(--v2-creme) 100%);
+  box-shadow: 0 40px 120px -30px rgba(0, 0, 0, 0.6);
+}
+
+.v2-slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 34px 56px 70px;
+}
+.v2-entra-proximo {
+  animation: v2-entra-proximo 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.v2-entra-anterior {
+  animation: v2-entra-anterior 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes v2-entra-proximo {
+  from {
+    opacity: 0;
+    transform: translateX(48px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes v2-entra-anterior {
+  from {
+    opacity: 0;
+    transform: translateX(-48px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Entrada em cascata dos itens do slide (--i = ordem). */
+.v2-cascata > * {
+  animation: v2-sobe 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 120ms);
+}
+@keyframes v2-sobe {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Cabeçalho de cada slide */
+.v2-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  height: 44px;
+}
+.v2-logo {
+  height: 40px;
+  width: auto;
+}
+.v2-capitulo {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--v2-gold);
+}
+.v2-titulo {
+  margin-top: 18px;
+  font-size: 34px;
+  line-height: 1.12;
+  font-weight: 700;
+  color: var(--v2-navy);
+  letter-spacing: -0.01em;
+}
+.v2-titulo::after {
+  content: "";
+  display: block;
+  width: 64px;
+  height: 4px;
+  margin-top: 12px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--v2-gold), var(--v2-laranja));
+}
+.v2-subtitulo {
+  margin-top: 10px;
+  font-size: 15px;
+  color: var(--v2-mudo);
+}
+
+/* Cartões com efeito ao passar o mouse */
+.v2-cartao {
+  position: relative;
+  border: 1px solid var(--v2-linha);
+  border-radius: 16px;
+  background: #fff;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.v2-cartao:hover,
+.v2-cartao:focus-within,
+.v2-cartao.v2-ativo {
+  transform: translateY(-4px);
+  border-color: var(--v2-gold);
+  box-shadow: 0 22px 44px -22px rgba(20, 27, 61, 0.38);
+}
+/* Detalhe que aparece ao passar o mouse (ou ao focar) */
+.v2-revela .v2-extra {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-height 0.35s ease,
+    opacity 0.3s ease,
+    margin 0.3s ease;
+}
+.v2-revela:hover .v2-extra,
+.v2-revela:focus-within .v2-extra,
+.v2-revela.v2-ativo .v2-extra {
+  max-height: 240px;
+  opacity: 1;
+  margin-top: 10px;
+}
+/* Texto em 2 linhas que se abre por inteiro ao passar o mouse */
+.v2-recorte {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.v2-revela:hover .v2-recorte,
+.v2-revela:focus-within .v2-recorte,
+.v2-revela:focus .v2-recorte {
+  -webkit-line-clamp: unset;
+  color: var(--v2-tinta);
+}
+.v2-dica-mouse {
+  font-size: 11px;
+  color: var(--v2-mudo);
+}
+
+.v2-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Barras que crescem ao entrar no slide */
+.v2-barra {
+  height: 100%;
+  border-radius: 999px;
+  transform-origin: left center;
+  animation: v2-cresce 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: 0.25s;
+}
+@keyframes v2-cresce {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Rodapé de navegação dentro do palco */
+.v2-rodape {
+  position: absolute;
+  left: 56px;
+  right: 56px;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 5;
+}
+.v2-pontos {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  justify-content: center;
+}
+.v2-ponto {
+  position: relative;
+  height: 8px;
+  width: 8px;
+  border-radius: 999px;
+  background: #d7d1c3;
+  transition:
+    width 0.3s ease,
+    background 0.3s ease;
+}
+.v2-ponto[aria-current="step"] {
+  width: 28px;
+  background: linear-gradient(90deg, var(--v2-gold), var(--v2-laranja));
+}
+.v2-ponto:hover {
+  background: var(--v2-gold);
+}
+.v2-ponto .v2-tip {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  white-space: nowrap;
+  border-radius: 8px;
+  background: var(--v2-navy);
+  color: #fff;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.v2-ponto:hover .v2-tip,
+.v2-ponto:focus-visible .v2-tip {
+  opacity: 1;
+  transform: translateX(-50%);
+}
+.v2-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--v2-linha);
+  background: #fff;
+  color: var(--v2-navy);
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+.v2-botao:hover:not(:disabled) {
+  border-color: var(--v2-gold);
+  transform: translateY(-1px);
+}
+.v2-botao:disabled {
+  opacity: 0.35;
+}
+.v2-root button:focus-visible {
+  outline: 2px solid var(--v2-gold);
+  outline-offset: 2px;
+}
+.v2-progresso {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--v2-gold), var(--v2-laranja));
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 6;
+}
+
+/* Opções de pagamento e parcelas */
+.v2-parcela {
+  height: 34px;
+  min-width: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--v2-linha);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--v2-navy);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+.v2-parcela:hover {
+  border-color: var(--v2-gold);
+  transform: translateY(-2px);
+}
+.v2-parcela[aria-checked="true"] {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--v2-navy), var(--v2-navy-2));
+  color: #fff;
+  box-shadow: 0 10px 22px -12px rgba(20, 27, 61, 0.7);
+}
+.v2-valor-troca {
+  animation: v2-pulso 0.45s ease;
+}
+@keyframes v2-pulso {
+  from {
+    opacity: 0.2;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.v2-dashplan {
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.v2-dashplan:hover {
+  transform: scale(1.03) rotate(-0.4deg);
+}
+
+/* Aviso rápido (ex.: impressão bloqueada) */
+.v2-aviso {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 50;
+  border-radius: 999px;
+  background: var(--v2-navy);
+  color: #fff;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+  animation: v2-sobe 0.3s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-entra-proximo,
+  .v2-entra-anterior,
+  .v2-cascata > *,
+  .v2-barra,
+  .v2-valor-troca {
+    animation: none !important;
+  }
+}
+
+/* Sem impressão: com a apresentação aberta, a página impressa sai só com um aviso. */
+@media print {
+  body.v2-sem-impressao * {
+    display: none !important;
+  }
+  body.v2-sem-impressao::before {
+    content: "A apresentação V2 não pode ser impressa nem salva. O diagnóstico completo é enviado em PDF pelo seu planejador.";
+    display: block;
+    padding: 48px;
+    font: 600 16px/1.5 Inter, system-ui, sans-serif;
+    color: #141b3d;
+  }
+}

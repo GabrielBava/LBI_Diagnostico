@@ -13,6 +13,6 @@ export default defineConfig({
   },
   build: {
     // As páginas do V1 · Institucional (src/assets/v1) vão embutidas no código: o HTML único abre sem arquivos ao lado.
-    assetsInlineLimit: (arquivo) => (arquivo.includes("/assets/v1/") || arquivo.includes("/assets/logo/") ? true : undefined),
+    assetsInlineLimit: (arquivo) => (["/assets/v1/", "/assets/logo/", "/assets/v2/"].some((p) => arquivo.includes(p)) ? true : undefined),
   },
 });

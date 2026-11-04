@@ -24,6 +24,7 @@ import Bussola from "./Bussola";
 import PlanoAcao from "./PlanoAcao";
 import Precificacao from "./Especificacao";
 import { AnaliticoIA, DoresGatilhos, NotasPlanejador, Transcricoes } from "./Analitico";
+import ApresentacaoV2Secao from "./ApresentacaoV2Secao";
 
 export const TELAS: Record<string, ComponentType> = {
   cadastro: Cadastro,
@@ -54,4 +55,5 @@ export const TELAS: Record<string, ComponentType> = {
   "dores-gatilhos": DoresGatilhos,
   "notas-planejador": NotasPlanejador,
   "analitico-ia": AnaliticoIA,
+  "apresentacao-v2": ApresentacaoV2Secao,
 };
