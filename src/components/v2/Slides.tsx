@@ -7,12 +7,12 @@ import {
   AlertOctagon,
   ArrowUpRight,
   BadgeCheck,
+  Banknote,
   CalendarClock,
   CreditCard,
   Gem,
   HeartHandshake,
   LineChart,
-  MessageCircle,
   PiggyBank,
   QrCode,
   ShieldCheck,
@@ -24,8 +24,8 @@ import {
 } from "lucide-react";
 import { Estrela } from "@/components/Estrela";
 import type { DadosRelatorio } from "@/components/relatorio/dados";
-import { PARCELAS, DESCONTO_PIX } from "@/config/especificacao";
-import { cartao, fmtPercentual, type Especificacao } from "@/lib/especificacao";
+import { DESCONTO_PIX, VALIDADE_DIAS } from "@/config/especificacao";
+import { fmtPercentual, type Especificacao } from "@/lib/especificacao";
 import { porEstado, type PilarEstrela } from "@/lib/estrela";
 import { fmtBRL, fmtPct } from "@/lib/format";
 import type { CardMesclado } from "@/lib/plano";
@@ -53,10 +53,18 @@ const ordem = (i: number) => ({ "--i": i }) as CSSProperties;
 // ---------------------------------------------------------------------
 //  Peças comuns
 // ---------------------------------------------------------------------
-export function Topo({ capitulo }: { capitulo?: string }) {
+/** Cabeçalho do slide. Com `onLogo`, o logo vira botão (no slide do investimento, atualiza os valores). */
+export function Topo({ capitulo, onLogo }: { capitulo?: string; onLogo?: () => void }) {
+  const imagem = <img src={logo} alt="Grupo Life Brasil · Planejamento" className="v2-logo" draggable={false} />;
   return (
     <div className="v2-topo">
-      <img src={logo} alt="Grupo Life Brasil · Planejamento" className="v2-logo" draggable={false} />
+      {onLogo ? (
+        <button type="button" onClick={onLogo} className="v2-logo-botao" title="Atualizar os valores" aria-label="Atualizar os valores da apresentação">
+          {imagem}
+        </button>
+      ) : (
+        imagem
+      )}
       {capitulo && <span className="v2-capitulo">{capitulo}</span>}
     </div>
   );
@@ -94,41 +102,97 @@ function Contador({ valor, formato }: { valor: number; formato: (v: number) => s
   return <>{formato(v)}</>;
 }
 
-/** Anel da nota LIFE (0 a 100). */
-function Anel({ nota, tamanho = 180, claro = false }: { nota?: number; tamanho?: number; claro?: boolean }) {
-  const r = tamanho / 2 - 12;
-  const c = 2 * Math.PI * r;
-  const v = useContagem(nota ?? 0, 1100);
+/** Faixas da nota LIFE (as mesmas do estado dos pilares: crítico < 45%, atenção < 75%, saudável a partir de 75%). */
+const FAIXAS_NOTA = [
+  { ate: 45, cor: "#d64545", rotulo: "Crítico" },
+  { ate: 75, cor: "#d9902a", rotulo: "Atenção" },
+  { ate: 100, cor: "#1f9d6b", rotulo: "Saudável" },
+];
+const faixaDaNota = (pct: number) => FAIXAS_NOTA.find((f) => pct < f.ate) ?? FAIXAS_NOTA[FAIXAS_NOTA.length - 1];
+
+/** Medidor da nota LIFE: meia-lua com as três faixas e o ponteiro na nota (mostra se está ou não na faixa ideal). */
+function Medidor({ nota, maximo }: { nota?: number; maximo: number }) {
+  const pct = nota === undefined ? 0 : Math.max(0, Math.min(100, (nota / Math.max(1, maximo)) * 100));
+  const v = useContagem(pct, 1200);
+  const L = 250;
+  const R = 92;
+  const cx = L / 2;
+  const cy = 120;
+  const ponto = (f: number, raio = R) => {
+    const t = Math.PI * (1 - f);
+    return [cx + raio * Math.cos(t), cy - raio * Math.sin(t)] as const;
+  };
+  const arco = (f0: number, f1: number) => {
+    const [x0, y0] = ponto(f0);
+    const [x1, y1] = ponto(f1);
+    return `M ${x0} ${y0} A ${R} ${R} 0 0 1 ${x1} ${y1}`;
+  };
+  const [px, py] = ponto(v / 100, R - 24);
+  const faixa = faixaDaNota(pct);
+  let inicio = 0;
   return (
-    <svg width={tamanho} height={tamanho} viewBox={`0 0 ${tamanho} ${tamanho}`} role="img" aria-label={nota === undefined ? "Nota LIFE sem dados" : `Nota LIFE ${nota} de 100`}>
-      <defs>
-        <linearGradient id="v2-anel" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#c9a23f" />
-          <stop offset="100%" stopColor="#ea6a2a" />
-        </linearGradient>
-      </defs>
-      <circle cx={tamanho / 2} cy={tamanho / 2} r={r} fill="none" stroke={claro ? "rgba(255,255,255,.14)" : "#ece7da"} strokeWidth="12" />
-      <circle
-        cx={tamanho / 2}
-        cy={tamanho / 2}
-        r={r}
-        fill="none"
-        stroke="url(#v2-anel)"
-        strokeWidth="12"
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={c * (1 - v / 100)}
-        transform={`rotate(-90 ${tamanho / 2} ${tamanho / 2})`}
-      />
-      <text x="50%" y="48%" textAnchor="middle" dominantBaseline="middle" fontSize={tamanho * 0.3} fontWeight="800" fill={claro ? "#fff" : "#141b3d"}>
-        {nota === undefined ? "—" : Math.round(v)}
-      </text>
-      <text x="50%" y="68%" textAnchor="middle" fontSize={tamanho * 0.075} fontWeight="700" letterSpacing="2" fill={claro ? "#e8d39a" : "#c9a23f"}>
-        NOTA LIFE
-      </text>
-    </svg>
+    <div className="flex flex-col items-center">
+      <svg width={L} height={140} viewBox={`0 0 ${L} 140`} role="img" aria-label={nota === undefined ? "Nota LIFE sem dados" : `Nota LIFE ${nota} de ${maximo}, faixa ${faixa.rotulo}`}>
+        {FAIXAS_NOTA.map((f) => {
+          const d = arco(inicio / 100 + 0.006, f.ate / 100 - 0.006);
+          const ativa = nota !== undefined && f === faixa;
+          inicio = f.ate;
+          return <path key={f.rotulo} d={d} fill="none" stroke={f.cor} strokeWidth={ativa ? 18 : 14} strokeOpacity={ativa ? 1 : 0.28} strokeLinecap="butt" />;
+        })}
+        {[0, 45, 75, 100].map((t) => {
+          const [tx, ty] = ponto(t / 100, R + 16);
+          return (
+            <text key={t} x={tx} y={ty + 3} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="#6b7080">
+              {t}
+            </text>
+          );
+        })}
+        {nota !== undefined && (
+          <>
+            <line x1={cx} y1={cy} x2={px} y2={py} stroke="#141b3d" strokeWidth="4" strokeLinecap="round" />
+            <circle cx={cx} cy={cy} r="8" fill="#141b3d" />
+            <circle cx={cx} cy={cy} r="3" fill="#c9a23f" />
+          </>
+        )}
+      </svg>
+      <div className="-mt-1 flex items-baseline gap-1">
+        <span className="text-[40px] font-extrabold leading-none tabular-nums" style={{ color: NAVY }}>
+          {nota === undefined ? "—" : Math.round((v / 100) * maximo)}
+        </span>
+        <span className="text-[14px] font-semibold text-[var(--v2-mudo)]">/ {maximo}</span>
+      </div>
+      <div className="mt-1 text-[10.5px] font-bold uppercase tracking-[0.2em]" style={ouro}>
+        Nota LIFE
+      </div>
+      {nota !== undefined && (
+        <span className="v2-selo mt-2 normal-case" style={{ background: `${faixa.cor}1f`, color: faixa.cor, letterSpacing: 0, fontSize: 12 }}>
+          {faixa.rotulo}
+          {pct < 75 ? " · faixa ideal a partir de 75" : " · na faixa ideal"}
+        </span>
+      )}
+    </div>
   );
 }
+
+/** Cor do momento financeiro (perfil): déficit e endividado em vermelho, consumidor em âmbar, os que poupam em verde. */
+const COR_MOMENTO: Record<string, string> = {
+  "Em déficit": "#d64545",
+  Endividado: "#d64545",
+  Consumidor: "#d9902a",
+  Equilibrado: "#232c5c",
+  Poupador: "#1f9d6b",
+  "Construtor de patrimônio": "#1f9d6b",
+};
+
+/** Texto em caixa alta vira frase (só a primeira letra maiúscula); siglas como LIFE e INSS continuam. */
+const SIGLAS = new Set(["LIFE", "INSS", "FGTS", "PGBL", "VGBL", "IR", "IRPF", "CLT", "PJ", "MEI"]);
+const frase = (t: string) => {
+  const r = t
+    .split(" ")
+    .map((p) => (p.length > 1 && p === p.toUpperCase() && /\p{L}/u.test(p) && !SIGLAS.has(p) ? p.toLowerCase() : p))
+    .join(" ");
+  return r.charAt(0).toUpperCase() + r.slice(1);
+};
 
 const COR_NIVEL: Record<string, { fundo: string; texto: string; rotulo: string }> = {
   Alta: { fundo: "rgba(214,69,69,.1)", texto: "var(--v2-vermelho)", rotulo: "Crítico" },
@@ -155,43 +219,30 @@ function Vazio({ children }: { children: ReactNode }) {
 // ---------------------------------------------------------------------
 export function SlideCapa({ x, nome }: { x: DadosV2; nome: string }) {
   return (
-    <div className="v2-slide !p-0">
-      <div className="grid h-full grid-cols-[1.25fr_1fr]">
-        <div className="v2-cascata flex flex-col justify-between px-16 py-14">
-          <img src={logo} alt="Grupo Life Brasil · Planejamento" className="h-[64px] w-auto self-start" style={ordem(0)} draggable={false} />
-          <div style={ordem(1)}>
-            <div className="v2-capitulo">Diagnóstico financeiro · Apresentação V2</div>
-            <h1 className="mt-4 text-[60px] font-extrabold leading-[1.02] tracking-tight" style={{ color: NAVY }}>
-              Plano de Vida
-              <br />
-              Financeira
-            </h1>
-            <p className="mt-5 text-[18px] font-medium text-[var(--v2-mudo)]">Atual · Necessário · Diferença · Decisão</p>
-          </div>
-          <div style={ordem(2)} className="border-t border-[var(--v2-linha)] pt-6">
+    <div className="v2-slide !p-0" style={{ background: "#fff" }}>
+      <div className="v2-cascata flex h-full flex-col justify-between px-20 pb-24 pt-16">
+        <img src={logo} alt="Grupo Life Brasil · Planejamento" className="h-[66px] w-auto self-start" style={ordem(0)} draggable={false} />
+        <div style={ordem(1)}>
+          <div className="v2-capitulo">Diagnóstico financeiro · Apresentação V2</div>
+          <h1 className="mt-5 text-[76px] font-extrabold leading-[1.02] tracking-tight" style={{ color: NAVY }}>
+            Plano de Vida Financeira
+          </h1>
+          <p className="mt-5 text-[20px] font-medium text-[var(--v2-mudo)]">Atual · Necessário · Diferença · Decisão</p>
+          <div className="mt-7 h-1.5 w-28 rounded-full" style={{ background: "linear-gradient(90deg,#c9a23f,#ea6a2a)" }} />
+        </div>
+        <div style={ordem(2)} className="flex items-end justify-between gap-8 border-t border-[var(--v2-linha)] pt-6">
+          <div>
             <div className="text-[11px] font-bold uppercase tracking-[0.2em]" style={ouro}>
               Preparado para
             </div>
-            <div className="mt-1 text-[30px] font-bold" style={{ color: NAVY }}>
+            <div className="mt-1 text-[32px] font-bold" style={{ color: NAVY }}>
               {nome}
             </div>
-            <div className="mt-1 text-[14px] text-[var(--v2-mudo)]">
-              {x.hoje} · Planejador {x.consultor}
-            </div>
           </div>
-        </div>
-        <div className="relative flex flex-col items-center justify-center gap-6 overflow-hidden" style={{ background: "linear-gradient(160deg,#141b3d 0%,#232c5c 70%,#2c2350 100%)" }}>
-          <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-30" style={{ background: "radial-gradient(circle,#ea6a2a 0%,transparent 70%)" }} />
-          <div className="absolute -bottom-32 -left-20 h-80 w-80 rounded-full opacity-25" style={{ background: "radial-gradient(circle,#c9a23f 0%,transparent 70%)" }} />
-          <div className="v2-cascata relative flex flex-col items-center gap-5 text-center">
-            <div style={ordem(1)}>
-              <Anel nota={x.d.notaLife} tamanho={230} claro />
-            </div>
-            <div style={ordem(2)} className="max-w-[360px]">
-              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--v2-gold-claro)]">Momento financeiro</div>
-              <div className="mt-1 text-[24px] font-bold text-white">{x.perfil.nome}</div>
-              <p className="mt-1 text-[13.5px] leading-snug text-white/70">{x.perfil.descricao}</p>
-            </div>
+          <div className="text-right text-[14px] text-[var(--v2-mudo)]">
+            {x.hoje}
+            <br />
+            Planejador {x.consultor}
           </div>
         </div>
       </div>
@@ -204,26 +255,31 @@ export function SlideCapa({ x, nome }: { x: DadosV2; nome: string }) {
 // ---------------------------------------------------------------------
 export function SlideVisao({ x }: { x: DadosV2 }) {
   const linhas = x.d.visao;
+  const corMomento = COR_MOMENTO[x.perfil.nome] ?? "#6b7080";
   return (
     <div className="v2-slide">
       <Topo capitulo="01 · Visão executiva" />
       <Titulo sub="Atual, necessário e a diferença que pede uma decisão. Passe o mouse para ver o que avaliar.">Atual x Necessário x Decisão</Titulo>
-      <div className="mt-6 grid flex-1 grid-cols-[250px_1fr] gap-6">
-        <div className="v2-cascata flex flex-col items-center justify-center gap-3 rounded-2xl bg-[var(--v2-creme)] p-5 text-center">
-          <div style={ordem(0)}>
-            <Anel nota={x.d.notaLife} tamanho={170} />
+      <div className="mt-5 grid flex-1 grid-cols-[270px_1fr] gap-6">
+        <div className="v2-cascata flex flex-col gap-3">
+          <div style={ordem(0)} className="flex flex-1 flex-col items-center justify-center rounded-2xl bg-[var(--v2-creme)] px-4 py-3">
+            <Medidor nota={x.d.notaLife} maximo={x.d.estrela.maximo} />
           </div>
-          <div style={ordem(1)}>
-            <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={ouro}>
-              Momento
+          <div
+            style={{ ...ordem(1), borderColor: corMomento, background: `${corMomento}12` }}
+            className="v2-momento relative overflow-hidden rounded-2xl border-l-[5px] px-4 py-3"
+          >
+            <div className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.18em]" style={{ color: corMomento }}>
+              <span className="v2-pulsa h-2 w-2 rounded-full" style={{ background: corMomento }} /> Momento financeiro
             </div>
-            <div className="text-[18px] font-bold" style={{ color: NAVY }}>
+            <div className="mt-0.5 text-[22px] font-extrabold leading-tight" style={{ color: corMomento }}>
               {x.perfil.nome}
             </div>
+            <p className="mt-0.5 text-[12px] leading-snug text-[var(--v2-tinta)]">{x.perfil.descricao}</p>
           </div>
         </div>
         <div className="v2-cascata flex flex-col gap-2.5">
-          <div style={ordem(0)} className="grid grid-cols-[1.5fr_1fr_1fr_1fr_110px] gap-3 px-4 text-[10.5px] font-bold uppercase tracking-[0.14em] text-[var(--v2-mudo)]">
+          <div style={ordem(0)} className="grid grid-cols-[1.5fr_1fr_1fr_1fr_110px] gap-3 px-4 text-[12px] font-semibold text-[var(--v2-mudo)]">
             <span>Dimensão</span>
             <span className="text-right">Atual</span>
             <span className="text-right">Necessário</span>
@@ -236,7 +292,7 @@ export function SlideVisao({ x }: { x: DadosV2 }) {
               <div key={l.dimensao} tabIndex={0} className="v2-cartao v2-revela px-4 py-3 outline-none" style={ordem(i + 1)}>
                 <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_110px] items-center gap-3 text-[14px]">
                   <span className="font-bold" style={{ color: NAVY }}>
-                    {l.dimensao}
+                    {frase(l.dimensao)}
                   </span>
                   <span className="text-right tabular-nums">{l.atual}</span>
                   <span className="text-right tabular-nums">{l.necessario}</span>
@@ -244,7 +300,7 @@ export function SlideVisao({ x }: { x: DadosV2 }) {
                     {l.diferenca}
                   </span>
                   <span className="flex justify-center">
-                    <span className="v2-selo" style={{ background: cor.fundo, color: cor.texto }}>
+                    <span className="v2-selo normal-case" style={{ background: cor.fundo, color: cor.texto, letterSpacing: 0, fontSize: 12 }}>
                       {l.prioridade}
                     </span>
                   </span>
@@ -271,13 +327,13 @@ export function SlideIndicadores({ x }: { x: DadosV2 }) {
   const { d } = x;
   const cards: { icone: LucideIcon; rotulo: string; valor: number; formato: (v: number) => string; sub: string; explica: string; cor: string }[] = [
     {
-      icone: Gem,
-      rotulo: "Patrimônio líquido",
-      valor: d.p.liquido,
-      formato: (v) => fmtBRL(v),
-      sub: `Bens ${fmtBRL(d.p.ativos)} − dívidas ${fmtBRL(d.p.passivos)}`,
-      explica: "Tudo o que você tem menos tudo o que deve. É o ponto de partida da construção de patrimônio.",
-      cor: NAVY,
+      icone: Banknote,
+      rotulo: "Receita líquida atual",
+      valor: d.f.renda,
+      formato: (v) => (d.f.renda > 0 ? `${fmtBRL(v)}/mês` : "Não informada"),
+      sub: d.f.renda > 0 ? "Renda líquida mensal da família" : "Informe a renda",
+      explica: "Tudo o que entra por mês já sem impostos e descontos: salários, pró-labore, aluguéis e outras rendas.",
+      cor: "var(--v2-verde)",
     },
     {
       icone: PiggyBank,
@@ -316,19 +372,19 @@ export function SlideIndicadores({ x }: { x: DadosV2 }) {
       cor: NAVY,
     },
     {
-      icone: TrendingUp,
-      rotulo: "Renda passiva (4% a.a.)",
-      valor: d.rendaHoje,
-      formato: (v) => `${fmtBRL(v)}/mês`,
-      sub: d.temFuturo ? `Alvo de ${fmtBRL(d.fu.rendaDesejada)}/mês` : "Renda que os investimentos de hoje gerariam",
-      explica: "A renda mensal que o patrimônio investido de hoje sustentaria, retirando 4% ao ano.",
-      cor: "var(--v2-verde)",
+      icone: Gem,
+      rotulo: "Patrimônio líquido",
+      valor: d.p.liquido,
+      formato: (v) => fmtBRL(v),
+      sub: `Bens ${fmtBRL(d.p.ativos)} − dívidas ${fmtBRL(d.p.passivos)}`,
+      explica: "Tudo o que você tem menos tudo o que deve. É o ponto de partida da construção de patrimônio.",
+      cor: NAVY,
     },
   ];
   return (
     <div className="v2-slide">
       <Topo capitulo="02 · Indicadores financeiros" />
-      <Titulo sub="Os números que sustentam o diagnóstico. Passe o mouse para entender cada um.">Indicadores financeiros atuais</Titulo>
+      <Titulo sub="Os números que sustentam o diagnóstico. Passe o mouse para entender cada um.">Indicadores Financeiros Atuais</Titulo>
       <div className="v2-cascata mt-7 grid flex-1 grid-cols-3 grid-rows-2 gap-4">
         {cards.map((c, i) => {
           const I = c.icone;
@@ -432,7 +488,7 @@ export function SlideFluxo({ x }: { x: DadosV2 }) {
   return (
     <div className="v2-slide">
       <Topo capitulo="04 · Fluxo de caixa" />
-      <Titulo sub="Quanto entra, quanto sai e quanto sobra: o motor do seu plano.">Fluxo de caixa mensal</Titulo>
+      <Titulo sub="Quanto entra, quanto sai e quanto sobra: o motor do seu plano.">Fluxo de Caixa Mensal</Titulo>
       <div className="v2-cascata mt-6 grid grid-cols-3 gap-4">
         {[
           { rotulo: "Receita mensal", valor: f.renda, cor: "var(--v2-verde)" },
@@ -525,7 +581,7 @@ export function SlideDespesas({ x }: { x: DadosV2 }) {
   return (
     <div className="v2-slide">
       <Topo capitulo="05 · Despesas por categoria" />
-      <Titulo sub="As maiores categorias de despesa do mês. Passe o mouse para ver o que entra em cada uma.">Despesas por categoria</Titulo>
+      <Titulo sub="As maiores categorias de despesa do mês. Passe o mouse para ver o que entra em cada uma.">Despesas por Categoria</Titulo>
       <div className="mt-6 grid flex-1 grid-cols-[1fr_270px] gap-6">
         {cats.length ? (
           <div className="v2-cascata flex flex-col justify-center gap-2">
@@ -627,7 +683,7 @@ export function SlidePotencial({ x }: { x: DadosV2 }) {
   return (
     <div className="v2-slide">
       <Topo capitulo="06 · Plano potencial" />
-      <Titulo sub="Oportunidades identificadas no diagnóstico e como podemos atuar juntos.">Plano potencial</Titulo>
+      <Titulo sub="Oportunidades identificadas no diagnóstico e como podemos atuar juntos.">Plano Potencial</Titulo>
       <GradeCartoes
         cards={x.potenciais}
         frente="oportunidade"
@@ -652,7 +708,7 @@ export function SlideOtimizacao({ x }: { x: DadosV2 }) {
   return (
     <div className="v2-slide">
       <Topo capitulo="07 · Plano otimização" />
-      <Titulo sub="O que você já faz bem e como deixar ainda melhor.">Plano otimização</Titulo>
+      <Titulo sub="O que você já faz bem e como deixar ainda melhor.">Plano Otimização</Titulo>
       <GradeCartoes
         cards={x.otimizacao}
         frente="descricao"
@@ -680,7 +736,7 @@ export function SlideAlertas({ x }: { x: DadosV2 }) {
   return (
     <div className="v2-slide">
       <Topo capitulo="08 · Alertas críticos" />
-      <Titulo sub={`Os pontos que pedem atenção primeiro${resto > 0 ? ` (mais ${resto} no diagnóstico completo)` : ""}.`}>Alertas críticos</Titulo>
+      <Titulo sub={`Os pontos que pedem atenção primeiro${resto > 0 ? ` (mais ${resto} no diagnóstico completo)` : ""}.`}>Alertas Críticos</Titulo>
       {alertas.length ? (
         <div className="v2-cascata mt-6 grid flex-1 grid-cols-2 grid-rows-3 gap-3.5">
           {alertas.map((a, i) => {
@@ -725,7 +781,7 @@ export function SlidePlano({ x }: { x: DadosV2 }) {
   return (
     <div className="v2-slide">
       <Topo capitulo="09 · Plano de ação estruturado" />
-      <Titulo sub={x.d.planoAutomatico ? "Primeiras ações sugeridas, organizadas por prazo." : "As ações combinadas, organizadas por prazo e prioridade."}>Plano de ação estruturado</Titulo>
+      <Titulo sub={x.d.planoAutomatico ? "Primeiras ações sugeridas, organizadas por prazo." : "As ações combinadas, organizadas por prazo e prioridade."}>Plano de Ação Estruturado</Titulo>
       <div className="v2-cascata mt-6 grid flex-1 grid-cols-3 gap-5">
         {PRAZOS.map((pz, i) => {
           const acoes = plano.filter((a) => a.prazo === pz.titulo);
@@ -777,117 +833,136 @@ export function SlidePlano({ x }: { x: DadosV2 }) {
 }
 
 // ---------------------------------------------------------------------
-//  10 · Precificação + Dashplan
+//  10 · Life Planejamento: investimento, metodologia e Dashplan
 // ---------------------------------------------------------------------
-const RECURSOS_DASHPLAN: { icone: LucideIcon; texto: string }[] = [
-  { icone: Wallet, texto: "Lançamentos e fluxo do mês num só lugar" },
-  { icone: Target, texto: "Plano e metas: essencial, desejo e sonho" },
-  { icone: TrendingUp, texto: "Simulador do futuro e da independência" },
-  { icone: MessageCircle, texto: "Conversa direta com o seu planejador" },
+/** Metodologia Life: a etapa de mapeamento e as quatro de implementação, com as entregas de cada uma. */
+const METODOLOGIA: { titulo: string; entregas: string }[] = [
+  { titulo: "Diagnóstico e Organização", entregas: "Diagnóstico Inicial, App Configurado, Mapa de Organização." },
+  { titulo: "Definição de Objetivos", entregas: "Mapa de Objetivos, Plano de Aportes, Simulações, Soluções Financeiras." },
+  { titulo: "Proteção e Sucessão", entregas: "Plano de Gestão de Riscos, Análise Sucessória, Relatório de Reserva de Emergência." },
+  { titulo: "Investimentos e Previdência", entregas: "Plano de Investimentos, Projeção de Aposentadoria, Relatório de Otimização Fiscal." },
+  { titulo: "Aquisição de Bens", entregas: "Análise Comparativa para Aquisição de Bens." },
 ];
 
-export function SlidePrecificacao({ x }: { x: DadosV2 }) {
+/** Chave da fase (Mapeamento / Implementação) sobre as etapas. */
+function Fase({ rotulo, className = "" }: { rotulo: string; className?: string }) {
+  const linha = { borderColor: "rgba(201,162,63,.6)" };
+  return (
+    <div className={`flex items-start gap-2 ${className}`}>
+      <span className="mt-[10px] h-2.5 flex-1 rounded-tl-lg border-l-[1.5px] border-t-[1.5px]" style={linha} />
+      <span className="text-[13.5px] font-bold leading-5" style={{ color: NAVY }}>
+        {rotulo}
+      </span>
+      <span className="mt-[10px] h-2.5 flex-1 rounded-tr-lg border-r-[1.5px] border-t-[1.5px]" style={linha} />
+    </div>
+  );
+}
+
+function Metodologia() {
+  const [foco, setFoco] = useState(0);
+  return (
+    <div>
+      <div className="grid grid-cols-5 gap-2">
+        <Fase rotulo="Mapeamento" />
+        <Fase rotulo="Implementação" className="col-span-4" />
+      </div>
+      <div className="mt-1.5 grid grid-cols-5 gap-2 rounded-2xl border border-[var(--v2-linha)] bg-[var(--v2-creme)] p-2" onMouseLeave={() => setFoco(0)}>
+        {METODOLOGIA.map((m, i) => {
+          const ativo = foco === i;
+          return (
+            <div
+              key={m.titulo}
+              tabIndex={0}
+              onMouseEnter={() => setFoco(i)}
+              onFocus={() => setFoco(i)}
+              className={`v2-etapa flex flex-col gap-1.5 outline-none ${ativo ? "v2-etapa-ativa" : ""}`}
+            >
+              <div className="v2-etapa-titulo grid h-[46px] place-items-center rounded-xl px-2 text-center text-[12px] font-bold leading-tight">{m.titulo}</div>
+              <div className="v2-etapa-corpo flex-1 rounded-xl px-2.5 py-2">
+                <div className="v2-etapa-num text-[17px] font-extrabold leading-none">{String(i + 1).padStart(2, "0")}.</div>
+                <p className="mt-1 text-[10.5px] leading-[1.35] text-[var(--v2-mudo)]">{m.entregas}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function SlidePrecificacao({ x, atualizar }: { x: DadosV2; atualizar?: () => void }) {
   const { e } = x;
-  // Parcelas escolhidas na hora (começa na condição da 7.1); o valor do plano não muda aqui.
-  const [parcelas, setParcelas] = useState(e.parcelas > 1 ? e.parcelas : 12);
-  const c = cartao(e.valor, parcelas);
+  // Valores e parcelas vêm da 7 · Precificação (aqui não se escolhe parcela nem se dá desconto).
+  const c = e.cartao;
   return (
     <div className="v2-slide">
-      <Topo capitulo="10 · Investimento e Dashplan" />
-      <div className="mt-2 grid flex-1 grid-cols-[1fr_1.08fr] gap-8">
+      <Topo capitulo="10 · Investimento e Dashplan" onLogo={atualizar} />
+      <div className="mt-1 grid min-h-0 flex-1 grid-cols-[390px_1fr] gap-8">
         <div className="v2-cascata flex min-h-0 flex-col">
           <div style={ordem(0)}>
-            <Titulo>Seu planejamento</Titulo>
+            <Titulo sub="O investimento no seu planejamento financeiro.">Life Planejamento</Titulo>
           </div>
-          <div style={ordem(1)} className="mt-4 rounded-2xl bg-[var(--v2-creme)] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[16px] font-bold" style={{ color: NAVY }}>
-                {e.modelo.nome}
-              </span>
-              <span className="v2-selo" style={{ background: "#fff", color: NAVY }}>
-                {e.modelo.duracao} · até {e.modelo.reunioes} reuniões
-              </span>
-            </div>
-            <p className="mt-1 text-[12.5px] leading-snug text-[var(--v2-mudo)]">{e.modelo.resumo}</p>
-          </div>
-          <div style={ordem(2)} className="mt-4 grid grid-cols-2 gap-3">
+          <div className="mt-4 flex flex-1 flex-col justify-center gap-4">
             {/* Pix ou boleto */}
-            <div tabIndex={0} className={`v2-cartao v2-revela flex flex-col p-4 outline-none ${e.condicao === "pix" ? "v2-ativo" : ""}`}>
+            <div style={ordem(1)} tabIndex={0} className={`v2-cartao flex flex-col p-5 outline-none ${e.condicao === "pix" ? "v2-ativo" : ""}`}>
               <div className="flex items-center gap-2">
                 <QrCode className="h-4 w-4" style={ouro} aria-hidden="true" />
                 <span className="text-[12px] font-bold uppercase tracking-[0.12em]" style={{ color: NAVY }}>
                   Pix ou boleto
                 </span>
+                {e.pix.economia > 0 && (
+                  <span className="v2-selo ml-auto" style={{ background: "rgba(31,157,107,.12)", color: "var(--v2-verde)" }}>
+                    {fmtPercentual(DESCONTO_PIX)} de desconto
+                  </span>
+                )}
               </div>
-              {e.pix.economia > 0 && (
-                <span className="v2-selo mt-2 self-start" style={{ background: "rgba(31,157,107,.12)", color: "var(--v2-verde)" }}>
-                  {fmtPercentual(DESCONTO_PIX)} de desconto
-                </span>
-              )}
-              <div className="mt-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--v2-mudo)]">À vista</div>
-              <div className="whitespace-nowrap text-[26px] font-extrabold tabular-nums leading-tight" style={{ color: NAVY }}>
+              <div className="mt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--v2-mudo)]">À vista</div>
+              <div className="whitespace-nowrap text-[34px] font-extrabold tabular-nums leading-tight" style={{ color: NAVY }}>
                 {fmtBRL(e.pix.total, true)}
               </div>
-              <div className="v2-extra text-[12px] text-[var(--v2-mudo)]">
-                {e.pix.economia > 0 ? `Economia de ${fmtBRL(e.pix.economia, true)} sobre ${fmtBRL(e.valor, true)}.` : "Pagamento único à vista."}
+              <div className="mt-0.5 text-[12.5px] text-[var(--v2-mudo)]">
+                {e.pix.economia > 0 ? `Economia de ${fmtBRL(e.pix.economia, true)} no pagamento à vista.` : "Pagamento único à vista."}
               </div>
             </div>
-            {/* Cartão parcelado */}
-            <div tabIndex={-1} className={`v2-cartao flex flex-col p-4 ${e.condicao === "cartao" ? "v2-ativo" : ""}`}>
+            {/* Cartão de crédito (parcelas da 7.1) */}
+            <div style={ordem(2)} tabIndex={0} className={`v2-cartao flex flex-col p-5 outline-none ${e.condicao === "cartao" ? "v2-ativo" : ""}`}>
               <div className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4" style={ouro} aria-hidden="true" />
                 <span className="text-[12px] font-bold uppercase tracking-[0.12em]" style={{ color: NAVY }}>
                   Cartão de crédito
                 </span>
               </div>
-              <div className="mt-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--v2-mudo)]">
-                {parcelas === 1 ? "À vista no cartão" : `Em ${parcelas} parcelas`}
+              <div className="mt-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--v2-mudo)]">
+                {c.parcelas === 1 ? "À vista no cartão" : `Em ${c.parcelas} parcelas`}
               </div>
-              <div key={parcelas} className="v2-valor-troca whitespace-nowrap text-[26px] font-extrabold tabular-nums leading-tight" style={{ color: NAVY }}>
-                {parcelas === 1 ? fmtBRL(c.total, true) : `${parcelas}× ${fmtBRL(c.parcela, true)}`}
+              <div className="whitespace-nowrap text-[34px] font-extrabold tabular-nums leading-tight" style={{ color: NAVY }}>
+                {c.parcelas === 1 ? fmtBRL(c.total, true) : `${c.parcelas}× ${fmtBRL(c.parcela, true)}`}
               </div>
-              <div key={`t${parcelas}`} className="v2-valor-troca text-[12px] tabular-nums text-[var(--v2-mudo)]">
-                Total {fmtBRL(c.total, true)}
-              </div>
+              <div className="mt-0.5 text-[12.5px] tabular-nums text-[var(--v2-mudo)]">Total {fmtBRL(c.total, true)}</div>
             </div>
           </div>
-          <div style={ordem(3)} className="mt-4">
-            <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--v2-mudo)]">Escolha as parcelas</div>
-            <div role="radiogroup" aria-label="Parcelas no cartão" className="flex flex-wrap gap-1">
-              {PARCELAS.map((p) => (
-                <button key={p} type="button" role="radio" aria-checked={parcelas === p} onClick={() => setParcelas(p)} className="v2-parcela">
-                  {p}x
-                </button>
-              ))}
-            </div>
-          </div>
+          <p style={ordem(3)} className="mt-3 text-[11.5px] text-[var(--v2-mudo)]">
+            Condições válidas por {VALIDADE_DIAS} dias.
+          </p>
         </div>
         <div className="v2-cascata flex min-h-0 flex-col">
-          <div style={ordem(1)} className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4" style={ouro} aria-hidden="true" />
+          <div style={ordem(1)} className="mb-1 flex items-center gap-2">
+            <BadgeCheck className="h-4 w-4" style={ouro} aria-hidden="true" />
             <span className="text-[11px] font-bold uppercase tracking-[0.2em]" style={ouro}>
-              Ferramenta de apoio inclusa
+              O que vamos entregar
             </span>
           </div>
-          <div style={{ ...ordem(2), color: NAVY }} className="mt-1 text-[24px] font-bold leading-tight">
-            Dashplan: o seu planejamento no dia a dia
+          <div style={ordem(2)}>
+            <Metodologia />
           </div>
-          <div style={ordem(3)} className="relative mt-3 flex flex-1 items-center justify-center">
-            <div className="absolute inset-x-6 bottom-2 top-8 rounded-[28px] opacity-60" style={{ background: "radial-gradient(60% 60% at 50% 55%,rgba(201,162,63,.25),transparent 70%)" }} />
-            <img src={dashplan} alt="Dashplan: tela Meu Futuro" className="v2-dashplan relative max-h-[330px] w-auto drop-shadow-2xl" draggable={false} />
+          <div style={ordem(3)} className="mt-4 flex items-center gap-2">
+            <Sparkles className="h-4 w-4" style={ouro} aria-hidden="true" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em]" style={ouro}>
+              Dashplan · ferramenta de apoio inclusa
+            </span>
           </div>
-          <div style={ordem(4)} className="mt-2 grid grid-cols-2 gap-2">
-            {RECURSOS_DASHPLAN.map((r) => {
-              const I = r.icone;
-              return (
-                <div key={r.texto} className="v2-cartao flex items-center gap-2.5 px-3 py-2">
-                  <I className="h-4 w-4 shrink-0" style={ouro} aria-hidden="true" />
-                  <span className="text-[12px] font-semibold leading-snug" style={{ color: NAVY }}>
-                    {r.texto}
-                  </span>
-                </div>
-              );
-            })}
+          <div style={ordem(4)} className="relative mt-2 min-h-0 flex-1">
+            <img src={dashplan} alt="Dashplan: tela Meu Futuro" className="v2-dashplan absolute inset-0 m-auto max-h-full max-w-full" draggable={false} />
           </div>
         </div>
       </div>
@@ -900,7 +975,7 @@ export function SlidePrecificacao({ x }: { x: DadosV2 }) {
 // ---------------------------------------------------------------------
 export function SlideEncerramento({ x, nome }: { x: DadosV2; nome: string }) {
   const passos = [
-    { icone: HeartHandshake, titulo: "Decidir juntos", texto: "Escolher o modelo e a condição que fazem sentido para você." },
+    { icone: HeartHandshake, titulo: "Decidir juntos", texto: "Escolher a condição de pagamento que faz sentido para você." },
     { icone: BadgeCheck, titulo: "Formalizar", texto: "Assinar a precificação e receber o diagnóstico completo em PDF." },
     { icone: ArrowUpRight, titulo: "Começar o plano", texto: "Primeira reunião de implementação e acesso ao Dashplan." },
   ];

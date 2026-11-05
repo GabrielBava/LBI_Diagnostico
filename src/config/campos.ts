@@ -142,7 +142,9 @@ export const OPCOES = {
   situacaoBem: ["Quitado", "Financiado"],
   categoriaImovel: ["Moradia", "Veraneio", "Renda (aluguel)", "Investimento", "Comercial"],
   tipoImovel: ["Casa", "Apartamento", "Terreno", "Sala comercial", "Galpão", "Rural"],
-  tipoMovel: ["Carro", "Moto", "Lancha", "Jetski"],
+  tipoMovel: ["Carro", "Moto", "Lancha", "Jetski", "Barco"],
+  controleGastos: ["Nenhum", "Papel", "Extrato bancário", "Planilha", "Aplicativo"],
+  frequenciaControle: ["Diariamente", "Semanalmente", "Mensalmente", "De vez em quando"],
   segmentoAquisicao: ["Imóvel", "Veículo"],
   condicaoVeiculo: ["Novo", "Seminovo"],
   estrategiaAquisicao: ["À vista", "Financiamento", "Consórcio"],
@@ -190,6 +192,14 @@ export const CAMPOS_CADASTRO: CampoDef[] = [
     largura: 2,
     mostrarSe: (d) => OPCOES.comConjuge.includes(String(d.estadoCivil ?? "")),
   },
+  {
+    key: "nascimentoConjuge",
+    label: "Data de nascimento do cônjuge",
+    tipo: "data",
+    largura: 2,
+    ajuda: "Idade do cônjuge para a proteção (seguros) e o plano.",
+    mostrarSe: (d) => OPCOES.comConjuge.includes(String(d.estadoCivil ?? "")),
+  },
   { key: "temFilhos", label: "Tem filhos?", tipo: "simnao" },
   {
     key: "qtdFilhos",
@@ -235,7 +245,7 @@ export const CAMPOS_PARAMETROS: CampoDef[] = [
 /** Teto da régua "Quanto consegue poupar todos os meses?" (ponto de partida). */
 export const POUPANCA_MENSAL_MAX = 5000;
 
-/** Ponto de partida (3 · Objetivos): motivação, satisfação com a organização do dinheiro e quanto consegue poupar, guardados no cadastro. */
+/** Ponto de partida (3 · Objetivos): motivação, satisfação com a organização do dinheiro, controle de gastos e quanto consegue poupar, guardados no cadastro. */
 export const CAMPOS_PONTO_PARTIDA: CampoDef[] = [
   {
     key: "motivacao",
@@ -250,9 +260,25 @@ export const CAMPOS_PONTO_PARTIDA: CampoDef[] = [
     tipo: "escala",
     min: 0,
     max: 10,
-    largura: 4,
+    largura: 2,
     rotulosEscala: ["Muito insatisfeito", "Muito satisfeito"],
     ajuda: "Repita a pergunta nas revisões para medir a evolução.",
+  },
+  {
+    key: "controleGastos",
+    label: "Como você controla os seus gastos hoje?",
+    tipo: "chips",
+    opcoes: OPCOES.controleGastos,
+    largura: 2,
+  },
+  {
+    key: "frequenciaControle",
+    label: "Com que frequência acompanha?",
+    tipo: "chips",
+    opcoes: OPCOES.frequenciaControle,
+    largura: 2,
+    meioLinha: true,
+    mostrarSe: (d) => !!d.controleGastos && d.controleGastos !== "Nenhum",
   },
   {
     key: "poupancaMensal",
@@ -263,7 +289,6 @@ export const CAMPOS_PONTO_PARTIDA: CampoDef[] = [
     passo: 100,
     moeda: true,
     largura: 4,
-    ajuda: "Na palavra do cliente. Entra no 5.1, no futuro (6.5) e no plano.",
   },
 ];
 

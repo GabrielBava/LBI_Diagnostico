@@ -165,6 +165,16 @@ export function importarJSON(texto: string) {
   return recebidos.length;
 }
 
+// Outra aba gravou (ex.: o diagnóstico aberto enquanto a apresentação V2 está em outra aba):
+// relê os dados para todas as telas desta aba ficarem em dia.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key !== null && e.key !== CHAVE_CLIENTES && e.key !== CHAVE_CONFIG) return;
+    cache = null;
+    avisar();
+  });
+}
+
 export function useClientes() {
   return useSyncExternalStore(
     (f) => {

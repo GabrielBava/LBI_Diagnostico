@@ -287,7 +287,7 @@ export const SECOES: SecaoDef[] = [
     etapa: "especificacao",
     numero: "7.1",
     titulo: "Precificação do planejamento",
-    subtitulo: "Modelo de consultoria, valor do plano e condições de pagamento",
+    subtitulo: "Base de cálculo, valor do plano e condições de pagamento",
     icone: BadgeDollarSign,
   },
 

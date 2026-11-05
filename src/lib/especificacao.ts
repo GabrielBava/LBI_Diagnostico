@@ -3,12 +3,12 @@
 //  ---------------------------------------------------------------------
 //  Base anual  = renda bruta mensal (cliente + cônjuge) × 12, ou a renda
 //                anual digitada pelo consultor (simulação).
-//  Referência  = base × percentual do modelo, ou o valor digitado pelo consultor.
+//  Referência  = base × percentual (padrão 3%), ou o valor digitado pelo consultor.
 //  Valor plano = referência − desconto do consultor (% ou R$), nunca abaixo do mínimo (R$ 2.790).
 //  Pix/boleto  = valor × (1 − 5%), nunca abaixo do mínimo.
 //  Cartão (n)  = valor + valor × taxa(n) + tarifa(n); parcela = total ÷ n.
-//  Nota fiscal = 18,5% do valor recebido (Pix: o total; cartão: o valor do plano,
-//                porque as taxas da maquininha ficam com a operadora). Líquido = recebido − nota.
+//  Receita líquida = valor recebido − nota fiscal de 18,5% (Pix: o total; cartão: o valor
+//                do plano, porque as taxas da maquininha ficam com a operadora).
 //  Parâmetros em src/config/especificacao.ts. Valores arredondados em centavos.
 // =====================================================================
 
@@ -17,10 +17,9 @@ import {
   CARTAO_AVISTA,
   DESCONTO_PIX,
   IMPOSTO_NOTA_FISCAL,
-  MODELOS_CONSULTORIA,
-  MODELO_PADRAO,
   PARCELAS,
   PARCELAS_PADRAO,
+  PERCENTUAL_PADRAO,
   TARIFA_POR_PARCELA,
   TAXAS_PARCELADO,
   VALIDADE_DIAS,
@@ -109,8 +108,8 @@ export const validadeAte = (emissao: Date, dias = VALIDADE_DIAS) => {
 
 /**
  * Precificação do cliente, a partir do que o consultor guardou em cliente.especificacao:
- *  modelo ("pontual" | "contrato" | "concierge") · rendaAnual (R$, em branco = calculada) ·
- *  percentual (%, em branco = o do modelo) · valorManual (R$, em branco = calculado) ·
+ *  rendaAnual (R$, em branco = calculada) ·
+ *  percentual (%, em branco = 3%) · valorManual (R$, em branco = calculado) ·
  *  descontoTipo ("%" ou "R$") · descontoPct (%) · descontoValor (R$) ·
  *  condicao ("pix" ou "cartao") · parcelas (1 a 12) · observacoes (texto).
  */
@@ -131,9 +130,8 @@ export function especificacao(c: Cliente) {
   const simulada = digitada !== undefined;
   const base = baseAnual(rendaMensal, digitada);
 
-  const modelo = MODELOS_CONSULTORIA.find((m) => m.id === s(e.modelo)) ?? MODELOS_CONSULTORIA.find((m) => m.id === MODELO_PADRAO)!;
   const percentualDigitado = nOpt(e.percentual);
-  const percentual = Math.max(0, percentualDigitado ?? modelo.percentual);
+  const percentual = Math.max(0, percentualDigitado ?? PERCENTUAL_PADRAO);
   const manual = nOpt(e.valorManual);
   const tipoDesconto: TipoDesconto = s(e.descontoTipo) === "R$" ? "R$" : "%";
   const descontoInformado = Math.max(0, tipoDesconto === "%" ? n(e.descontoPct) : n(e.descontoValor));
@@ -146,7 +144,6 @@ export function especificacao(c: Cliente) {
   const pix = pixBoleto(plano.valor);
   const cartaoEscolhido = cartao(plano.valor, parcelas);
   return {
-    modelo,
     /** O consultor digitou o valor do plano (em vez de base × percentual). */
     valorManual: manual !== undefined,
     pessoas,
@@ -161,7 +158,7 @@ export function especificacao(c: Cliente) {
     /** Alguma renda bruta usada na base foi estimada pela líquida. */
     estimada: !simulada && pessoas.some((p) => p.estimada && p.bruta > 0),
     percentual,
-    /** Sem percentual digitado: vale o do modelo de consultoria. */
+    /** Sem percentual digitado: vale o padrão (3%). */
     percentualPadrao: percentualDigitado === undefined,
     tipoDesconto,
     descontoInformado,

@@ -4,7 +4,9 @@
 // "Tópicos" abre o índice e F alterna a tela cheia.
 // Sem download nem impressão: Ctrl/Cmd+P e Ctrl/Cmd+S são bloqueados, o menu do botão
 // direito, copiar e arrastar também, e a impressão sai só com um aviso (v2.css).
-// O valor do plano vem da 7 · Precificação e não pode ser alterado aqui; só as parcelas.
+// O valor do plano e as parcelas vêm da 7 · Precificação e não podem ser alterados aqui.
+// No slide do investimento, clicar no logo recarrega a página (pega o valor novo da 7.1)
+// e volta ao mesmo slide. Mudanças feitas na outra aba também chegam sozinhas (storage.ts).
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type CSSProperties } from "react";
 import { Navigate, useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, LayoutGrid, Maximize2, Minimize2, X } from "lucide-react";
@@ -34,22 +36,22 @@ import { lerConfig, useClientes } from "@/lib/storage";
 interface DefSlide {
   id: string;
   titulo: string;
-  Tela: ComponentType<{ x: DadosV2; nome: string }>;
+  Tela: ComponentType<{ x: DadosV2; nome: string; atualizar?: () => void }>;
 }
 
 const SLIDES: DefSlide[] = [
   { id: "capa", titulo: "Abertura", Tela: SlideCapa },
-  { id: "visao", titulo: "Visão executiva", Tela: SlideVisao },
-  { id: "indicadores", titulo: "Indicadores financeiros", Tela: SlideIndicadores },
+  { id: "visao", titulo: "Visão Executiva", Tela: SlideVisao },
+  { id: "indicadores", titulo: "Indicadores Financeiros", Tela: SlideIndicadores },
   { id: "estrela", titulo: "Estrela LIFE", Tela: SlideEstrela },
-  { id: "fluxo", titulo: "Fluxo de caixa", Tela: SlideFluxo },
-  { id: "despesas", titulo: "Despesas por categoria", Tela: SlideDespesas },
-  { id: "potencial", titulo: "Plano potencial", Tela: SlidePotencial },
-  { id: "otimizacao", titulo: "Plano otimização", Tela: SlideOtimizacao },
-  { id: "alertas", titulo: "Alertas críticos", Tela: SlideAlertas },
-  { id: "plano", titulo: "Plano de ação estruturado", Tela: SlidePlano },
+  { id: "fluxo", titulo: "Fluxo de Caixa", Tela: SlideFluxo },
+  { id: "despesas", titulo: "Despesas por Categoria", Tela: SlideDespesas },
+  { id: "potencial", titulo: "Plano Potencial", Tela: SlidePotencial },
+  { id: "otimizacao", titulo: "Plano Otimização", Tela: SlideOtimizacao },
+  { id: "alertas", titulo: "Alertas Críticos", Tela: SlideAlertas },
+  { id: "plano", titulo: "Plano de Ação Estruturado", Tela: SlidePlano },
   { id: "precificacao", titulo: "Investimento e Dashplan", Tela: SlidePrecificacao },
-  { id: "encerramento", titulo: "Próximo passo", Tela: SlideEncerramento },
+  { id: "encerramento", titulo: "Próximo Passo", Tela: SlideEncerramento },
 ];
 
 /** Escala do palco (1280 × 720) para caber na janela. */
@@ -64,10 +66,23 @@ function useEscala() {
   return escala;
 }
 
+/** Slide para retomar depois de recarregar a página (guardado só nesta aba). */
+const chaveRetomar = (id?: string) => `life-v2-retomar:${id ?? ""}`;
+const lerRetomar = (id?: string) => {
+  try {
+    const v = sessionStorage.getItem(chaveRetomar(id));
+    sessionStorage.removeItem(chaveRetomar(id));
+    const i = v === null ? 0 : Number(v);
+    return Number.isInteger(i) && i >= 0 && i < SLIDES.length ? i : 0;
+  } catch {
+    return 0;
+  }
+};
+
 export default function ApresentacaoV2() {
   const { id } = useParams();
   const cliente = useClientes().find((c) => c.id === id);
-  const [atual, setAtual] = useState(0);
+  const [atual, setAtual] = useState(() => lerRetomar(id));
   const [direcao, setDirecao] = useState<"proximo" | "anterior">("proximo");
   const [indice, setIndice] = useState(false);
   const [telaCheia, setTelaCheia] = useState(false);
@@ -136,6 +151,16 @@ export default function ApresentacaoV2() {
   const atualRef = useRef(atual);
   atualRef.current = atual;
 
+  /** Recarrega a página (dados novos da 7.1) e volta a este mesmo slide. */
+  const recarregar = () => {
+    try {
+      sessionStorage.setItem(chaveRetomar(id), String(atualRef.current));
+    } catch {
+      // Sem sessionStorage: recarrega e começa do início.
+    }
+    window.location.reload();
+  };
+
   const alternarTelaCheia = () => {
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
     else void document.documentElement.requestFullscreen?.().catch(() => undefined);
@@ -185,10 +210,10 @@ export default function ApresentacaoV2() {
     >
       <div className="v2-palco" style={{ transform: `translate(-50%, -50%) scale(${escala})` }} role="region" aria-roledescription="apresentação" aria-label={`${slide.titulo}, slide ${atual + 1} de ${total}`}>
         <div key={slide.id} className={direcao === "proximo" ? "v2-entra-proximo absolute inset-0" : "v2-entra-anterior absolute inset-0"}>
-          <Tela x={x} nome={nome} />
+          <Tela x={x} nome={nome} atualizar={recarregar} />
         </div>
 
-        <div className="v2-rodape" style={atual === 0 || atual === total - 1 ? { color: "#fff" } : undefined}>
+        <div className="v2-rodape" style={atual === total - 1 ? { color: "#fff" } : undefined}>
           <button type="button" className="v2-botao" onClick={() => setIndice(true)} aria-label="Tópicos da apresentação">
             <LayoutGrid className="h-4 w-4" aria-hidden="true" /> Tópicos
           </button>
@@ -199,7 +224,7 @@ export default function ApresentacaoV2() {
               </button>
             ))}
           </div>
-          <span className="w-[54px] text-right text-[12px] font-semibold tabular-nums" style={{ color: atual === 0 || atual === total - 1 ? "#e8d39a" : "var(--v2-mudo)" }}>
+          <span className="w-[54px] text-right text-[12px] font-semibold tabular-nums" style={{ color: atual === total - 1 ? "#e8d39a" : "var(--v2-mudo)" }}>
             {atual + 1} / {total}
           </span>
           <button type="button" className="v2-botao" onClick={() => ir(atual - 1)} disabled={atual === 0} aria-label="Slide anterior">

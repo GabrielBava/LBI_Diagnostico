@@ -1,11 +1,10 @@
 // Precificação do planejamento em PDF (página de impressão A4 retrato, aberta pela 7.1).
-// Identidade do Grupo Life Brasil (azul-marinho e dourado). Mostra o modelo de consultoria
-// (cronograma, regras de entrada e limite de reuniões), o valor do plano e só a condição de
-// pagamento marcada na 7.1; sem condição marcada, mostra as duas (com aviso só na tela).
-// A nota fiscal e as taxas da maquininha não aparecem aqui (são internas).
+// Identidade do Grupo Life Brasil (azul-marinho e dourado). Mostra a base de cálculo, o valor
+// do plano e só a condição de pagamento marcada na 7.1; sem condição marcada, mostra as duas
+// (com aviso só na tela). A receita líquida e as taxas da maquininha não aparecem aqui (são internas).
 import { useEffect, type ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check, Printer, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Printer, TriangleAlert } from "lucide-react";
 import { BotaoOuro } from "@/components/ui";
 import { DESCONTO_PIX, TEXTOS_PDF, VALIDADE_DIAS, VALOR_MINIMO } from "@/config/especificacao";
 import { s } from "@/lib/calculos";
@@ -177,41 +176,7 @@ export default function PrecificacaoPdf() {
               ))}
             </dl>
 
-            {/* Modelo de consultoria: o que inclui, cronograma e regras de entrada */}
-            <Bloco titulo={`Modelo de consultoria · ${e.modelo.nome}`}>
-              <p className="mb-2 leading-snug text-[#3a3f52]">
-                {e.modelo.resumo} <strong className="text-[#141C3B]">Duração: {e.modelo.duracao} · até {e.modelo.reunioes} reuniões.</strong>
-              </p>
-              <ul className="grid gap-x-6 gap-y-1 sm:grid-cols-2">
-                {e.modelo.inclui.map((item) => (
-                  <li key={item} className="flex gap-2 leading-snug">
-                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#141C3B] text-[#E3C77A]">
-                      <Check className="h-2.5 w-2.5" strokeWidth={3.5} aria-hidden="true" />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </Bloco>
-
-            <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-              <Bloco titulo="Cronograma">
-                <ol className="space-y-1 border-l-2 border-[#C7A340] pl-3 text-[11px]">
-                  {e.modelo.cronograma.map((c) => (
-                    <li key={c.quando} className="leading-snug">
-                      <span className="font-semibold text-[#141C3B]">{c.quando}:</span> {c.oque}
-                    </li>
-                  ))}
-                </ol>
-              </Bloco>
-              <Bloco titulo="Regras de entrada">
-                <ul className="list-disc space-y-0.5 pl-4 text-[11px] leading-snug">
-                  {e.modelo.regras.map((r) => (
-                    <li key={r}>{r}</li>
-                  ))}
-                </ul>
-              </Bloco>
-            </div>
+            <p className="leading-snug text-[#3a3f52]">{TEXTOS_PDF.introducao}</p>
 
             <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
               <Bloco titulo="Base de cálculo">
@@ -243,7 +208,7 @@ export default function PrecificacaoPdf() {
                   )}
                 </dl>
                 <div className="mt-2 rounded-lg bg-[#141C3B] px-4 py-3 text-white">
-                  <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C7A340]">Valor do plano · {e.modelo.nome}</div>
+                  <div className="text-[9px] font-semibold uppercase tracking-[0.2em] text-[#C7A340]">Valor do plano</div>
                   <div className="mt-0.5 text-[22px] font-bold tabular-nums">{fmtBRL(e.valor, true)}</div>
                 </div>
                 <p className="mt-2 text-[10px] leading-snug text-[#6b7080]">

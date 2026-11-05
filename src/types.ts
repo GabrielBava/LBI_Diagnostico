@@ -80,7 +80,7 @@ export interface Cliente {
   simulacao: Secao;
   plano: Item[];
 
-  // Etapa 7 · Precificação (modelo de consultoria, percentual, valor, desconto, forma de pagamento)
+  // Etapa 7 · Precificação (percentual, valor, desconto, forma de pagamento)
   especificacao: Secao;
 
   // Etapa 8 · Analítico do Planejador (transcrições e análise da reunião)

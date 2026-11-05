@@ -304,6 +304,12 @@ export default function Panorama() {
           {s(cliente.cadastro.satisfacao) !== "" && (
             <p className="mt-2 text-xs text-muted-foreground">Satisfação financeira declarada: {n(cliente.cadastro.satisfacao)}/10</p>
           )}
+          {s(cliente.cadastro.controleGastos) !== "" && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Controle de gastos: {s(cliente.cadastro.controleGastos)}
+              {s(cliente.cadastro.controleGastos) !== "Nenhum" && s(cliente.cadastro.frequenciaControle) ? ` · ${s(cliente.cadastro.frequenciaControle).toLowerCase()}` : ""}
+            </p>
+          )}
         </div>
       </div>
 

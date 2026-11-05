@@ -80,7 +80,17 @@ export function resumoDiagnostico(c: Cliente): string {
     const idade = idadePorNascimento(s(cad.nascimento));
     add("Nome", s(cad.nome) || "não informado");
     add("Idade", idade !== undefined ? `${idade} anos` : "não informada");
-    add("Estado civil", [s(cad.estadoCivil), temConjuge(c) && s(cad.conjuge) ? `cônjuge: ${s(cad.conjuge)}` : ""].filter(Boolean).join(" · ") || "não informado");
+    const idadeConjuge = temConjuge(c) ? idadePorNascimento(s(cad.nascimentoConjuge)) : undefined;
+    add(
+      "Estado civil",
+      [
+        s(cad.estadoCivil),
+        temConjuge(c) && s(cad.conjuge) ? `cônjuge: ${s(cad.conjuge)}` : "",
+        idadeConjuge !== undefined ? `cônjuge com ${idadeConjuge} anos` : "",
+      ]
+        .filter(Boolean)
+        .join(" · ") || "não informado",
+    );
     add("Ocupação", [s(cad.ocupacao), s(cad.regimeTrabalho)].filter(Boolean).join(" · ") || "não informada");
     add(
       "Filhos e dependentes",
@@ -96,6 +106,10 @@ export function resumoDiagnostico(c: Cliente): string {
     );
     add("O que motivou a busca pelo planejamento", s(cad.motivacao));
     add("Satisfação com a vida financeira (0 a 10)", s(cad.satisfacao));
+    add(
+      "Como controla os gastos",
+      s(cad.controleGastos) && [s(cad.controleGastos), s(cad.controleGastos) !== "Nenhum" ? s(cad.frequenciaControle).toLowerCase() : ""].filter(Boolean).join(" · "),
+    );
 
     const f = fluxo(c);
     if (f.renda > 0) {

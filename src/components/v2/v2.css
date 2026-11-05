@@ -312,50 +312,91 @@
   z-index: 6;
 }
 
-/* Opções de pagamento e parcelas */
-.v2-parcela {
-  height: 34px;
-  min-width: 40px;
-  border-radius: 10px;
+/* Tela do Dashplan (sem a moldura do tablet), como em tela cheia */
+.v2-dashplan {
+  border-radius: 14px;
   border: 1px solid var(--v2-linha);
+  box-shadow: 0 26px 50px -24px rgba(20, 27, 61, 0.45);
+  transition:
+    transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.5s ease;
+}
+.v2-dashplan:hover {
+  transform: scale(1.025);
+  box-shadow: 0 34px 60px -24px rgba(20, 27, 61, 0.55);
+}
+
+/* Logo que atualiza os valores (slide do investimento) */
+.v2-logo-botao {
+  display: inline-flex;
+  border: 0;
+  background: none;
+  padding: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.v2-logo-botao:hover {
+  opacity: 0.8;
+}
+
+/* Metodologia (mapeamento e implementação) */
+.v2-etapa {
+  transition: transform 0.25s ease;
+}
+.v2-etapa-titulo {
   background: #fff;
-  font-size: 13px;
-  font-weight: 700;
+  border: 1px solid var(--v2-linha);
   color: var(--v2-navy);
   transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.2s ease;
+    background 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
-.v2-parcela:hover {
-  border-color: var(--v2-gold);
+.v2-etapa-corpo {
+  background: #fff;
+  border: 1px solid var(--v2-linha);
+  transition: border-color 0.25s ease;
+}
+.v2-etapa-num {
+  color: var(--v2-navy);
+  opacity: 0.55;
+  transition:
+    color 0.25s ease,
+    opacity 0.25s ease;
+}
+.v2-etapa-ativa {
   transform: translateY(-2px);
 }
-.v2-parcela[aria-checked="true"] {
+.v2-etapa-ativa .v2-etapa-titulo {
   border-color: transparent;
   background: linear-gradient(135deg, var(--v2-navy), var(--v2-navy-2));
   color: #fff;
-  box-shadow: 0 10px 22px -12px rgba(20, 27, 61, 0.7);
+  box-shadow: 0 10px 24px -12px rgba(201, 162, 63, 0.9);
 }
-.v2-valor-troca {
-  animation: v2-pulso 0.45s ease;
+.v2-etapa-ativa .v2-etapa-corpo {
+  border-color: var(--v2-gold);
 }
-@keyframes v2-pulso {
-  from {
-    opacity: 0.2;
-    transform: translateY(6px);
-  }
-  to {
+.v2-etapa-ativa .v2-etapa-num {
+  color: var(--v2-gold);
+  opacity: 1;
+}
+
+/* Momento financeiro em destaque (ponto pulsando) */
+.v2-pulsa {
+  animation: v2-pulsa 1.8s ease-in-out infinite;
+}
+@keyframes v2-pulsa {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 currentColor;
     opacity: 1;
-    transform: none;
   }
-}
-.v2-dashplan {
-  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.v2-dashplan:hover {
-  transform: scale(1.03) rotate(-0.4deg);
+  50% {
+    box-shadow: 0 0 0 5px transparent;
+    opacity: 0.55;
+  }
 }
 
 /* Aviso rápido (ex.: impressão bloqueada) */
@@ -380,7 +421,7 @@
   .v2-entra-anterior,
   .v2-cascata > *,
   .v2-barra,
-  .v2-valor-troca {
+  .v2-pulsa {
     animation: none !important;
   }
 }

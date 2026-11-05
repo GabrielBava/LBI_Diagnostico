@@ -1,14 +1,14 @@
-// 7.1 · Precificação do planejamento (só na versão consultor): modelo de consultoria (pontual,
-// contrato ou concierge, com cronograma, regras de entrada e limite de reuniões), valor do plano
-// (renda bruta anual × percentual − desconto, ou o valor digitado; mínimo R$ 2.790) e condições de
-// pagamento (Pix/boleto com desconto ou cartão em até 12x), com o líquido após a nota fiscal.
+// 7.1 · Precificação do planejamento (só na versão consultor): base de cálculo, valor do plano
+// (renda bruta anual × percentual − desconto em % ou R$, ou o valor digitado; mínimo R$ 2.790) e
+// condições de pagamento (Pix/boleto com desconto ou cartão em até 12x), com a receita líquida
+// (o que sobra depois da nota fiscal de 18,5%) só como informação para o planejador.
 // A condição marcada vai para o PDF. Tudo fica em cliente.especificacao (contas em src/lib/especificacao.ts).
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarRange, CreditCard, FileDown, ListChecks, QrCode, RotateCcw, ShieldCheck, TriangleAlert, type LucideIcon } from "lucide-react";
+import { CreditCard, FileDown, QrCode, RotateCcw, TriangleAlert, type LucideIcon } from "lucide-react";
 import { CampoMoeda, CampoNumero, Chips, Rotulo } from "@/components/campos";
 import { BotaoOuro, Kpi, Selo, SubBloco } from "@/components/ui";
-import { DESCONTO_PIX, IMPOSTO_NOTA_FISCAL, MODELOS_CONSULTORIA, PARCELAS, VALOR_MINIMO } from "@/config/especificacao";
+import { DESCONTO_PIX, IMPOSTO_NOTA_FISCAL, PARCELAS, PERCENTUAL_PADRAO, VALOR_MINIMO } from "@/config/especificacao";
 import { useCliente } from "@/lib/cliente-context";
 import { s } from "@/lib/calculos";
 import { especificacao, fmtPercentual, type CondicaoPagamento, type notaFiscal } from "@/lib/especificacao";
@@ -89,12 +89,12 @@ function ValorCondicao({ rotulo, valor, detalhe }: { rotulo: string; valor: stri
 
 const linha = "flex items-baseline justify-between gap-3 py-1.5";
 
-/** Nota fiscal e líquido da condição (interno: não vai para o PDF). */
-function LinhaNota({ nota }: { nota: ReturnType<typeof notaFiscal> }) {
+/** Receita líquida da condição: o que sobra depois da nota fiscal (interno: não vai para o PDF). */
+function ReceitaLiquida({ nota }: { nota: ReturnType<typeof notaFiscal> }) {
   return (
     <div className="rounded-lg border border-border bg-secondary/30 px-3 py-2 text-[11px] text-muted-foreground tabular-nums">
-      Nota fiscal ({fmtPercentual(nota.impostoPct)}): <span className="text-foreground">− {fmtBRL(nota.imposto, true)}</span> · Líquido:{" "}
-      <strong className="text-foreground">{fmtBRL(nota.liquido, true)}</strong>
+      Receita líquida: <strong className="text-foreground">{fmtBRL(nota.liquido, true)}</strong>
+      <span className="block">Obs.: desconto de {fmtPercentual(nota.impostoPct)} da nota fiscal.</span>
     </div>
   );
 }
@@ -111,7 +111,6 @@ export default function Precificacao() {
   // Desconto pedido acima do valor do plano: fica limitado a ele.
   const descontoLimitado = e.bruto > 0 && (e.tipoDesconto === "%" ? e.descontoInformado > 100 : e.descontoInformado > e.bruto);
 
-  const modeloAtual = e.modelo;
   const noPdf = !temValor
     ? "Informe a renda para calcular o valor do plano e exportar."
     : e.condicao === "pix"
@@ -127,81 +126,10 @@ export default function Precificacao() {
         <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">Etapa 7 · Precificação</div>
         <h3 className="mt-0.5 text-lg font-semibold sm:text-xl">Precificação · Planejamento financeiro</h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Escolha o modelo de consultoria, ajuste o percentual ou digite o valor do plano (mínimo de {fmtBRL(VALOR_MINIMO)}) e marque a
-          condição de pagamento: ela vai para o PDF.
+          Ajuste o percentual ou digite o valor do plano (mínimo de {fmtBRL(VALOR_MINIMO)}), dê o desconto em % ou em R$ e marque a condição
+          de pagamento: ela vai para o PDF.
         </p>
       </div>
-
-      {/* Modelo de consultoria: pontual, contrato ou concierge */}
-      <SubBloco titulo="Modelo de consultoria">
-        <div role="radiogroup" aria-label="Modelo de consultoria" className="grid gap-3 md:grid-cols-3">
-          {MODELOS_CONSULTORIA.map((m) => {
-            const ativo = modeloAtual.id === m.id;
-            return (
-              <button
-                key={m.id}
-                type="button"
-                role="radio"
-                aria-checked={ativo}
-                onClick={() => {
-                  set("modelo", m.id);
-                  // O percentual digitado era do modelo anterior: volta ao padrão do novo modelo.
-                  if (dados.percentual !== undefined) set("percentual", undefined);
-                }}
-                className={`flex min-w-0 flex-col gap-1.5 rounded-xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary ${
-                  ativo ? "border-primary/70 bg-primary/5 ring-1 ring-primary/40" : "border-border bg-card hover:border-primary/50"
-                }`}
-              >
-                <span className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold">{m.nome}</span>
-                  {ativo && <span className="shrink-0 text-[10px] font-semibold uppercase tracking-widest text-primary">Escolhido</span>}
-                </span>
-                <span className="text-xs leading-snug text-muted-foreground">{m.resumo}</span>
-                <span className="mt-auto flex flex-wrap gap-1.5 pt-1">
-                  <Selo className="border-border bg-muted/40 text-muted-foreground">{m.duracao}</Selo>
-                  <Selo className="border-border bg-muted/40 text-muted-foreground">até {m.reunioes} reuniões</Selo>
-                  <Selo className="border-primary/30 bg-primary/10 text-primary">{fmtPercentual(m.percentual)} da renda anual</Selo>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="mt-4 grid gap-4 lg:grid-cols-3">
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <CalendarRange className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Cronograma
-            </div>
-            <ol className="space-y-2 border-l border-border pl-3">
-              {modeloAtual.cronograma.map((c) => (
-                <li key={c.quando} className="text-xs">
-                  <span className="font-semibold text-foreground">{c.quando}</span>
-                  <span className="block text-muted-foreground">{c.oque}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> Regras de entrada · até {modeloAtual.reunioes} reuniões
-            </div>
-            <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
-              {modeloAtual.regras.map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="min-w-0">
-            <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              <ListChecks className="h-3.5 w-3.5 text-primary" aria-hidden="true" /> O que inclui
-            </div>
-            <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
-              {modeloAtual.inclui.map((r) => (
-                <li key={r}>{r}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </SubBloco>
 
       <div className="grid gap-4 xl:grid-cols-2">
         {/* (a) Base de cálculo */}
@@ -288,12 +216,12 @@ export default function Precificacao() {
                 sufixo="%"
                 min={0}
                 max={100}
-                placeholder={`${modeloAtual.percentual.toLocaleString("pt-BR")} (padrão do modelo)`}
+                placeholder={`${PERCENTUAL_PADRAO.toLocaleString("pt-BR")} (padrão)`}
                 ariaLabel="Percentual sobre a renda anual"
               />
               <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3">
                 <span className="text-[11px] text-muted-foreground/80">
-                  Sobre a renda bruta anual. Padrão do modelo: {fmtPercentual(modeloAtual.percentual)}
+                  Sobre a renda bruta anual. Padrão: {fmtPercentual(PERCENTUAL_PADRAO)}
                 </span>
                 <BotaoRestaurar onClick={() => set("percentual", undefined)} disabled={e.percentualPadrao}>
                   Voltar ao padrão
@@ -344,7 +272,7 @@ export default function Precificacao() {
           <div className="mt-4">
             <Kpi
               tom="ouro"
-              rotulo={`Valor do plano · ${modeloAtual.nome}`}
+              rotulo="Valor do plano"
               valor={fmtBRL(e.valor, true)}
               detalhe={
                 <span className="tabular-nums">
@@ -367,8 +295,8 @@ export default function Precificacao() {
       <SubBloco titulo="Condições de pagamento">
         <fieldset className="min-w-0">
           <legend className="mb-3 text-xs text-muted-foreground">
-            Marque a condição escolhida pelo cliente. Só ela entra no PDF. A nota fiscal ({fmtPercentual(IMPOSTO_NOTA_FISCAL)}) e o líquido aparecem
-            só aqui.
+            Marque a condição escolhida pelo cliente. Só ela entra no PDF. A receita líquida (já sem a nota fiscal de{" "}
+            {fmtPercentual(IMPOSTO_NOTA_FISCAL)}) aparece só aqui, para o planejador.
           </legend>
           <div className="grid gap-3 md:grid-cols-2">
             <Opcao
@@ -394,7 +322,7 @@ export default function Precificacao() {
                   ))
                 }
               />
-              {temValor && <LinhaNota nota={e.notaPix} />}
+              {temValor && <ReceitaLiquida nota={e.notaPix} />}
             </Opcao>
 
             <Opcao
@@ -424,7 +352,7 @@ export default function Precificacao() {
                 valor={temValor ? (e.parcelas === 1 ? fmtBRL(e.cartao.total, true) : `${e.parcelas}× de ${fmtBRL(e.cartao.parcela, true)}`) : "—"}
                 detalhe={temValor && e.parcelas > 1 && <>Total {fmtBRL(e.cartao.total, true)}</>}
               />
-              {temValor && <LinhaNota nota={e.notaCartao} />}
+              {temValor && <ReceitaLiquida nota={e.notaCartao} />}
             </Opcao>
           </div>
         </fieldset>

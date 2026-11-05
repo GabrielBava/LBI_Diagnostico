@@ -18,7 +18,7 @@ export default function ApresentacaoV2Secao() {
     mesclarCards(cliente, lista, auto, COLUNAS_PLANO[lista].chaves, COLUNAS_PLANO[lista].selo).filter((c) => !c.oculto).length;
   const topicos: { titulo: string; ok: boolean; detalhe: string }[] = [
     { titulo: "Visão executiva", ok: true, detalhe: "Atual × necessário × decisão" },
-    { titulo: "Indicadores financeiros", ok: f.renda > 0, detalhe: "Patrimônio, superávit, proteção, reserva e futuro" },
+    { titulo: "Indicadores financeiros", ok: f.renda > 0, detalhe: "Receita líquida, superávit, proteção, reserva, futuro e patrimônio" },
     { titulo: "Estrela LIFE", ok: estrela(cliente).temDados, detalhe: "Os 8 pilares e a nota LIFE" },
     { titulo: "Fluxo de caixa", ok: f.renda > 0, detalhe: "Receita, despesa, superávit e o 50-30-20" },
     { titulo: "Despesas por categoria", ok: f.despesas > 0, detalhe: "As maiores categorias do mês" },
@@ -26,7 +26,7 @@ export default function ApresentacaoV2Secao() {
     { titulo: "Plano otimização", ok: visiveis("planoOtimizacao", planoOtimizacao(cliente)) > 0, detalhe: "Até 6 pontos fortes visíveis no 6.4" },
     { titulo: "Alertas críticos", ok: visiveis("planoAtual", planoAtual(cliente)) > 0, detalhe: "Até 6 alertas do 6.2, do mais grave" },
     { titulo: "Plano de ação estruturado", ok: true, detalhe: cliente.plano.length ? "Ações do 6.8 por prazo" : "Sugestões do plano, por prazo" },
-    { titulo: "Investimento e Dashplan", ok: e.valor > 0, detalhe: `${e.modelo.nome} · ${fmtBRL(e.valor, true)}` },
+    { titulo: "Investimento e Dashplan", ok: e.valor > 0, detalhe: `Life Planejamento · ${fmtBRL(e.valor, true)}` },
   ];
   const abrir = () => {
     const base = window.location.href.split("#")[0];
@@ -75,17 +75,21 @@ export default function ApresentacaoV2Secao() {
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
           <span className="flex flex-wrap items-center gap-2">
             <BadgeDollarSign className="h-4 w-4 text-primary" aria-hidden="true" />
-            <strong>{e.modelo.nome}</strong>
+            <strong>Valor do plano</strong>
             <Selo className="border-border bg-muted/40 text-muted-foreground">{fmtBRL(e.valor, true)}</Selo>
             <span className="text-muted-foreground">
-              · Pix/boleto {fmtBRL(e.pix.total, true)} · cartão em até 12x (as parcelas podem ser trocadas na hora)
+              · Pix/boleto {fmtBRL(e.pix.total, true)} · cartão{" "}
+              {e.parcelas === 1 ? `à vista ${fmtBRL(e.cartao.total, true)}` : `${e.parcelas}× de ${fmtBRL(e.cartao.parcela, true)}`}
             </span>
           </span>
           <button type="button" onClick={() => irPara("especificacao")} className="text-xs font-semibold text-primary underline-offset-2 hover:underline">
             Ajustar em 7 · Precificação
           </button>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">Na apresentação não dá para mudar o valor nem dar desconto: ajuste antes, na 7.1.</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Na apresentação não dá para mudar o valor nem dar desconto: ajuste na 7.1. Com a apresentação aberta, clique no logo do slide 11 para
+          atualizar o valor sem voltar ao início.
+        </p>
       </SubBloco>
     </div>
   );
